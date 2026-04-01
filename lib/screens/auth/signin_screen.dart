@@ -129,11 +129,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
             children: [
               // ── Logo ──
               Center(
-                child: Image.network(
-                  'https://placehold.co/210x64',
-                  width: 210,
-                  height: 64,
-                  fit: BoxFit.fill,
+                child: Image.asset(
+                  'images/logo.png',
+                  // 'https://placehold.co/210x64',
+                  // width: 210,
+                  // height: 64,
+                  // fit: BoxFit.fill,
                 ),
               ),
               const SizedBox(height: 16),
