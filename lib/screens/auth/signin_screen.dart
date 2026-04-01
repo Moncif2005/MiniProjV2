@@ -77,12 +77,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
       if (response) {
         final user = authService.userProfile;
         print(user.toString());
-        if (user != null) {
-          userProvider.setUser(
-            name: user['name'] ?? '',
-            email: user['email'] ?? '',
-          );
-        }
+        // if (user != null) {
+        //   userProvider.setUser(
+        //     name: user['name'] ?? '',
+        //     email: user['email'] ?? '',
+        //   );
+        // }
         if (mounted) {
           Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
         }

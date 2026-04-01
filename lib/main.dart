@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:minipr/firebase_options.dart';
+import 'package:minipr/screens/auth_wrapper.dart';
 import 'package:minipr/services/auth_service.dart';
 import 'package:provider/provider.dart';
 import 'theme/app_theme.dart';
@@ -50,14 +51,7 @@ class MyApp extends StatelessWidget {
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: themeProvider.themeMode,
-      home: Consumer<AuthService>(
-        builder: (context, authService, _) {
-          if (!authService.isAuthenticated) {
-            return const SignUpScreen();
-          }
-          return const HomeScreen();
-        },
-      ),
+      home: const AuthWrapper(), 
       routes: {
         '/signup':          (context) => const SignUpScreen(),
         '/create-account':  (context) => const CreateAccountScreen(),
