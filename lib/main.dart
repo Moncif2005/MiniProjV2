@@ -50,7 +50,14 @@ class MyApp extends StatelessWidget {
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: themeProvider.themeMode,
-      initialRoute: '/signup',
+      home: Consumer<AuthService>(
+        builder: (context, authService, _) {
+          if (!authService.isAuthenticated) {
+            return const SignUpScreen();
+          }
+          return const HomeScreen();
+        },
+      ),
       routes: {
         '/signup':          (context) => const SignUpScreen(),
         '/create-account':  (context) => const CreateAccountScreen(),

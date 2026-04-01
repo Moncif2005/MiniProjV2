@@ -1,6 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:minipr/providers/user_provider.dart';
 
 class AuthService extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -25,7 +24,7 @@ class AuthService extends ChangeNotifier {
     try {
       await _auth.signInWithEmailAndPassword(email: email, password: password);
       notifyListeners();
-
+print('name: ${_auth.currentUser?.displayName}, email: ${_auth.currentUser?.email}');
       return true;
     } on FirebaseAuthException catch (e) {
       debugPrint('Sign-in error: ${e.message}');

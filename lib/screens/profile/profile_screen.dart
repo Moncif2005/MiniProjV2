@@ -10,8 +10,7 @@ class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
   @override
-  State<ProfileScreen> createState() =>
-      _ProfileScreenState();
+  State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
@@ -19,7 +18,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final c    = context.colors;
+    final c = context.colors;
     final user = context.watch<UserProvider>();
 
     return Scaffold(
@@ -31,15 +30,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
           switch (index) {
             case 0:
               Navigator.pushNamedAndRemoveUntil(
-                  context, '/home', (route) => false);
+                context,
+                '/home',
+                (route) => false,
+              );
               break;
             case 1:
               Navigator.pushNamedAndRemoveUntil(
-                  context, '/learn', (route) => false);
+                context,
+                '/learn',
+                (route) => false,
+              );
               break;
             case 2:
               Navigator.pushNamedAndRemoveUntil(
-                  context, '/offers', (route) => false);
+                context,
+                '/offers',
+                (route) => false,
+              );
               break;
           }
         },
@@ -50,11 +58,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-
               // ── Header ──
               Row(
-                mainAxisAlignment:
-                    MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
                     'My Profile',
@@ -71,10 +77,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     decoration: ShapeDecoration(
                       color: c.surface,
                       shape: RoundedRectangleBorder(
-                        side: BorderSide(
-                            width: 1.24, color: c.border),
-                        borderRadius:
-                            BorderRadius.circular(14),
+                        side: BorderSide(width: 1.24, color: c.border),
+                        borderRadius: BorderRadius.circular(14),
                       ),
                     ),
                     child: Icon(
@@ -94,8 +98,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 decoration: ShapeDecoration(
                   color: c.surface,
                   shape: RoundedRectangleBorder(
-                    side: BorderSide(
-                        width: 1.24, color: c.border),
+                    side: BorderSide(width: 1.24, color: c.border),
                     borderRadius: BorderRadius.circular(40),
                   ),
                   shadows: const [
@@ -114,7 +117,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 child: Column(
                   children: [
-
                     // ── Gradient Banner ──
                     Container(
                       height: 96,
@@ -128,11 +130,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
 
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(
-                          24, 0, 24, 24),
+                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
                       child: Column(
                         children: [
-
                           // ── Avatar ──
                           Transform.translate(
                             offset: const Offset(0, -48),
@@ -145,24 +145,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     shape: BoxShape.circle,
                                     color: c.surface,
                                   ),
-                                  padding:
-                                      const EdgeInsets.all(4),
+                                  padding: const EdgeInsets.all(4),
                                   // ── Show initials if no photo ──
                                   child: ClipOval(
                                     child: Container(
-                                      color: AppColors
-                                          .primaryLight,
+                                      color: AppColors.primaryLight,
                                       child: Center(
                                         child: Text(
                                           user.initials,
-                                          style:
-                                              const TextStyle(
-                                            color: AppColors
-                                                .primary,
+                                          style: const TextStyle(
+                                            color: AppColors.primary,
                                             fontSize: 28,
                                             fontFamily: 'Inter',
-                                            fontWeight:
-                                                FontWeight.w700,
+                                            fontWeight: FontWeight.w700,
                                           ),
                                         ),
                                       ),
@@ -179,8 +174,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       color: AppColors.primary,
                                       shape: BoxShape.circle,
                                       border: Border.all(
-                                          color: c.surface,
-                                          width: 2),
+                                        color: c.surface,
+                                        width: 2,
+                                      ),
                                     ),
                                     child: const Icon(
                                       Icons.edit_rounded,
@@ -207,8 +203,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     color: c.textPrimary,
                                     fontSize: 20,
                                     fontFamily: 'Inter',
-                                    fontWeight:
-                                        FontWeight.w700,
+                                    fontWeight: FontWeight.w700,
                                   ),
                                 ),
                                 const SizedBox(height: 4),
@@ -218,22 +213,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     color: c.textSecondary,
                                     fontSize: 14,
                                     fontFamily: 'Inter',
-                                    fontWeight:
-                                        FontWeight.w500,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
                                 const SizedBox(height: 8),
                                 Container(
-                                  padding:
-                                      const EdgeInsets.symmetric(
-                                          horizontal: 12,
-                                          vertical: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 4,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color:
-                                        AppColors.primaryLight,
-                                    borderRadius:
-                                        BorderRadius.circular(
-                                            100),
+                                    color: AppColors.primaryLight,
+                                    borderRadius: BorderRadius.circular(100),
                                   ),
                                   child: const Text(
                                     'Student',
@@ -241,8 +232,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       color: AppColors.primary,
                                       fontSize: 12,
                                       fontFamily: 'Inter',
-                                      fontWeight:
-                                          FontWeight.w700,
+                                      fontWeight: FontWeight.w700,
                                     ),
                                   ),
                                 ),
@@ -254,40 +244,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           Transform.translate(
                             offset: const Offset(0, -24),
                             child: Row(
-                              mainAxisAlignment:
-                                  MainAxisAlignment.center,
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 _StatItem(
-                                    value: '12',
-                                    label: 'COURSES',
-                                    textColor: c.textPrimary,
-                                    labelColor: c.textMuted),
+                                  value: '12',
+                                  label: 'COURSES',
+                                  textColor: c.textPrimary,
+                                  labelColor: c.textMuted,
+                                ),
                                 Container(
                                   width: 1,
                                   height: 32,
                                   color: c.border,
-                                  margin:
-                                      const EdgeInsets.symmetric(
-                                          horizontal: 16),
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                  ),
                                 ),
                                 _StatItem(
-                                    value: '4.9k',
-                                    label: 'POINTS',
-                                    textColor: c.textPrimary,
-                                    labelColor: c.textMuted),
+                                  value: '4.9k',
+                                  label: 'POINTS',
+                                  textColor: c.textPrimary,
+                                  labelColor: c.textMuted,
+                                ),
                                 Container(
                                   width: 1,
                                   height: 32,
                                   color: c.border,
-                                  margin:
-                                      const EdgeInsets.symmetric(
-                                          horizontal: 16),
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                  ),
                                 ),
                                 _StatItem(
-                                    value: '8',
-                                    label: 'PROJECTS',
-                                    textColor: c.textPrimary,
-                                    labelColor: c.textMuted),
+                                  value: '8',
+                                  label: 'PROJECTS',
+                                  textColor: c.textPrimary,
+                                  labelColor: c.textMuted,
+                                ),
                               ],
                             ),
                           ),
@@ -306,8 +298,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 iconColor: AppColors.primary,
                 title: 'My Certificates',
                 badge: '4',
-                onTap: () => Navigator.pushNamed(
-                    context, '/certificates'),
+                onTap: () => Navigator.pushNamed(context, '/certificates'),
               ),
               const SizedBox(height: 8),
               ProfileMenuItem(
@@ -315,8 +306,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 iconBg: c.iconBg,
                 iconColor: c.textSecondary,
                 title: 'Learning History',
-                onTap: () => Navigator.pushNamed(
-                    context, '/learning-history'),
+                onTap: () => Navigator.pushNamed(context, '/learning-history'),
               ),
               const SizedBox(height: 8),
               ProfileMenuItem(
@@ -325,8 +315,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 iconColor: AppColors.primary,
                 title: 'Applied Jobs',
                 badge: '12',
-                onTap: () => Navigator.pushNamed(
-                    context, '/applied-jobs'),
+                onTap: () => Navigator.pushNamed(context, '/applied-jobs'),
               ),
               const SizedBox(height: 8),
               ProfileMenuItem(
@@ -334,8 +323,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 iconBg: c.iconBg,
                 iconColor: c.textSecondary,
                 title: 'Parameters',
-                onTap: () => Navigator.pushNamed(
-                    context, '/settings'),
+                onTap: () => Navigator.pushNamed(context, '/settings'),
               ),
               const SizedBox(height: 8),
               ProfileMenuItem(
@@ -344,14 +332,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 iconColor: AppColors.red,
                 title: 'Log Out',
                 isDestructive: true,
-                onTap: () async{
+                onTap: () async {
                   // ── Clear user on logout ──
-                  await AuthService().signOut();
+                  final authService = Provider.of<AuthService>(
+                    context,
+                    listen: false,
+                  );
+                  await authService.signOut();
                   context.read<UserProvider>().clearUser();
-                  Navigator.pushNamedAndRemoveUntil(
+                  if (context.mounted) {
+                    Navigator.pushNamedAndRemoveUntil(
                       context,
                       '/signup',
-                      (route) => false);
+                      (route) => false,
+                    );
+                  }
                 },
               ),
               const SizedBox(height: 24),
