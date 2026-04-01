@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:minipr/services/auth_service.dart';
 import 'package:provider/provider.dart';
 import '../../theme/app_colors.dart';
 import '../../providers/user_provider.dart';
@@ -235,7 +236,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                             100),
                                   ),
                                   child: const Text(
-                                    'Étudiant',
+                                    'Student',
                                     style: TextStyle(
                                       color: AppColors.primary,
                                       fontSize: 12,
@@ -343,8 +344,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 iconColor: AppColors.red,
                 title: 'Log Out',
                 isDestructive: true,
-                onTap: () {
+                onTap: () async{
                   // ── Clear user on logout ──
+                  await AuthService().signOut();
                   context.read<UserProvider>().clearUser();
                   Navigator.pushNamedAndRemoveUntil(
                       context,

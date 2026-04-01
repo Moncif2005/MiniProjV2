@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "657050782727",
+    "project_id": "formanova-a3d7c",
+    "storage_bucket": "formanova-a3d7c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:657050782727:android:2e2005e7d0508e4444eea2",
+        "android_client_info": {
+          "package_name": "com.example.minipr"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBjuiUb7DGy4IvqiYKsZDK99vHe30epdNs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
