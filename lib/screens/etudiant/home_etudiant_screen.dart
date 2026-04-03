@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../theme/app_colors.dart';
 import '../../providers/user_provider.dart';
-import '../../widgets/bottom_nav_bar.dart';
-import '../../widgets/course_card.dart';
 import '../../widgets/continue_learning_card.dart';
+import '../../widgets/course_card.dart';
 import '../../widgets/job_card.dart';
+import '../../widgets/bottom_nav_bar.dart';
 
 class HomeEtudiantScreen extends StatefulWidget {
   const HomeEtudiantScreen({super.key});
@@ -28,7 +28,7 @@ class _HomeEtudiantScreenState extends State<HomeEtudiantScreen> {
   Widget build(BuildContext context) {
     final c = context.colors;
     final user = context.watch<UserProvider>();
-    final displayName = user.name.isNotEmpty ? user.firstName : 'Alex';
+    final displayName = user.name.isNotEmpty ? user.firstName : 'there';
 
     return Scaffold(
       backgroundColor: c.bg,
@@ -76,7 +76,7 @@ class _HomeEtudiantScreenState extends State<HomeEtudiantScreen> {
                         ),
                       ),
                       Text(
-                        'Ready to learn something new?',
+                        'Ready to level up today?',
                         style: TextStyle(
                           color: c.textSecondary,
                           fontSize: 16,
@@ -85,6 +85,8 @@ class _HomeEtudiantScreenState extends State<HomeEtudiantScreen> {
                       ),
                     ],
                   ),
+
+                  // ── Bell ──
                   GestureDetector(
                     onTap: () =>
                         Navigator.pushNamed(context, '/notifications'),
@@ -96,7 +98,8 @@ class _HomeEtudiantScreenState extends State<HomeEtudiantScreen> {
                           decoration: ShapeDecoration(
                             color: c.surface,
                             shape: RoundedRectangleBorder(
-                              side: BorderSide(width: 1.24, color: c.border),
+                              side: BorderSide(
+                                  width: 1.24, color: c.border),
                               borderRadius: BorderRadius.circular(14),
                             ),
                             shadows: const [
@@ -108,8 +111,11 @@ class _HomeEtudiantScreenState extends State<HomeEtudiantScreen> {
                               ),
                             ],
                           ),
-                          child: Icon(Icons.notifications_outlined,
-                              color: c.textSecondary, size: 20),
+                          child: Icon(
+                            Icons.notifications_outlined,
+                            color: c.textSecondary,
+                            size: 20,
+                          ),
                         ),
                         Positioned(
                           top: 6,
@@ -120,8 +126,8 @@ class _HomeEtudiantScreenState extends State<HomeEtudiantScreen> {
                             decoration: BoxDecoration(
                               color: AppColors.red,
                               shape: BoxShape.circle,
-                              border:
-                                  Border.all(color: c.surface, width: 1.24),
+                              border: Border.all(
+                                  color: c.surface, width: 1.24),
                             ),
                           ),
                         ),
@@ -153,11 +159,14 @@ class _HomeEtudiantScreenState extends State<HomeEtudiantScreen> {
                   controller: _searchController,
                   style: TextStyle(color: c.textPrimary),
                   decoration: InputDecoration(
-                    hintText: 'Search courses...',
+                    hintText: 'Search courses, jobs, skills...',
                     hintStyle: TextStyle(
-                        color: c.textMuted, fontSize: 16, fontFamily: 'Inter'),
-                    prefixIcon: Icon(Icons.search_rounded,
-                        color: c.textSecondary),
+                      color: c.textMuted,
+                      fontSize: 16,
+                      fontFamily: 'Inter',
+                    ),
+                    prefixIcon:
+                        Icon(Icons.search_rounded, color: c.textSecondary),
                     border: InputBorder.none,
                     contentPadding:
                         const EdgeInsets.symmetric(vertical: 14),
@@ -166,106 +175,20 @@ class _HomeEtudiantScreenState extends State<HomeEtudiantScreen> {
               ),
               const SizedBox(height: 24),
 
-              // ── Continue Learning Banner ──
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(24),
-                decoration: ShapeDecoration(
-                  color: AppColors.primary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                  shadows: const [
-                    BoxShadow(
-                      color: Color(0xFFDBEAFE),
-                      blurRadius: 6,
-                      offset: Offset(0, 4),
-                      spreadRadius: -4,
-                    ),
-                    BoxShadow(
-                      color: Color(0xFFDBEAFE),
-                      blurRadius: 15,
-                      offset: Offset(0, 10),
-                      spreadRadius: -3,
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
-                            Text(
-                              'Continue Learning',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontFamily: 'Inter',
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            SizedBox(height: 4),
-                            Text(
-                              '0 courses in progress ',
-                              style: TextStyle(
-                                color: Color(0xFFDBEAFE),
-                                fontSize: 14,
-                                fontFamily: 'Inter',
-                              ),
-                            ),
-                          ],
-                        ),
-                        Container(
-                          width: 36,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Icon(Icons.play_circle_outline,
-                              color: Colors.white, size: 20),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    GestureDetector(
-                      onTap: () => Navigator.pushNamed(
-                          context, '/etudiant/learn'),
-                      child: Container(
-                        width: double.infinity,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: const Center(
-                          child: Text(
-                            'Browse All Courses',
-                            style: TextStyle(
-                              color: AppColors.primary,
-                              fontSize: 14,
-                              fontFamily: 'Inter',
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+              // ── Continue Learning ──
+              const ContinueLearningCard(
+                title: 'Continue Learning',
+                subtitle: 'Flutter Development - Lesson 4',
+                progress: 0.60,
               ),
               const SizedBox(height: 32),
 
-              // ── Recommended Courses ──
+              // ── Recommended ──
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Recommended',
+                    'Recommended for You',
                     style: TextStyle(
                       color: c.textPrimary,
                       fontSize: 20,
@@ -274,8 +197,8 @@ class _HomeEtudiantScreenState extends State<HomeEtudiantScreen> {
                     ),
                   ),
                   TextButton(
-                    onPressed: () =>
-                        Navigator.pushNamed(context, '/etudiant/learn'),
+                    onPressed: () => Navigator.pushNamed(
+                        context, '/etudiant/learn'),
                     child: Text(
                       'See all',
                       style: TextStyle(
@@ -309,40 +232,25 @@ class _HomeEtudiantScreenState extends State<HomeEtudiantScreen> {
                       category: 'Design',
                       imageUrl: 'https://placehold.co/238x128',
                     ),
+                    const SizedBox(width: 16),
+                    CourseCard(
+                      title: 'Flutter Development',
+                      instructor: 'John Smith',
+                      rating: '4.8',
+                      category: 'Mobile',
+                      imageUrl: 'https://placehold.co/238x128',
+                    ),
                   ],
                 ),
               ),
               const SizedBox(height: 32),
 
-              // ── In Progress — only shown when the user has started courses ──
-              if (user.hasEnrolledCourses) ...[
-                Text(
-                  'In Progress',
-                  style: TextStyle(
-                    color: c.textPrimary,
-                    fontSize: 20,
-                    fontFamily: 'Inter',
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                ...user.enrolledCourses.map((course) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: ContinueLearningCard(
-                    title: course.title,
-                    subtitle: course.subtitle,
-                    progress: course.progress,
-                  ),
-                )),
-                const SizedBox(height: 32),
-              ],
-
-              // ── Job Opportunities ──
+              // ── New Opportunities ──
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Job Opportunities',
+                    'New Opportunities',
                     style: TextStyle(
                       color: c.textPrimary,
                       fontSize: 20,
@@ -366,28 +274,23 @@ class _HomeEtudiantScreenState extends State<HomeEtudiantScreen> {
                 ],
               ),
               const SizedBox(height: 12),
+
               JobCard(
-                title: 'Senior UX Designer',
-                company: 'Studio Nova',
-                location: 'London, UK',
-                salary: '\$80k - \$110k',
-                type: 'Full-time',
-                postedAgo: '2h ago',
-                companyInitial: 'S',
-                companyColor: const Color(0xFFE0E7FF),
-                initialColor: const Color(0xFF4F39F6),
+                title: 'Senior Product Designer',
+                company: 'Techflow Inc. • Remote',
+                type: 'Full-Time',
+                salary: '\$90K - \$120K',
+                location: 'Remote',
+                onBookmark: () {},
               ),
               const SizedBox(height: 12),
               JobCard(
-                title: 'React Native Developer',
-                company: 'TechPulse',
-                location: 'San Francisco, CA',
-                salary: '\$120k - \$150k',
-                type: 'Remote',
-                postedAgo: '5h ago',
-                companyInitial: 'T',
-                companyColor: const Color(0xFFCEFAFE),
-                initialColor: const Color(0xFF0092B8),
+                title: 'Marketing Specialist',
+                company: 'Lumina Creative • New York, NY',
+                type: 'Contract',
+                salary: '\$60K - \$80K',
+                location: 'New York, NY',
+                onBookmark: () {},
               ),
               const SizedBox(height: 24),
             ],

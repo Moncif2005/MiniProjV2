@@ -63,10 +63,7 @@ class _EditProfileScreenState
         maxHeight: 512,
       );
       if (picked != null) {
-        setState(() {
-          _avatarPath = picked.path;
-          _avatarCleared = false;
-        });
+        setState(() => _avatarPath = picked.path);
       }
     } catch (e) {
       if (mounted) {
@@ -173,9 +170,6 @@ class _EditProfileScreenState
     );
   }
 
-  // ── Track whether the user explicitly removed their avatar ──
-  bool _avatarCleared = false;
-
   // ── Save ──
   Future<void> _save() async {
     if (_nameController.text.trim().isEmpty) {
@@ -200,10 +194,10 @@ class _EditProfileScreenState
       linkedin:    _linkedinController.text.trim(),
       facebook:    _facebookController.text.trim(),
       avatarPath:  _avatarPath,
-      clearAvatar: _avatarCleared,
     );
 
-    await Future.delayed(const Duration(milliseconds: 300));
+    await Future.delayed(
+        const Duration(milliseconds: 400));
 
     if (mounted) {
       setState(() => _isSaving = false);

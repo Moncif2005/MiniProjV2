@@ -187,15 +187,14 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 24),
 
-              // ── Continue Learning — only shown after enrolling ──
-              if (user.hasEnrolledCourses) ...[
-                ContinueLearningCard(
-                  title: user.enrolledCourses.first.title,
-                  subtitle: user.enrolledCourses.first.subtitle,
-                  progress: user.enrolledCourses.first.progress,
-                ),
-                const SizedBox(height: 32),
-              ],
+              // ── Continue Learning ──
+              const ContinueLearningCard(
+                title: 'Continue Learning',
+                subtitle:
+                    'Flutter Development - Lesson 4',
+                progress: 0.60,
+              ),
+              const SizedBox(height: 32),
 
               // ── Recommended ──
               Row(

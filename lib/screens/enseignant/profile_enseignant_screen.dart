@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../services/auth_service.dart';
 import '../../theme/app_colors.dart';
 import '../../providers/user_provider.dart';
 import '../../widgets/bottom_nav_bar.dart';
@@ -320,6 +321,7 @@ class _ProfileEnseignantScreenState
                 title: 'Log Out',
                 isDestructive: true,
                 onTap: () {
+                  context.read<AuthService>().signOut();
                   context.read<UserProvider>().clearUser();
                   Navigator.pushNamedAndRemoveUntil(
                       context, '/signup', (route) => false);

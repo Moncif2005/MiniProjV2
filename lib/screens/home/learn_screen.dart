@@ -18,7 +18,14 @@ class _LearnScreenState extends State<LearnScreen> {
   ];
 
   final List<Map<String, dynamic>> _courses = [
-
+    {
+      'title': 'Arabic for Professionals',
+      'instructor': 'Ahmed Hassan',
+      'rating': '4.9',
+      'category': 'Languages',
+      'duration': '12h 30min',
+      'lessons': 24,
+    },
     {
       'title': 'UX/UI Advanced Motion',
       'instructor': 'Sarah Jenkins',
@@ -27,7 +34,14 @@ class _LearnScreenState extends State<LearnScreen> {
       'duration': '8h 15min',
       'lessons': 18,
     },
-
+    {
+      'title': 'Flutter Development',
+      'instructor': 'John Smith',
+      'rating': '4.9',
+      'category': 'Coding',
+      'duration': '20h 00min',
+      'lessons': 32,
+    },
     {
       'title': 'Business Strategy 101',
       'instructor': 'Marie Dupont',

@@ -1,5 +1,5 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
+import '../../services/auth_service.dart';
 import 'package:provider/provider.dart';
 import '../../theme/app_colors.dart';
 import '../../providers/user_provider.dart';
@@ -18,7 +18,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final c    = context.colors;
+    final c = context.colors;
     final user = context.watch<UserProvider>();
 
     return Scaffold(
@@ -29,13 +29,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
           setState(() => _currentNavIndex = index);
           switch (index) {
             case 0:
-              Navigator.pushNamedAndRemoveUntil(context, '/home', (r) => false);
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/home',
+                (route) => false,
+              );
               break;
             case 1:
-              Navigator.pushNamedAndRemoveUntil(context, '/learn', (r) => false);
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/learn',
+                (route) => false,
+              );
               break;
             case 2:
-              Navigator.pushNamedAndRemoveUntil(context, '/offers', (r) => false);
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/offers',
+                (route) => false,
+              );
               break;
           }
         },
@@ -46,7 +58,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-
               // ── Header ──
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -60,20 +71,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  // Edit button — navigates to EditProfileScreen
-                  GestureDetector(
-                    onTap: () => Navigator.pushNamed(context, '/edit-profile'),
-                    child: Container(
-                      width: 38,
-                      height: 38,
-                      decoration: ShapeDecoration(
-                        color: c.surface,
-                        shape: RoundedRectangleBorder(
-                          side: BorderSide(width: 1.24, color: c.border),
-                          borderRadius: BorderRadius.circular(14),
-                        ),
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: ShapeDecoration(
+                      color: c.surface,
+                      shape: RoundedRectangleBorder(
+                        side: BorderSide(width: 1.24, color: c.border),
+                        borderRadius: BorderRadius.circular(14),
                       ),
-                      child: Icon(Icons.edit_outlined, color: c.textSecondary, size: 18),
+                    ),
+                    child: Icon(
+                      Icons.edit_outlined,
+                      color: c.textSecondary,
+                      size: 18,
                     ),
                   ),
                 ],
@@ -91,8 +102,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     borderRadius: BorderRadius.circular(40),
                   ),
                   shadows: const [
-                    BoxShadow(color: Color(0x19000000), blurRadius: 2, offset: Offset(0, 1), spreadRadius: -1),
-                    BoxShadow(color: Color(0x19000000), blurRadius: 3, offset: Offset(0, 1)),
+                    BoxShadow(
+                      color: Color(0x19000000),
+                      blurRadius: 2,
+                      offset: Offset(0, 1),
+                      spreadRadius: -1,
+                    ),
+                    BoxShadow(
+                      color: Color(0x19000000),
+                      blurRadius: 3,
+                      offset: Offset(0, 1),
+                    ),
                   ],
                 ),
                 child: Column(
@@ -116,50 +136,56 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           // ── Avatar ──
                           Transform.translate(
                             offset: const Offset(0, -48),
-                            child: GestureDetector(
-                              onTap: () => Navigator.pushNamed(context, '/edit-profile'),
-                              child: Stack(
-                                children: [
-                                  Container(
-                                    width: 96,
-                                    height: 96,
-                                    decoration: BoxDecoration(shape: BoxShape.circle, color: c.surface),
-                                    padding: const EdgeInsets.all(4),
-                                    child: ClipOval(
-                                      child: user.avatarPath != null
-                                          ? Image.file(File(user.avatarPath!), fit: BoxFit.cover)
-                                          : Container(
-                                              color: AppColors.primaryLight,
-                                              child: Center(
-                                                child: Text(
-                                                  user.initials,
-                                                  style: const TextStyle(
-                                                    color: AppColors.primary,
-                                                    fontSize: 28,
-                                                    fontFamily: 'Inter',
-                                                    fontWeight: FontWeight.w700,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                    ),
+                            child: Stack(
+                              children: [
+                                Container(
+                                  width: 96,
+                                  height: 96,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: c.surface,
                                   ),
-                                  Positioned(
-                                    bottom: 0,
-                                    right: 0,
+                                  padding: const EdgeInsets.all(4),
+                                  // ── Show initials if no photo ──
+                                  child: ClipOval(
                                     child: Container(
-                                      width: 30,
-                                      height: 30,
-                                      decoration: BoxDecoration(
-                                        color: AppColors.primary,
-                                        shape: BoxShape.circle,
-                                        border: Border.all(color: c.surface, width: 2),
+                                      color: AppColors.primaryLight,
+                                      child: Center(
+                                        child: Text(
+                                          user.initials,
+                                          style: const TextStyle(
+                                            color: AppColors.primary,
+                                            fontSize: 28,
+                                            fontFamily: 'Inter',
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
                                       ),
-                                      child: const Icon(Icons.edit_rounded, color: Colors.white, size: 14),
                                     ),
                                   ),
-                                ],
-                              ),
+                                ),
+                                Positioned(
+                                  bottom: 0,
+                                  right: 0,
+                                  child: Container(
+                                    width: 30,
+                                    height: 30,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: c.surface,
+                                        width: 2,
+                                      ),
+                                    ),
+                                    child: const Icon(
+                                      Icons.edit_rounded,
+                                      color: Colors.white,
+                                      size: 14,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
 
@@ -169,7 +195,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             child: Column(
                               children: [
                                 Text(
-                                  user.name.isNotEmpty ? user.name : 'Your Name',
+                                  // ── Real name from provider ──
+                                  user.name.isNotEmpty
+                                      ? user.name
+                                      : 'Your Name',
                                   style: TextStyle(
                                     color: c.textPrimary,
                                     fontSize: 20,
@@ -178,46 +207,81 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: 4),
-                                // Show description if set, otherwise show email
                                 Text(
-                                  user.description.isNotEmpty
-                                      ? user.description
-                                      : (user.email.isNotEmpty ? user.email : 'Tap edit to update your profile'),
+                                  'UI/UX Designer & Frontend Dev',
                                   style: TextStyle(
                                     color: c.textSecondary,
-                                    fontSize: 13,
+                                    fontSize: 14,
                                     fontFamily: 'Inter',
                                     fontWeight: FontWeight.w500,
                                   ),
-                                  textAlign: TextAlign.center,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
                                 ),
                                 const SizedBox(height: 8),
-                                // ── Role Badge ──
-                                _RoleBadge(user: user),
-                                const SizedBox(height: 12),
-                                // ── Contact info (phone if set) ──
-                                if (user.phone.isNotEmpty)
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(Icons.phone_outlined, size: 13, color: c.textMuted),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        user.phone,
-                                        style: TextStyle(color: c.textMuted, fontSize: 12, fontFamily: 'Inter'),
-                                      ),
-                                    ],
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 4,
                                   ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primaryLight,
+                                    borderRadius: BorderRadius.circular(100),
+                                  ),
+                                  child: const Text(
+                                    'Student',
+                                    style: TextStyle(
+                                      color: AppColors.primary,
+                                      fontSize: 12,
+                                      fontFamily: 'Inter',
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
                               ],
                             ),
                           ),
 
-                          // ── Social Links (if set) ──
+                          // ── Stats ──
                           Transform.translate(
                             offset: const Offset(0, -24),
-                            child: _SocialLinks(user: user, c: c),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                _StatItem(
+                                  value: '12',
+                                  label: 'COURSES',
+                                  textColor: c.textPrimary,
+                                  labelColor: c.textMuted,
+                                ),
+                                Container(
+                                  width: 1,
+                                  height: 32,
+                                  color: c.border,
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                  ),
+                                ),
+                                _StatItem(
+                                  value: '4.9k',
+                                  label: 'POINTS',
+                                  textColor: c.textPrimary,
+                                  labelColor: c.textMuted,
+                                ),
+                                Container(
+                                  width: 1,
+                                  height: 32,
+                                  color: c.border,
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                  ),
+                                ),
+                                _StatItem(
+                                  value: '8',
+                                  label: 'PROJECTS',
+                                  textColor: c.textPrimary,
+                                  labelColor: c.textMuted,
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
@@ -225,7 +289,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 24),
 
               // ── Menu Items ──
               ProfileMenuItem(
@@ -233,6 +297,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 iconBg: AppColors.primaryLight,
                 iconColor: AppColors.primary,
                 title: 'My Certificates',
+                badge: '4',
                 onTap: () => Navigator.pushNamed(context, '/certificates'),
               ),
               const SizedBox(height: 8),
@@ -249,6 +314,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 iconBg: AppColors.primaryLight,
                 iconColor: AppColors.primary,
                 title: 'Applied Jobs',
+                badge: '12',
                 onTap: () => Navigator.pushNamed(context, '/applied-jobs'),
               ),
               const SizedBox(height: 8),
@@ -266,9 +332,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 iconColor: AppColors.red,
                 title: 'Log Out',
                 isDestructive: true,
-                onTap: () {
+                onTap: () async {
+                  // ── Clear user on logout ──
+                  final authService = Provider.of<AuthService>(
+                    context,
+                    listen: false,
+                  );
+                  await authService.signOut();
+                  context.read<AuthService>().signOut();
                   context.read<UserProvider>().clearUser();
-                  Navigator.pushNamedAndRemoveUntil(context, '/signup', (route) => false);
+                  if (context.mounted) {
+                    Navigator.pushNamedAndRemoveUntil(
+                      context,
+                      '/signup',
+                      (route) => false,
+                    );
+                  }
                 },
               ),
               const SizedBox(height: 24),
@@ -280,72 +359,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 }
 
-// ── Role Badge ────────────────────────────────────────────────────────────────
-class _RoleBadge extends StatelessWidget {
-  final UserProvider user;
-  const _RoleBadge({required this.user});
+class _StatItem extends StatelessWidget {
+  final String value;
+  final String label;
+  final Color textColor;
+  final Color labelColor;
+
+  const _StatItem({
+    required this.value,
+    required this.label,
+    required this.textColor,
+    required this.labelColor,
+  });
 
   @override
   Widget build(BuildContext context) {
-    Color bg, color;
-    switch (user.role) {
-      case UserRole.enseignant:
-        bg = AppColors.greenLight; color = AppColors.green;
-        break;
-      case UserRole.recruteur:
-        bg = AppColors.purpleLight; color = AppColors.purple;
-        break;
-      default:
-        bg = AppColors.primaryLight; color = AppColors.primary;
-    }
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(100)),
-      child: Text(
-        user.roleLabel,
-        style: TextStyle(color: color, fontSize: 12, fontFamily: 'Inter', fontWeight: FontWeight.w700),
-      ),
-    );
-  }
-}
-
-// ── Social Links ──────────────────────────────────────────────────────────────
-class _SocialLinks extends StatelessWidget {
-  final UserProvider user;
-  final ThemeColors c;
-  const _SocialLinks({required this.user, required this.c});
-
-  @override
-  Widget build(BuildContext context) {
-    final hasAny = user.github.isNotEmpty || user.linkedin.isNotEmpty || user.facebook.isNotEmpty;
-    if (!hasAny) return const SizedBox.shrink();
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    return Column(
       children: [
-        if (user.github.isNotEmpty)
-          _SocialIcon(icon: Icons.code_rounded, color: c.textSecondary, bg: c.iconBg),
-        if (user.linkedin.isNotEmpty)
-          _SocialIcon(icon: Icons.work_outline_rounded, color: const Color(0xFF0077B5), bg: const Color(0xFFE8F4FD)),
-        if (user.facebook.isNotEmpty)
-          _SocialIcon(icon: Icons.facebook_rounded, color: const Color(0xFF1877F2), bg: const Color(0xFFE7F0FF)),
+        Text(
+          value,
+          style: TextStyle(
+            color: textColor,
+            fontSize: 18,
+            fontFamily: 'Inter',
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            color: labelColor,
+            fontSize: 10,
+            fontFamily: 'Inter',
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1,
+          ),
+        ),
       ],
-    );
-  }
-}
-
-class _SocialIcon extends StatelessWidget {
-  final IconData icon;
-  final Color color, bg;
-  const _SocialIcon({required this.icon, required this.color, required this.bg});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 6),
-      width: 36,
-      height: 36,
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(12)),
-      child: Icon(icon, color: color, size: 18),
     );
   }
 }

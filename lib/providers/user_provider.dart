@@ -7,7 +7,12 @@ class EnrolledCourse {
   final String title;
   final String subtitle;
   double progress;
-  EnrolledCourse({required this.id, required this.title, required this.subtitle, this.progress = 0.0});
+  EnrolledCourse({
+    required this.id,
+    required this.title,
+    required this.subtitle,
+    this.progress = 0.0,
+  });
 }
 
 class UserProvider extends ChangeNotifier {
@@ -21,7 +26,12 @@ class UserProvider extends ChangeNotifier {
   String?  _avatarPath;
   UserRole _role        = UserRole.etudiant;
 
-  // ── Enrolled courses (empty on new account) ──
+  // ── Stats (from Auth) ──
+  int _courses  = 0;
+  int _points   = 0;
+  int _projects = 0;
+
+  // ── Enrolled courses (from Moncif) ──
   final List<EnrolledCourse> _enrolledCourses = [];
 
   // ── Getters ──
@@ -34,14 +44,17 @@ class UserProvider extends ChangeNotifier {
   String   get facebook       => _facebook;
   String?  get avatarPath     => _avatarPath;
   UserRole get role           => _role;
+  int      get courses        => _courses;
+  int      get points         => _points;
+  int      get projects       => _projects;
   List<EnrolledCourse> get enrolledCourses => List.unmodifiable(_enrolledCourses);
   bool get hasEnrolledCourses => _enrolledCourses.isNotEmpty;
 
   String get roleLabel {
     switch (_role) {
-      case UserRole.etudiant:    return 'Étudiant';
-      case UserRole.enseignant:  return 'Enseignant';
-      case UserRole.recruteur:   return 'Recruteur';
+      case UserRole.etudiant:   return 'Étudiant';
+      case UserRole.enseignant: return 'Enseignant';
+      case UserRole.recruteur:  return 'Recruteur';
     }
   }
 
@@ -57,8 +70,18 @@ class UserProvider extends ChangeNotifier {
     return (parts.first[0] + parts.last[0]).toUpperCase();
   }
 
-  // ── Called on Create Account — everything starts at zero ──
-  void setUser({
+  // ── Called by AuthWrapper after Firebase login (keeps existing role) ──
+  void setUser({required String name, required String email}) {
+    _name     = name;
+    _email    = email;
+    _courses  = 0;
+    _points   = 0;
+    _projects = 0;
+    notifyListeners();
+  }
+
+  // ── Called by CreateAccountScreen with role ──
+  void setUserWithRole({
     required String name,
     required String email,
     required UserRole role,
@@ -66,6 +89,9 @@ class UserProvider extends ChangeNotifier {
     _name        = name;
     _email       = email;
     _role        = role;
+    _courses     = 0;
+    _points      = 0;
+    _projects    = 0;
     _phone       = '';
     _description = '';
     _github      = '';
@@ -73,6 +99,12 @@ class UserProvider extends ChangeNotifier {
     _facebook    = '';
     _avatarPath  = null;
     _enrolledCourses.clear();
+    notifyListeners();
+  }
+
+  // ── Set role only (can be called after sign-in to restore role) ──
+  void setRole(UserRole role) {
+    _role = role;
     notifyListeners();
   }
 
@@ -103,7 +135,9 @@ class UserProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ── Enroll in a course ──
+  // ── Course progress ──
+  void incrementCourses() { _courses++; notifyListeners(); }
+
   void enrollCourse(EnrolledCourse course) {
     if (!_enrolledCourses.any((c) => c.id == course.id)) {
       _enrolledCourses.add(course);
@@ -130,6 +164,9 @@ class UserProvider extends ChangeNotifier {
     _facebook    = '';
     _avatarPath  = null;
     _role        = UserRole.etudiant;
+    _courses     = 0;
+    _points      = 0;
+    _projects    = 0;
     _enrolledCourses.clear();
     notifyListeners();
   }

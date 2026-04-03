@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../theme/app_colors.dart';
 
 class SettingsToggleItem extends StatefulWidget {
   final String title;
@@ -28,16 +27,41 @@ class _SettingsToggleItemState extends State<SettingsToggleItem> {
 
   @override
   Widget build(BuildContext context) {
-    return Switch(
-      value: _value,
-      onChanged: (v) {
-        setState(() => _value = v);
-        widget.onChanged?.call(v);
+    return GestureDetector(
+      onTap: () {
+        setState(() => _value = !_value);
+        widget.onChanged?.call(_value);
       },
-      activeColor: AppColors.primary,
-      activeTrackColor: AppColors.primaryLight,
-      inactiveThumbColor: Colors.white,
-      inactiveTrackColor: const Color(0xFFE5E5E5),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: 44,
+        height: 26,
+        padding: EdgeInsets.only(
+          left: _value ? 20 : 3,
+          right: _value ? 3 : 20,
+          top: 3,
+          bottom: 3,
+        ),
+        decoration: BoxDecoration(
+          color: _value
+              ? const Color(0xFF155DFC)
+              : const Color(0xFFE5E5E5),
+          borderRadius: BorderRadius.circular(100),
+        ),
+        child: Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Color(0x19000000),
+                blurRadius: 2,
+                offset: Offset(0, 1),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

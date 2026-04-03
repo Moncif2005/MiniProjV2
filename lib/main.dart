@@ -1,10 +1,18 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'firebase_options.dart';
 import 'theme/app_theme.dart';
 import 'theme/theme_provider.dart';
 import 'providers/user_provider.dart';
-import 'screens/auth/signup_screen.dart';
+import 'services/auth_service.dart';
+
+// ── Auth ──
+import 'screens/auth_wrapper.dart';
+import 'screens/auth/signin_screen.dart';
 import 'screens/auth/create_account_screen.dart';
+
+// ── Home / Shared ──
 import 'screens/home/home_screen.dart';
 import 'screens/home/offers_screen.dart';
 import 'screens/home/learn_screen.dart';
@@ -16,26 +24,34 @@ import 'screens/profile/certificates_screen.dart';
 import 'screens/profile/applied_jobs_screen.dart';
 import 'screens/profile/settings_screen.dart';
 import 'screens/profile/learning_history_screen.dart';
+
 // ── Étudiant ──
 import 'screens/etudiant/home_etudiant_screen.dart';
 import 'screens/etudiant/learn_etudiant_screen.dart';
 import 'screens/etudiant/profile_etudiant_screen.dart';
+
 // ── Enseignant ──
 import 'screens/enseignant/home_enseignant_screen.dart';
 import 'screens/enseignant/my_courses_screen.dart';
 import 'screens/enseignant/enseignant_profile_screen.dart';
 import 'screens/enseignant/create_course_screen.dart';
+
 // ── Recruteur ──
 import 'screens/recruteur/home_recruteur_screen.dart';
 import 'screens/recruteur/jobs_recruteur_screen.dart';
 import 'screens/recruteur/profile_recruteur_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => UserProvider()),
+        ChangeNotifierProvider(create: (_) => AuthService()),
       ],
       child: const MyApp(),
     ),
@@ -55,38 +71,46 @@ class MyApp extends StatelessWidget {
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: themeProvider.themeMode,
-      initialRoute: '/signup',
+      // AuthWrapper: checks Firebase state → routes to correct home
+      home: const AuthWrapper(),
       routes: {
-        '/signup':                   (context) => const SignUpScreen(),
-        '/create-account':           (context) => const CreateAccountScreen(),
-        '/home':                     (context) => const HomeScreen(),
-        '/offers':                   (context) => const OffersScreen(),
-        '/learn':                    (context) => const LearnScreen(),
-        '/lesson':                   (context) => const LessonScreen(),
-        '/notifications':            (context) => const NotificationScreen(),
-        '/profile':                  (context) => const ProfileScreen(),
-        '/edit-profile':             (context) => const EditProfileScreen(),
-        '/certificates':             (context) => const CertificatesScreen(),
-        '/applied-jobs':             (context) => const AppliedJobsScreen(),
-        '/settings':                 (context) => const SettingsScreen(),
-        '/learning-history':         (context) => const LearningHistoryScreen(),
+        // ── Auth ──
+        '/signup':                   (_) => const SignUpScreen(),
+        '/create-account':           (_) => const CreateAccountScreen(),
+
+        // ── Shared home screens ──
+        '/home':                     (_) => const HomeScreen(),
+        '/offers':                   (_) => const OffersScreen(),
+        '/learn':                    (_) => const LearnScreen(),
+        '/lesson':                   (_) => const LessonScreen(),
+        '/notifications':            (_) => const NotificationScreen(),
+        '/profile':                  (_) => const ProfileScreen(),
+        '/edit-profile':             (_) => const EditProfileScreen(),
+        '/certificates':             (_) => const CertificatesScreen(),
+        '/applied-jobs':             (_) => const AppliedJobsScreen(),
+        '/settings':                 (_) => const SettingsScreen(),
+        '/learning-history':         (_) => const LearningHistoryScreen(),
+
         // ── Étudiant ──
-        '/etudiant/home':            (context) => const HomeEtudiantScreen(),
-        '/etudiant/learn':           (context) => const LearnEtudiantScreen(),
-        '/etudiant/profile':         (context) => const ProfileEtudiantScreen(),
+        '/etudiant/home':            (_) => const HomeEtudiantScreen(),
+        '/etudiant/learn':           (_) => const LearnEtudiantScreen(),
+        '/etudiant/profile':         (_) => const ProfileEtudiantScreen(),
+
         // ── Enseignant ──
-        '/enseignant/home':          (context) => const HomeEnseignantScreen(),
-        '/enseignant-home':          (context) => const HomeEnseignantScreen(),
-        '/enseignant/courses':       (context) => const MyCoursesScreen(),
-        '/enseignant-courses':       (context) => const MyCoursesScreen(),
-        '/enseignant/profile':       (context) => const EnseignantProfileScreen(),
-        '/enseignant-profile':       (context) => const EnseignantProfileScreen(),
-        '/enseignant/create-course': (context) => const CreateCourseScreen(),
-        '/create-course':            (context) => const CreateCourseScreen(),
+        '/enseignant/home':          (_) => const HomeEnseignantScreen(),
+        '/enseignant-home':          (_) => const HomeEnseignantScreen(),
+        '/enseignant/courses':       (_) => const MyCoursesScreen(),
+        '/enseignant-courses':       (_) => const MyCoursesScreen(),
+        '/enseignant/profile':       (_) => const EnseignantProfileScreen(),
+        '/enseignant-profile':       (_) => const EnseignantProfileScreen(),
+        '/enseignant/create-course': (_) => const CreateCourseScreen(),
+        '/create-course':            (_) => const CreateCourseScreen(),
+
         // ── Recruteur ──
-        '/recruteur/home':           (context) => const HomeRecruteurScreen(),
-        '/recruteur/jobs':           (context) => const JobsRecruteurScreen(),
-        '/recruteur/profile':        (context) => const ProfileRecruteurScreen(),
+        '/recruteur/home':           (_) => const HomeRecruteurScreen(),
+        '/recruteur/jobs':           (_) => const JobsRecruteurScreen(),
+        '/recruteur/profile':        (_) => const ProfileRecruteurScreen(),
+        '/recruteur/post-job':       (_) => const JobsRecruteurScreen(),
       },
     );
   }

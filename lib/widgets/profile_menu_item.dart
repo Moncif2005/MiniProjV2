@@ -7,8 +7,8 @@ class ProfileMenuItem extends StatelessWidget {
   final Color iconColor;
   final String title;
   final String? badge;
+  final VoidCallback? onTap;
   final bool isDestructive;
-  final VoidCallback onTap;
 
   const ProfileMenuItem({
     super.key,
@@ -17,8 +17,8 @@ class ProfileMenuItem extends StatelessWidget {
     required this.iconColor,
     required this.title,
     this.badge,
+    this.onTap,
     this.isDestructive = false,
-    required this.onTap,
   });
 
   @override
@@ -28,7 +28,9 @@ class ProfileMenuItem extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        width: double.infinity,
+        height: 70,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: ShapeDecoration(
           color: c.surface,
           shape: RoundedRectangleBorder(
@@ -37,63 +39,77 @@ class ProfileMenuItem extends StatelessWidget {
           ),
           shadows: const [
             BoxShadow(
-              color: Color(0x0A000000),
+              color: Color(0x19000000),
               blurRadius: 2,
+              offset: Offset(0, 1),
+              spreadRadius: -1,
+            ),
+            BoxShadow(
+              color: Color(0x19000000),
+              blurRadius: 3,
               offset: Offset(0, 1),
             ),
           ],
         ),
         child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            // ── Icon ──
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: iconBg,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: iconColor, size: 20),
-            ),
-            const SizedBox(width: 14),
-
-            // ── Title ──
-            Expanded(
-              child: Text(
-                title,
-                style: TextStyle(
-                  color: isDestructive ? AppColors.red : c.textPrimary,
-                  fontSize: 15,
-                  fontFamily: 'Inter',
-                  fontWeight: FontWeight.w600,
+            Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: iconBg,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(icon, color: iconColor, size: 20),
                 ),
-              ),
-            ),
-
-            // ── Badge or chevron ──
-            if (badge != null) ...[
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryLight,
-                  borderRadius: BorderRadius.circular(100),
-                ),
-                child: Text(
-                  badge!,
-                  style: const TextStyle(
-                    color: AppColors.primary,
-                    fontSize: 12,
+                const SizedBox(width: 16),
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: isDestructive
+                        ? AppColors.red
+                        : c.textSecondary,
+                    fontSize: 14,
                     fontFamily: 'Inter',
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
-            ],
-            if (!isDestructive)
-              Icon(Icons.chevron_right_rounded,
-                  color: c.textMuted, size: 20),
+              ],
+            ),
+            Row(
+              children: [
+                if (badge != null) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryLight,
+                      borderRadius:
+                          BorderRadius.circular(100),
+                    ),
+                    child: Text(
+                      badge!,
+                      style: const TextStyle(
+                        color: AppColors.primary,
+                        fontSize: 10,
+                        fontFamily: 'Inter',
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                if (!isDestructive)
+                  Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    color: c.textMuted,
+                    size: 16,
+                  ),
+              ],
+            ),
           ],
         ),
       ),

@@ -7,33 +7,84 @@ class LearningHistoryScreen extends StatelessWidget {
   // ── Stats Data ──
   static const _stats = [
     {
-      'value': '0',
+      'value': '3',
       'label': 'cours actifs',
       'icon': Icons.school_rounded,
       'colors': [Color(0xFF2B7FFF), Color(0xFF4F39F6)],
     },
     {
-      'value': '0',
+      'value': '2',
       'label': 'cours complétés',
       'icon': Icons.check_circle_rounded,
       'colors': [Color(0xFF00C950), Color(0xFF009966)],
     },
     {
-      'value': '0',
+      'value': '7',
       'label': 'jours consécutifs',
       'icon': Icons.local_fire_department_rounded,
       'colors': [Color(0xFFFF6900), Color(0xFFE7000B)],
     },
     {
-      'value': '0h',
+      'value': '70.5h',
       'label': "d'apprentissage",
       'icon': Icons.access_time_rounded,
       'colors': [Color(0xFFAD46FF), Color(0xFFE60076)],
     },
   ];
 
-  // ── Courses Data — empty for new users ──
-  static const _courses = <Map<String, dynamic>>[];
+  // ── Courses Data ──
+  static const _courses = [
+    {
+      'title': 'Arabic for Professionals',
+      'category': 'Languages',
+      'status': CourseStatus.inProgress,
+      'progress': 0.75,
+      'lessons': '18/24 leçons',
+      'timeSpent': '12h 30min',
+      'lastAccessed': 'Today',
+      'rating': null,
+    },
+    {
+      'title': 'Flutter Development',
+      'category': 'Programming',
+      'status': CourseStatus.inProgress,
+      'progress': 0.40,
+      'lessons': '4/10 leçons',
+      'timeSpent': '8h 15min',
+      'lastAccessed': 'Yesterday',
+      'rating': null,
+    },
+    {
+      'title': 'UX Design Fundamentals',
+      'category': 'Design',
+      'status': CourseStatus.completed,
+      'progress': 1.0,
+      'lessons': '20/20 leçons',
+      'timeSpent': '25h 45min',
+      'lastAccessed': '3 days ago',
+      'rating': '⭐⭐⭐⭐⭐',
+    },
+    {
+      'title': 'French Advanced',
+      'category': 'Languages',
+      'status': CourseStatus.completed,
+      'progress': 1.0,
+      'lessons': '30/30 leçons',
+      'timeSpent': '20h 00min',
+      'lastAccessed': '1 week ago',
+      'rating': '⭐⭐⭐⭐',
+    },
+    {
+      'title': 'JavaScript ES6+',
+      'category': 'Programming',
+      'status': CourseStatus.inProgress,
+      'progress': 0.15,
+      'lessons': '3/20 leçons',
+      'timeSpent': '4h 20min',
+      'lastAccessed': '2 weeks ago',
+      'rating': null,
+    },
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -82,7 +133,7 @@ class LearningHistoryScreen extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      "0 cours • 0h d'apprentissage",
+                      "5 cours • 70.5h d'apprentissage",
                       style: TextStyle(
                         color: Color(0xFF737373),
                         fontSize: 12,

@@ -1,31 +1,44 @@
 import 'package:flutter/material.dart';
+import '../theme/app_colors.dart';
 
 class SocialButton extends StatelessWidget {
   final String label;
-  final IconData icon;
   final VoidCallback onTap;
+  final IconData? icon;
+  final String? iconPath;
 
   const SocialButton({
     super.key,
     required this.label,
-    required this.icon,
     required this.onTap,
+    this.icon,
+    this.iconPath,
   });
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 50,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFFE5E5E5), width: 1.24),
-          boxShadow: const [
+        height: 56,
+        decoration: ShapeDecoration(
+          color: c.surface,
+          shape: RoundedRectangleBorder(
+            side: BorderSide(width: 1.24, color: c.border),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          shadows: const [
             BoxShadow(
-              color: Color(0x0A000000),
+              color: Color(0x19000000),
               blurRadius: 2,
+              offset: Offset(0, 1),
+              spreadRadius: -1,
+            ),
+            BoxShadow(
+              color: Color(0x19000000),
+              blurRadius: 3,
               offset: Offset(0, 1),
             ),
           ],
@@ -33,15 +46,27 @@ class SocialButton extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 22, color: const Color(0xFF404040)),
-            const SizedBox(width: 8),
+            if (iconPath != null)
+              Image.asset(
+                iconPath!,
+                width: 20,
+                height: 20,
+                errorBuilder: (_, __, ___) => Icon(
+                  Icons.image_not_supported_outlined,
+                  size: 20,
+                  color: c.textSecondary,
+                ),
+              )
+            else if (icon != null)
+              Icon(icon, size: 22, color: c.textSecondary),
+            const SizedBox(width: 10),
             Text(
               label,
-              style: const TextStyle(
-                color: Color(0xFF404040),
+              style: TextStyle(
+                color: c.textPrimary,
                 fontSize: 14,
                 fontFamily: 'Inter',
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ],

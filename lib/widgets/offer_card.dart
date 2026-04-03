@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 
-class OfferCard extends StatelessWidget {
+class OfferCard extends StatefulWidget {
   final String title;
   final String company;
   final String companyInitial;
@@ -11,7 +11,9 @@ class OfferCard extends StatelessWidget {
   final String postedAgo;
   final String salary;
   final String jobType;
-  final VoidCallback onApply;
+  final bool isBookmarked;
+  final VoidCallback? onApply;
+  final VoidCallback? onBookmark;
 
   const OfferCard({
     super.key,
@@ -24,14 +26,30 @@ class OfferCard extends StatelessWidget {
     required this.postedAgo,
     required this.salary,
     required this.jobType,
-    required this.onApply, required Null Function() onBookmark,
+    this.isBookmarked = false,
+    this.onApply,
+    this.onBookmark,
   });
+
+  @override
+  State<OfferCard> createState() => _OfferCardState();
+}
+
+class _OfferCardState extends State<OfferCard> {
+  late bool _bookmarked;
+
+  @override
+  void initState() {
+    super.initState();
+    _bookmarked = widget.isBookmarked;
+  }
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
 
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: ShapeDecoration(
         color: c.surface,
@@ -41,124 +59,176 @@ class OfferCard extends StatelessWidget {
         ),
         shadows: const [
           BoxShadow(
-            color: Color(0x0A000000),
-            blurRadius: 4,
-            offset: Offset(0, 2),
+            color: Color(0x19000000),
+            blurRadius: 2,
+            offset: Offset(0, 1),
+            spreadRadius: -1,
+          ),
+          BoxShadow(
+            color: Color(0x19000000),
+            blurRadius: 3,
+            offset: Offset(0, 1),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Top Row ──
+
+          // ── Company + Bookmark ──
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: widget.companyBg,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x19000000),
+                          blurRadius: 2,
+                          offset: Offset(0, 1),
+                          spreadRadius: -1,
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Text(
+                        widget.companyInitial,
+                        style: TextStyle(
+                          color: widget.companyColor,
+                          fontSize: 18,
+                          fontFamily: 'Inter',
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Column(
+                    crossAxisAlignment:
+                        CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.title,
+                        style: TextStyle(
+                          color: c.textPrimary,
+                          fontSize: 18,
+                          fontFamily: 'Inter',
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        widget.company,
+                        style: TextStyle(
+                          color: c.textSecondary,
+                          fontSize: 14,
+                          fontFamily: 'Inter',
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+
+              // ── Bookmark ──
+              GestureDetector(
+                onTap: () {
+                  setState(() => _bookmarked = !_bookmarked);
+                  widget.onBookmark?.call();
+                },
+                child: Icon(
+                  _bookmarked
+                      ? Icons.bookmark_rounded
+                      : Icons.bookmark_border_rounded,
+                  color: _bookmarked
+                      ? AppColors.primary
+                      : c.textSecondary,
+                  size: 20,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // ── Details Grid ──
           Row(
             children: [
-              // Company avatar
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: companyBg,
-                  borderRadius: BorderRadius.circular(14),
+              Expanded(
+                child: _DetailItem(
+                  icon: Icons.location_on_outlined,
+                  text: widget.location,
+                  color: c.textSecondary,
                 ),
-                child: Center(
-                  child: Text(
-                    companyInitial,
+              ),
+              Expanded(
+                child: _DetailItem(
+                  icon: Icons.access_time_rounded,
+                  text: widget.postedAgo,
+                  color: c.textSecondary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Expanded(
+                child: _DetailItem(
+                  icon: Icons.attach_money_rounded,
+                  text: widget.salary,
+                  color: c.textSecondary,
+                ),
+              ),
+              Expanded(
+                child: _DetailItem(
+                  icon: Icons.work_outline_rounded,
+                  text: widget.jobType,
+                  color: AppColors.primary,
+                  isBold: true,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // ── Apply Button ──
+          GestureDetector(
+            onTap: widget.onApply,
+            child: Container(
+              width: double.infinity,
+              height: 44,
+              decoration: BoxDecoration(
+                color: c.bg,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                    color: c.border, width: 1.24),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Apply Now',
                     style: TextStyle(
-                      color: companyColor,
-                      fontSize: 20,
+                      color: c.textPrimary,
+                      fontSize: 14,
                       fontFamily: 'Inter',
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        color: c.textPrimary,
-                        fontSize: 16,
-                        fontFamily: 'Inter',
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      company,
-                      style: TextStyle(
-                        color: c.textSecondary,
-                        fontSize: 13,
-                        fontFamily: 'Inter',
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Text(
-                postedAgo,
-                style: TextStyle(
-                  color: c.textMuted,
-                  fontSize: 12,
-                  fontFamily: 'Inter',
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-
-          // ── Tags Row ──
-          Row(
-            children: [
-              _Tag(
-                label: location,
-                icon: Icons.location_on_outlined,
-                bgColor: c.bg,
-                textColor: c.textSecondary,
-              ),
-              const SizedBox(width: 8),
-              _Tag(
-                label: jobType,
-                icon: Icons.work_outline_rounded,
-                bgColor: AppColors.primaryLight,
-                textColor: AppColors.primary,
-              ),
-              const SizedBox(width: 8),
-              _Tag(
-                label: salary,
-                icon: Icons.attach_money_rounded,
-                bgColor: AppColors.greenLight,
-                textColor: AppColors.green,
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-
-          // ── Apply Button ──
-          SizedBox(
-            width: double.infinity,
-            height: 44,
-            child: ElevatedButton(
-              onPressed: onApply,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text(
-                'Apply Now',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontFamily: 'Inter',
-                  fontWeight: FontWeight.w700,
-                ),
+                  const SizedBox(width: 6),
+                  Icon(
+                    Icons.arrow_forward_rounded,
+                    color: c.textPrimary,
+                    size: 16,
+                  ),
+                ],
               ),
             ),
           ),
@@ -168,43 +238,39 @@ class OfferCard extends StatelessWidget {
   }
 }
 
-class _Tag extends StatelessWidget {
-  final String label;
+class _DetailItem extends StatelessWidget {
   final IconData icon;
-  final Color bgColor;
-  final Color textColor;
+  final String text;
+  final Color color;
+  final bool isBold;
 
-  const _Tag({
-    required this.label,
+  const _DetailItem({
     required this.icon,
-    required this.bgColor,
-    required this.textColor,
+    required this.text,
+    required this.color,
+    this.isBold = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 12, color: textColor),
-          const SizedBox(width: 4),
-          Text(
-            label,
+    return Row(
+      children: [
+        Icon(icon, color: color, size: 14),
+        const SizedBox(width: 6),
+        Flexible(
+          child: Text(
+            text,
             style: TextStyle(
-              color: textColor,
-              fontSize: 11,
+              color: color,
+              fontSize: 12,
               fontFamily: 'Inter',
-              fontWeight: FontWeight.w600,
+              fontWeight:
+                  isBold ? FontWeight.w700 : FontWeight.w400,
             ),
+            overflow: TextOverflow.ellipsis,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

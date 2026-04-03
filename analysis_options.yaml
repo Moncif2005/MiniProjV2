@@ -9,7 +9,13 @@
 # packages, and plugins designed to encourage good coding practices.
 analyzer:
   errors:
+    deprecated_member_use: ignore
+    unnecessary_underscores: ignore
+    unreachable_switch_default: ignore
+    unused_element: ignore
     unused_element_parameter: ignore
+    unused_field: ignore
+    unused_import: ignore
 include: package:flutter_lints/flutter.yaml
 
 linter:

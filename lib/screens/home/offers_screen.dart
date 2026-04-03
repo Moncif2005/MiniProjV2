@@ -20,8 +20,28 @@ class _OffersScreenState extends State<OffersScreen> {
   ];
 
   final List<Map<String, dynamic>> _offers = [
-
-
+    {
+      'title': 'Senior UX Designer',
+      'company': 'Studio Nova',
+      'initial': 'S',
+      'companyBg': const Color(0xFFE0E7FF),
+      'companyColor': const Color(0xFF4F39F6),
+      'location': 'London, UK',
+      'postedAgo': '2h ago',
+      'salary': '\$80k - \$110k',
+      'jobType': 'Full-time',
+    },
+    {
+      'title': 'React Native Developer',
+      'company': 'TechPulse',
+      'initial': 'T',
+      'companyBg': const Color(0xFFCEFAFE),
+      'companyColor': const Color(0xFF0092B8),
+      'location': 'San Francisco, CA',
+      'postedAgo': '5h ago',
+      'salary': '\$120k - \$150k',
+      'jobType': 'Remote',
+    },
     {
       'title': 'Content Marketing Manager',
       'company': 'GreenGrow',
@@ -33,7 +53,17 @@ class _OffersScreenState extends State<OffersScreen> {
       'salary': '\$60k - \$75k',
       'jobType': 'Contract',
     },
-
+    {
+      'title': 'Product Analyst',
+      'company': 'DataDash',
+      'initial': 'D',
+      'companyBg': const Color(0xFFFFEDD4),
+      'companyColor': const Color(0xFFF54900),
+      'location': 'Remote',
+      'postedAgo': '3d ago',
+      'salary': '\$50/hr - \$80/hr',
+      'jobType': 'Freelance',
+    },
     {
       'title': 'Full Stack Engineer',
       'company': 'Finly',

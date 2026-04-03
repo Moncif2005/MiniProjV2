@@ -18,8 +18,46 @@ class _CertificatesScreenState
     'Tous', 'Certificats', 'Formation', 'Portfolio'
   ];
 
-  // New users start with an empty list — they add their own certificates/CV/portfolio
-  final List<Map<String, dynamic>> _items = [];
+  final List<Map<String, dynamic>> _items = [
+    {
+      'title': 'Advanced React Development',
+      'issuer': 'Udemy',
+      'date': 'January 2026',
+      'certId': 'UC-123456789',
+      'type': CertificateType.certificate,
+      'iconBg': AppColors.primaryLight,
+      'iconColor': AppColors.primary,
+    },
+    {
+      'title': 'UX Design Professional',
+      'issuer': 'Google',
+      'date': 'December 2025',
+      'certId': 'GGL-987654321',
+      'type': CertificateType.certificate,
+      'iconBg': AppColors.primaryLight,
+      'iconColor': AppColors.primary,
+    },
+    {
+      'title': 'Bachelor of Computer Science',
+      'issuer': 'University of Technology',
+      'date': '2020 - 2024',
+      'description':
+          'Major in Software Engineering, GPA: 3.8/4.0',
+      'type': CertificateType.formation,
+      'iconBg': AppColors.greenLight,
+      'iconColor': AppColors.green,
+    },
+    {
+      'title': 'E-commerce Mobile App',
+      'issuer': 'Personal Project',
+      'date': 'February 2026',
+      'description':
+          'Full-stack mobile app built with React Native and Node.js',
+      'type': CertificateType.portfolio,
+      'iconBg': AppColors.purpleLight,
+      'iconColor': AppColors.purple,
+    },
+  ];
 
   List<Map<String, dynamic>> get _filtered {
     if (_selectedFilter == 0) { return List.from(_items); }
@@ -180,7 +218,7 @@ class _CertificatesScreenState
                               ),
                             ),
                             Text(
-                              'No CV uploaded yet',
+                              'CV_AlexThompson_2026.pdf',
                               style: TextStyle(
                                 color: AppColors.primaryLight,
                                 fontSize: 12,

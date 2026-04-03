@@ -6,11 +6,7 @@ class JobCard extends StatefulWidget {
   final String company;
   final String type;
   final String salary;
-  final String? location;
-  final String? postedAgo;
-  final String? companyInitial;
-  final Color? companyColor;
-  final Color? initialColor;
+  final String location;
   final VoidCallback? onBookmark;
 
   const JobCard({
@@ -19,11 +15,7 @@ class JobCard extends StatefulWidget {
     required this.company,
     required this.type,
     required this.salary,
-    this.location,
-    this.postedAgo,
-    this.companyInitial,
-    this.companyColor,
-    this.initialColor,
+    this.location = '',
     this.onBookmark,
   });
 
@@ -65,94 +57,66 @@ class _JobCardState extends State<JobCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
 
-          // ── Company avatar + title row ──
+          // ── Title + Bookmark ──
           Row(
+            mainAxisAlignment:
+                MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (widget.companyInitial != null)
-                Container(
-                  width: 44,
-                  height: 44,
-                  margin: const EdgeInsets.only(right: 12),
-                  decoration: BoxDecoration(
-                    color: widget.companyColor ?? AppColors.primaryLight,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Center(
-                    child: Text(
-                      widget.companyInitial!,
-                      style: TextStyle(
-                        color: widget.initialColor ?? AppColors.primary,
-                        fontSize: 18,
-                        fontFamily: 'Inter',
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
+              Expanded(
+                child: Text(
+                  widget.title,
+                  style: TextStyle(
+                    color: c.textPrimary,
+                    fontSize: 16,
+                    fontFamily: 'Inter',
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            widget.title,
-                            style: TextStyle(
-                              color: c.textPrimary,
-                              fontSize: 16,
-                              fontFamily: 'Inter',
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: () {
-                            setState(() => _bookmarked = !_bookmarked);
-                            widget.onBookmark?.call();
-                          },
-                          child: Icon(
-                            _bookmarked
-                                ? Icons.bookmark_rounded
-                                : Icons.bookmark_border_rounded,
-                            color: _bookmarked
-                                ? AppColors.primary
-                                : c.textSecondary,
-                            size: 20,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      widget.company,
-                      style: TextStyle(
-                        color: c.textSecondary,
-                        fontSize: 13,
-                        fontFamily: 'Inter',
-                      ),
-                    ),
-                  ],
+              ),
+              GestureDetector(
+                onTap: () {
+                  setState(
+                      () => _bookmarked = !_bookmarked);
+                  widget.onBookmark?.call();
+                },
+                child: Icon(
+                  _bookmarked
+                      ? Icons.bookmark_rounded
+                      : Icons.bookmark_border_rounded,
+                  color: _bookmarked
+                      ? AppColors.primary
+                      : c.textSecondary,
+                  size: 20,
                 ),
               ),
             ],
           ),
+          const SizedBox(height: 6),
+
+          // ── Company ──
+          Text(
+            widget.company,
+            style: TextStyle(
+              color: c.textSecondary,
+              fontSize: 13,
+              fontFamily: 'Inter',
+            ),
+          ),
           const SizedBox(height: 12),
 
           // ── Tags Row ──
-          Wrap(
-            spacing: 8,
-            runSpacing: 6,
+          Row(
             children: [
-              // Type badge
+
+              // ── Type Badge ──
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: AppColors.primaryLight,
-                  borderRadius: BorderRadius.circular(100),
+                  borderRadius:
+                      BorderRadius.circular(100),
                 ),
                 child: Text(
                   widget.type.toUpperCase(),
@@ -165,12 +129,16 @@ class _JobCardState extends State<JobCard> {
                   ),
                 ),
               ),
-              // Salary
+              const SizedBox(width: 8),
+
+              // ── Salary ──
               Row(
-                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.attach_money_rounded,
-                      color: c.textSecondary, size: 14),
+                  Icon(
+                    Icons.attach_money_rounded,
+                    color: c.textSecondary,
+                    size: 14,
+                  ),
                   Text(
                     widget.salary,
                     style: TextStyle(
@@ -182,34 +150,6 @@ class _JobCardState extends State<JobCard> {
                   ),
                 ],
               ),
-              // Location
-              if (widget.location != null)
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.location_on_outlined,
-                        color: c.textSecondary, size: 13),
-                    const SizedBox(width: 2),
-                    Text(
-                      widget.location!,
-                      style: TextStyle(
-                        color: c.textSecondary,
-                        fontSize: 12,
-                        fontFamily: 'Inter',
-                      ),
-                    ),
-                  ],
-                ),
-              // Posted ago
-              if (widget.postedAgo != null)
-                Text(
-                  widget.postedAgo!,
-                  style: TextStyle(
-                    color: c.textMuted,
-                    fontSize: 12,
-                    fontFamily: 'Inter',
-                  ),
-                ),
             ],
           ),
         ],

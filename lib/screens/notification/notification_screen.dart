@@ -11,8 +11,44 @@ class NotificationScreen extends StatefulWidget {
 
 class _NotificationScreenState
     extends State<NotificationScreen> {
-  // New users start with no notifications
-  final List<Map<String, dynamic>> _notifications = [];
+  final List<Map<String, dynamic>> _notifications = [
+    {
+      'title': 'New lesson available',
+      'body': 'Flutter Development - Lesson 5 is now live',
+      'time': '2 min ago',
+      'type': 'course',
+      'isUnread': true,
+    },
+    {
+      'title': 'Job match found',
+      'body':
+          'Senior UX Designer at Studio Nova matches your profile',
+      'time': '1h ago',
+      'type': 'job',
+      'isUnread': true,
+    },
+    {
+      'title': 'Achievement unlocked',
+      'body': 'You completed 7 days streak! Keep it up 🔥',
+      'time': '3h ago',
+      'type': 'achievement',
+      'isUnread': false,
+    },
+    {
+      'title': 'Course update',
+      'body': 'Arabic for Professionals has new content',
+      'time': 'Yesterday',
+      'type': 'course',
+      'isUnread': false,
+    },
+    {
+      'title': 'New job posted',
+      'body': 'React Native Developer at TechPulse — Remote',
+      'time': '2d ago',
+      'type': 'job',
+      'isUnread': false,
+    },
+  ];
 
   bool get _allRead =>
       _notifications.every((n) => !(n['isUnread'] as bool));
