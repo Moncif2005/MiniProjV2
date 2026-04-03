@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:minipr/providers/user_provider.dart';
+import 'package:minipr/services/auth_service.dart';
+import 'package:provider/provider.dart';
 import '../../widgets/settings_toggle_item.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -11,11 +14,9 @@ class SettingsScreen extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-
             // ── App Bar ──
             Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 24, vertical: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               child: Row(
                 children: [
                   GestureDetector(
@@ -27,8 +28,9 @@ class SettingsScreen extends StatelessWidget {
                         color: Colors.white,
                         shape: RoundedRectangleBorder(
                           side: const BorderSide(
-                              width: 1.24,
-                              color: Color(0xFFF5F5F5)),
+                            width: 1.24,
+                            color: Color(0xFFF5F5F5),
+                          ),
                           borderRadius: BorderRadius.circular(14),
                         ),
                         shadows: const [
@@ -40,9 +42,10 @@ class SettingsScreen extends StatelessWidget {
                         ],
                       ),
                       child: const Icon(
-                          Icons.arrow_back_ios_new_rounded,
-                          size: 16,
-                          color: Color(0xFF171717)),
+                        Icons.arrow_back_ios_new_rounded,
+                        size: 16,
+                        color: Color(0xFF171717),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -62,157 +65,191 @@ class SettingsScreen extends StatelessWidget {
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 24, vertical: 8),
+                  horizontal: 24,
+                  vertical: 8,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-
                     // ── ACCOUNT ──
                     _SectionLabel(label: 'ACCOUNT'),
                     const SizedBox(height: 12),
-                    _SettingsCard(children: [
-                      _SettingsNavItem(
-                        iconBg: const Color(0xFFFAF5FF),
-                        iconColor: const Color(0xFF9810FA),
-                        icon: Icons.manage_accounts_outlined,
-                        title: 'Account Type',
-                        subtitle: 'Étudiant',
-                        onTap: () {},
-                      ),
-                    ]),
+                    _SettingsCard(
+                      children: [
+                        _SettingsNavItem(
+                          iconBg: const Color(0xFFFAF5FF),
+                          iconColor: const Color(0xFF9810FA),
+                          icon: Icons.manage_accounts_outlined,
+                          title: 'Account Type',
+                          subtitle: 'Étudiant',
+                          onTap: () {},
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 24),
 
                     // ── PREFERENCE ──
                     _SectionLabel(label: 'PREFERENCE'),
                     const SizedBox(height: 12),
-                    _SettingsCard(children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 16),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 36,
-                              height: 36,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFEFF6FF),
-                                borderRadius:
-                                    BorderRadius.circular(14),
-                              ),
-                              child: const Icon(
+                    _SettingsCard(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 16,
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFEFF6FF),
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                child: const Icon(
                                   Icons.dark_mode_outlined,
                                   color: Color(0xFF155DFC),
-                                  size: 18),
-                            ),
-                            const SizedBox(width: 16),
-                            const Expanded(
-                              child: Text(
-                                'Night Mode',
-                                style: TextStyle(
-                                  color: Color(0xFF404040),
-                                  fontSize: 16,
-                                  fontFamily: 'Inter',
-                                  fontWeight: FontWeight.w700,
+                                  size: 18,
                                 ),
                               ),
-                            ),
-                            SettingsToggleItem(
-                              title: '',
-                              initialValue: false,
-                            ),
-                          ],
+                              const SizedBox(width: 16),
+                              const Expanded(
+                                child: Text(
+                                  'Night Mode',
+                                  style: TextStyle(
+                                    color: Color(0xFF404040),
+                                    fontSize: 16,
+                                    fontFamily: 'Inter',
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                              SettingsToggleItem(
+                                title: '',
+                                initialValue: false,
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      const Divider(
+                        const Divider(
                           color: Color(0xFFFAFAFA),
                           thickness: 1.24,
-                          height: 0),
-                      _SettingsNavItem(
-                        iconBg: const Color(0xFFFAFAFA),
-                        iconColor: const Color(0xFF737373),
-                        icon: Icons.notifications_outlined,
-                        title: 'Notifications Center',
-                        onTap: () {},
-                      ),
-                    ]),
+                          height: 0,
+                        ),
+                        _SettingsNavItem(
+                          iconBg: const Color(0xFFFAFAFA),
+                          iconColor: const Color(0xFF737373),
+                          icon: Icons.notifications_outlined,
+                          title: 'Notifications Center',
+                          onTap: () {},
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 24),
 
                     // ── NOTIFICATION SETTINGS ──
                     _SectionLabel(label: 'NOTIFICATION SETTINGS'),
                     const SizedBox(height: 12),
-                    _SettingsCard(children: [
-                      _ToggleRow(
+                    _SettingsCard(
+                      children: [
+                        _ToggleRow(
                           title: 'Push Notifications',
-                          initialValue: true),
-                      const Divider(
+                          initialValue: true,
+                        ),
+                        const Divider(
                           color: Color(0xFFFAFAFA),
                           thickness: 1.24,
-                          height: 0),
-                      _ToggleRow(
+                          height: 0,
+                        ),
+                        _ToggleRow(
                           title: 'Email Summaries',
-                          initialValue: false),
-                      const Divider(
+                          initialValue: false,
+                        ),
+                        const Divider(
                           color: Color(0xFFFAFAFA),
                           thickness: 1.24,
-                          height: 0),
-                      _ToggleRow(
-                          title: 'Job Alerts', initialValue: true),
-                    ]),
+                          height: 0,
+                        ),
+                        _ToggleRow(title: 'Job Alerts', initialValue: true),
+                      ],
+                    ),
                     const SizedBox(height: 24),
 
                     // ── PRIVACY & SECURITY ──
                     _SectionLabel(label: 'PRIVACY & SECURITY'),
                     const SizedBox(height: 12),
-                    _SettingsCard(children: [
-                      _SettingsNavItem(
-                        iconBg: const Color(0xFFFAFAFA),
-                        iconColor: const Color(0xFF737373),
-                        icon: Icons.privacy_tip_outlined,
-                        title: 'Privacy Policy',
-                        onTap: () {},
-                      ),
-                      const Divider(
+                    _SettingsCard(
+                      children: [
+                        _SettingsNavItem(
+                          iconBg: const Color(0xFFFAFAFA),
+                          iconColor: const Color(0xFF737373),
+                          icon: Icons.privacy_tip_outlined,
+                          title: 'Privacy Policy',
+                          onTap: () {},
+                        ),
+                        const Divider(
                           color: Color(0xFFFAFAFA),
                           thickness: 1.24,
-                          height: 0),
-                      _SettingsNavItem(
-                        iconBg: const Color(0xFFFAFAFA),
-                        iconColor: const Color(0xFF737373),
-                        icon: Icons.help_outline_rounded,
-                        title: 'Help Center',
-                        onTap: () {},
-                      ),
-                      const Divider(
+                          height: 0,
+                        ),
+                        _SettingsNavItem(
+                          iconBg: const Color(0xFFFAFAFA),
+                          iconColor: const Color(0xFF737373),
+                          icon: Icons.help_outline_rounded,
+                          title: 'Help Center',
+                          onTap: () {},
+                        ),
+                        const Divider(
                           color: Color(0xFFFAFAFA),
                           thickness: 1.24,
-                          height: 0),
-                      _SettingsNavItem(
-                        iconBg: const Color(0xFFFAFAFA),
-                        iconColor: const Color(0xFF737373),
-                        icon: Icons.info_outline_rounded,
-                        title: 'About Us',
-                        onTap: () {},
-                      ),
-                    ]),
+                          height: 0,
+                        ),
+                        _SettingsNavItem(
+                          iconBg: const Color(0xFFFAFAFA),
+                          iconColor: const Color(0xFF737373),
+                          icon: Icons.info_outline_rounded,
+                          title: 'About Us',
+                          onTap: () {},
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 24),
 
                     // ── Log Out ──
                     GestureDetector(
-                      onTap: () => Navigator.pushNamedAndRemoveUntil(
-                          context, '/signup', (route) => false),
+                      onTap: () async {
+                        // ── Clear user on logout ──
+                        final authService = Provider.of<AuthService>(
+                          context,
+                          listen: false,
+                        );
+                        await authService.signOut();
+                        context.read<AuthService>().signOut();
+                        context.read<UserProvider>().clearUser();
+                        if (context.mounted) {
+                          Navigator.pushNamedAndRemoveUntil(
+                            context,
+                            '/signup',
+                            (route) => false,
+                          );
+                        }
+                      },
                       child: Container(
                         width: double.infinity,
                         height: 64,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 20),
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
                         decoration: BoxDecoration(
                           color: const Color(0xFFFEF2F2),
                           borderRadius: BorderRadius.circular(24),
                         ),
                         child: const Row(
                           children: [
-                            Icon(Icons.logout_rounded,
-                                color: Color(0xFFE7000B), size: 20),
+                            Icon(
+                              Icons.logout_rounded,
+                              color: Color(0xFFE7000B),
+                              size: 20,
+                            ),
                             SizedBox(width: 16),
                             Text(
                               'Log Out',
@@ -273,8 +310,7 @@ class _SettingsCard extends StatelessWidget {
       decoration: ShapeDecoration(
         color: Colors.white,
         shape: RoundedRectangleBorder(
-          side: const BorderSide(
-              width: 1.24, color: Color(0xFFF5F5F5)),
+          side: const BorderSide(width: 1.24, color: Color(0xFFF5F5F5)),
           borderRadius: BorderRadius.circular(24),
         ),
         shadows: const [
@@ -318,8 +354,7 @@ class _SettingsNavItem extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(
-            horizontal: 16, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -360,8 +395,11 @@ class _SettingsNavItem extends StatelessWidget {
                 ),
               ],
             ),
-            const Icon(Icons.arrow_forward_ios_rounded,
-                color: Color(0xFFA1A1A1), size: 16),
+            const Icon(
+              Icons.arrow_forward_ios_rounded,
+              color: Color(0xFFA1A1A1),
+              size: 16,
+            ),
           ],
         ),
       ),
@@ -372,8 +410,7 @@ class _SettingsNavItem extends StatelessWidget {
 class _ToggleRow extends StatefulWidget {
   final String title;
   final bool initialValue;
-  const _ToggleRow(
-      {required this.title, this.initialValue = false});
+  const _ToggleRow({required this.title, this.initialValue = false});
 
   @override
   State<_ToggleRow> createState() => _ToggleRowState();
@@ -391,8 +428,7 @@ class _ToggleRowState extends State<_ToggleRow> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(
-          horizontal: 16, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
