@@ -16,52 +16,22 @@ class _EnseignantCoursesScreenState
   int _selectedFilter = 0;
   final _filters = ['All', 'Languages', 'Design', 'Coding', 'Business'];
 
-  final List<Map<String, dynamic>> _courses = [
-    {
-      'title': 'Arabic for Professionals',
-      'instructor': 'Ahmed Hassan',
-      'rating': '4.9',
-      'category': 'LANGUAGES',
-      'imageUrl': 'https://placehold.co/283x192',
-      'duration': '20h 00m',
-      'lessons': 30,
-      'students': 45,
-      'status': 'active',
-    },
-    {
-      'title': 'French: Conversational Mastery',
-      'instructor': 'Sophie Lefebvre',
-      'rating': '4.8',
-      'category': 'LANGUAGES',
-      'imageUrl': 'https://placehold.co/283x192',
-      'duration': '15h 30m',
-      'lessons': 25,
-      'students': 32,
-      'status': 'active',
-    },
-    {
-      'title': 'Advanced English for Tech',
-      'instructor': 'James Wilson',
-      'rating': '4.7',
-      'category': 'LANGUAGES',
-      'imageUrl': 'https://placehold.co/283x192',
-      'duration': '12h 45m',
-      'lessons': 18,
-      'students': 50,
-      'status': 'active',
-    },
-    {
-      'title': 'Mastering Figma for Mobile',
-      'instructor': 'David Miller',
-      'rating': '4.8',
-      'category': 'DESIGN',
-      'imageUrl': 'https://placehold.co/283x192',
-      'duration': '12h 30m',
-      'lessons': 24,
-      'students': 38,
-      'status': 'active',
-    },
-  ];
+  // Starts empty — courses added via CreateCourseScreen
+  final List<Map<String, dynamic>> _courses = [];
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args != null && args is Map<String, dynamic>) {
+      final alreadyAdded = _courses.any((c) => c['title'] == args['title']);
+      if (!alreadyAdded) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) setState(() => _courses.add(args));
+        });
+      }
+    }
+  }
 
   List<Map<String, dynamic>> get _filtered {
     if (_selectedFilter == 0) return List.from(_courses);
@@ -227,7 +197,26 @@ class _EnseignantCoursesScreenState
 
             // ── Course List ──
             Expanded(
-              child: ListView.separated(
+              child: _filtered.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.school_outlined, size: 48, color: c.textMuted),
+                          const SizedBox(height: 16),
+                          Text(
+                            _courses.isEmpty ? 'No courses yet' : 'No courses in this category',
+                            style: TextStyle(color: c.textMuted, fontSize: 16, fontFamily: 'Inter'),
+                          ),
+                          if (_courses.isEmpty) ...[
+                            const SizedBox(height: 8),
+                            Text('Tap "+ Nouveau cours" to create one!',
+                                style: TextStyle(color: c.textMuted, fontSize: 14, fontFamily: 'Inter')),
+                          ],
+                        ],
+                      ),
+                    )
+                  : ListView.separated(
                 padding: const EdgeInsets.symmetric(
                     horizontal: 24),
                 itemCount: _filtered.length,
@@ -247,7 +236,7 @@ class _EnseignantCoursesScreenState
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () =>
-            Navigator.pushNamed(context, '/create-course'),
+            Navigator.pushNamed(context, '/enseignant/create-course'),
         backgroundColor: AppColors.green,
         icon: const Icon(Icons.add_rounded,
             color: Colors.white),

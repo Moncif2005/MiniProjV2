@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/bottom_nav_bar.dart';
 import '../../widgets/offer_card.dart';
+import '../../providers/user_provider.dart';
 
 class OffersScreen extends StatefulWidget {
   const OffersScreen({super.key});
@@ -78,11 +80,22 @@ class _OffersScreenState extends State<OffersScreen> {
   ];
 
   List<Map<String, dynamic>> get _filteredOffers {
-    if (_selectedFilter == 0) { return _offers; }
+    if (_selectedFilter == 0) return _offers;
     final selected = _filters[_selectedFilter];
-    return _offers
-        .where((o) => o['jobType'] == selected)
-        .toList();
+    return _offers.where((o) => o['jobType'] == selected).toList();
+  }
+
+  // ── Returns the correct routes for the current user role ──
+  Map<String, String> _routesForRole(UserRole role) {
+    switch (role) {
+      case UserRole.enseignant:
+        return {'home': '/enseignant/home', 'learn': '/enseignant/courses', 'profile': '/enseignant/profile'};
+      case UserRole.recruteur:
+        return {'home': '/recruteur/home', 'learn': '/recruteur/jobs', 'profile': '/recruteur/profile'};
+      case UserRole.etudiant:
+      default:
+        return {'home': '/etudiant/home', 'learn': '/etudiant/learn', 'profile': '/etudiant/profile'};
+    }
   }
 
   @override
@@ -93,7 +106,9 @@ class _OffersScreenState extends State<OffersScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final c = context.colors;
+    final c    = context.colors;
+    final role = context.watch<UserProvider>().role;
+    final nav  = _routesForRole(role);
 
     return Scaffold(
       backgroundColor: c.bg,
@@ -103,16 +118,13 @@ class _OffersScreenState extends State<OffersScreen> {
           setState(() => _currentNavIndex = index);
           switch (index) {
             case 0:
-              Navigator.pushNamedAndRemoveUntil(
-                  context, '/home', (route) => false);
+              Navigator.pushNamedAndRemoveUntil(context, nav['home']!, (r) => false);
               break;
             case 1:
-              Navigator.pushNamedAndRemoveUntil(
-                  context, '/learn', (route) => false);
+              Navigator.pushNamedAndRemoveUntil(context, nav['learn']!, (r) => false);
               break;
             case 3:
-              Navigator.pushNamedAndRemoveUntil(
-                  context, '/profile', (route) => false);
+              Navigator.pushNamedAndRemoveUntil(context, nav['profile']!, (r) => false);
               break;
           }
         },
@@ -124,17 +136,13 @@ class _OffersScreenState extends State<OffersScreen> {
 
             // ── Header ──
             Padding(
-              padding: const EdgeInsets.fromLTRB(
-                  24, 24, 24, 0),
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
               child: Row(
-                mainAxisAlignment:
-                    MainAxisAlignment.spaceBetween,
-                crossAxisAlignment:
-                    CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Column(
-                    crossAxisAlignment:
-                        CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         'Working',
@@ -161,8 +169,7 @@ class _OffersScreenState extends State<OffersScreen> {
                     height: 44,
                     decoration: BoxDecoration(
                       color: AppColors.primary,
-                      borderRadius:
-                          BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(16),
                       boxShadow: const [
                         BoxShadow(
                           color: AppColors.primaryLight,
@@ -172,11 +179,7 @@ class _OffersScreenState extends State<OffersScreen> {
                         ),
                       ],
                     ),
-                    child: const Icon(
-                      Icons.add_rounded,
-                      color: Colors.white,
-                      size: 24,
-                    ),
+                    child: const Icon(Icons.add_rounded, color: Colors.white, size: 24),
                   ),
                 ],
               ),
@@ -185,14 +188,12 @@ class _OffersScreenState extends State<OffersScreen> {
 
             // ── Search ──
             Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 24),
+              padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Container(
                 decoration: ShapeDecoration(
                   color: c.surface,
                   shape: RoundedRectangleBorder(
-                    side: BorderSide(
-                        width: 1.24, color: c.border),
+                    side: BorderSide(width: 1.24, color: c.border),
                     borderRadius: BorderRadius.circular(16),
                   ),
                 ),
@@ -200,20 +201,11 @@ class _OffersScreenState extends State<OffersScreen> {
                   controller: _searchController,
                   style: TextStyle(color: c.textPrimary),
                   decoration: InputDecoration(
-                    hintText:
-                        'Job title, company or keyword',
-                    hintStyle: TextStyle(
-                      color: c.textMuted,
-                      fontSize: 16,
-                      fontFamily: 'Inter',
-                    ),
-                    prefixIcon: Icon(
-                        Icons.search_rounded,
-                        color: c.textSecondary),
+                    hintText: 'Job title, company or keyword',
+                    hintStyle: TextStyle(color: c.textMuted, fontSize: 16, fontFamily: 'Inter'),
+                    prefixIcon: Icon(Icons.search_rounded, color: c.textSecondary),
                     border: InputBorder.none,
-                    contentPadding:
-                        const EdgeInsets.symmetric(
-                            vertical: 14),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 14),
                   ),
                 ),
               ),
@@ -225,41 +217,28 @@ class _OffersScreenState extends State<OffersScreen> {
               height: 40,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 24),
+                padding: const EdgeInsets.symmetric(horizontal: 24),
                 itemCount: _filters.length,
-                separatorBuilder: (_, __) =>
-                    const SizedBox(width: 8),
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
                 itemBuilder: (context, index) {
-                  final isSelected =
-                      _selectedFilter == index;
+                  final isSelected = _selectedFilter == index;
                   return GestureDetector(
-                    onTap: () => setState(
-                        () => _selectedFilter = index),
+                    onTap: () => setState(() => _selectedFilter = index),
                     child: AnimatedContainer(
-                      duration: const Duration(
-                          milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 8),
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                       decoration: BoxDecoration(
-                        color: isSelected
-                            ? c.textPrimary
-                            : c.surface,
-                        borderRadius:
-                            BorderRadius.circular(100),
+                        color: isSelected ? c.textPrimary : c.surface,
+                        borderRadius: BorderRadius.circular(100),
                         border: Border.all(
                           width: 1.24,
-                          color: isSelected
-                              ? c.textPrimary
-                              : c.border,
+                          color: isSelected ? c.textPrimary : c.border,
                         ),
                       ),
                       child: Text(
                         _filters[index],
                         style: TextStyle(
-                          color: isSelected
-                              ? c.surface
-                              : c.textSecondary,
+                          color: isSelected ? c.surface : c.textSecondary,
                           fontSize: 14,
                           fontFamily: 'Inter',
                           fontWeight: FontWeight.w600,
@@ -274,8 +253,7 @@ class _OffersScreenState extends State<OffersScreen> {
 
             // ── Count ──
             Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 24),
+              padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Text(
                 '${_filteredOffers.length} offres disponibles',
                 style: TextStyle(
@@ -293,62 +271,37 @@ class _OffersScreenState extends State<OffersScreen> {
               child: _filteredOffers.isEmpty
                   ? Center(
                       child: Column(
-                        mainAxisAlignment:
-                            MainAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
-                            Icons.search_off_rounded,
-                            color: c.textMuted,
-                            size: 48,
-                          ),
+                          Icon(Icons.search_off_rounded, color: c.textMuted, size: 48),
                           const SizedBox(height: 16),
-                          Text(
-                            'No offers found',
-                            style: TextStyle(
-                              color: c.textMuted,
-                              fontSize: 16,
-                              fontFamily: 'Inter',
-                            ),
-                          ),
+                          Text('No offers found',
+                              style: TextStyle(color: c.textMuted, fontSize: 16, fontFamily: 'Inter')),
                         ],
                       ),
                     )
                   : ListView.separated(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 24, vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                       itemCount: _filteredOffers.length,
-                      separatorBuilder: (_, __) =>
-                          const SizedBox(height: 16),
+                      separatorBuilder: (_, __) => const SizedBox(height: 16),
                       itemBuilder: (context, index) {
-                        final offer =
-                            _filteredOffers[index];
+                        final offer = _filteredOffers[index];
                         return OfferCard(
                           title: offer['title'] as String,
-                          company:
-                              offer['company'] as String,
-                          companyInitial:
-                              offer['initial'] as String,
-                          companyBg:
-                              offer['companyBg'] as Color,
-                          companyColor: offer['companyColor']
-                              as Color,
-                          location:
-                              offer['location'] as String,
-                          postedAgo:
-                              offer['postedAgo'] as String,
+                          company: offer['company'] as String,
+                          companyInitial: offer['initial'] as String,
+                          companyBg: offer['companyBg'] as Color,
+                          companyColor: offer['companyColor'] as Color,
+                          location: offer['location'] as String,
+                          postedAgo: offer['postedAgo'] as String,
                           salary: offer['salary'] as String,
-                          jobType:
-                              offer['jobType'] as String,
+                          jobType: offer['jobType'] as String,
                           onApply: () {
-                            ScaffoldMessenger.of(context)
-                                .showSnackBar(
+                            ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text(
-                                    'Applied to ${offer['title']}!'),
-                                backgroundColor:
-                                    AppColors.primary,
-                                behavior: SnackBarBehavior
-                                    .floating,
+                                content: Text('Applied to ${offer['title']}!'),
+                                backgroundColor: AppColors.primary,
+                                behavior: SnackBarBehavior.floating,
                               ),
                             );
                           },

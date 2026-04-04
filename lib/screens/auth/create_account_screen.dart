@@ -124,18 +124,16 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         role: roles[_selectedProfile],
       );
 
-      // ── Navigate to role-specific home ──
+      // ── Navigate to role-specific home directly ──
       if (!mounted) return;
       if (ok && mounted) {
-        Navigator.pushNamedAndRemoveUntil(context, '/home', (r) => false);
+        const routes = ['/etudiant/home', '/enseignant/home', '/recruteur/home'];
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          routes[_selectedProfile],
+          (r) => false,
+        );
       }
-      // if (!mounted) return;
-      // const routes = ['/etudiant/home', '/enseignant/home', '/recruteur/home'];
-      // Navigator.pushNamedAndRemoveUntil(
-      //   context,
-      //   routes[_selectedProfile],
-      //   (r) => false,
-      // );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
