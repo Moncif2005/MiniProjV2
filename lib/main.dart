@@ -55,7 +55,7 @@ class MyApp extends StatelessWidget {
       routes: {
         '/signup':          (context) => const SignUpScreen(),
         '/create-account':  (context) => const CreateAccountScreen(),
-        //انا بدلتها هاذي ماتزيدش تبدلها
+        //انا بدلتها هاذي لما يكون المستخدم مسجل دخول يروح لهوم سكرين واذا ماكانش مسجل دخول يروح لصفحة تسجيل الدخول
         '/home':            (context) => const AuthWrapper(),
         '/offers':          (context) => const OffersScreen(),
         '/learn':           (context) => const LearnScreen(),
