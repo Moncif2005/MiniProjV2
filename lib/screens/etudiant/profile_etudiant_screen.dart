@@ -213,9 +213,11 @@ class _ProfileEtudiantScreenState extends State<ProfileEtudiantScreen> {
                                     borderRadius:
                                         BorderRadius.circular(100),
                                   ),
-                                  child: const Text(
-                                    'Étudiant',
-                                    style: TextStyle(
+                                  child: Text(
+                                    user.roleLabel.isNotEmpty
+                                      ? user.roleLabel
+                                      : 'Étudiant',
+                                    style: const TextStyle(
                                       color: AppColors.primary,
                                       fontSize: 12,
                                       fontFamily: 'Inter',

@@ -226,9 +226,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     color: AppColors.primaryLight,
                                     borderRadius: BorderRadius.circular(100),
                                   ),
-                                  child: const Text(
-                                    'Student',
-                                    style: TextStyle(
+                                  child: Text(
+                                    user.roleLabel,
+                                    style: const TextStyle(
                                       color: AppColors.primary,
                                       fontSize: 12,
                                       fontFamily: 'Inter',

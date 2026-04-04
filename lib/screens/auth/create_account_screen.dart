@@ -17,20 +17,20 @@ class CreateAccountScreen extends StatefulWidget {
 }
 
 class _CreateAccountScreenState extends State<CreateAccountScreen> {
-  final _nameController     = TextEditingController();
-  final _emailController    = TextEditingController();
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _confirmController  = TextEditingController();
+  final _confirmController = TextEditingController();
 
-  bool _isLoading       = false;
-  int  _selectedProfile = 0; // 0=étudiant 1=enseignant 2=recruteur
+  bool _isLoading = false;
+  int _selectedProfile = 0; // 0=étudiant 1=enseignant 2=recruteur
 
-  bool   _nameError       = false;
-  bool   _emailError      = false;
-  bool   _passwordError   = false;
-  bool   _confirmError    = false;
-  bool   _confirmMismatch = false;
-  String _confirmValue    = '';
+  bool _nameError = false;
+  bool _emailError = false;
+  bool _passwordError = false;
+  bool _confirmError = false;
+  bool _confirmMismatch = false;
+  String _confirmValue = '';
 
   @override
   void dispose() {
@@ -50,32 +50,34 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
       RegExp(r'[0-9]').hasMatch(v) &&
       RegExp(r'[!@#\$&*~%^()_\-+=<>?/]').hasMatch(v);
 
-  bool _passwordsMatch() =>
-      _passwordController.text == _confirmController.text;
+  bool _passwordsMatch() => _passwordController.text == _confirmController.text;
 
   bool _validateAll() {
-    final nameOk    = _nameController.text.trim().isNotEmpty;
-    final emailOk   = _isValidEmail(_emailController.text.trim());
-    final passOk    = _isValidPassword(_passwordController.text);
+    final nameOk = _nameController.text.trim().isNotEmpty;
+    final emailOk = _isValidEmail(_emailController.text.trim());
+    final passOk = _isValidPassword(_passwordController.text);
     final confirmOk = _confirmController.text.isNotEmpty && _passwordsMatch();
 
     setState(() {
-      _nameError       = !nameOk;
-      _emailError      = !emailOk;
-      _passwordError   = !passOk;
-      _confirmError    = !confirmOk;
-      _confirmMismatch = _confirmController.text.isNotEmpty && !_passwordsMatch();
+      _nameError = !nameOk;
+      _emailError = !emailOk;
+      _passwordError = !passOk;
+      _confirmError = !confirmOk;
+      _confirmMismatch =
+          _confirmController.text.isNotEmpty && !_passwordsMatch();
     });
     return nameOk && emailOk && passOk && confirmOk;
   }
 
   Future<void> _handleCreateAccount() async {
     if (!_validateAll()) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Please correct the errors'),
-        backgroundColor: AppColors.red,
-        behavior: SnackBarBehavior.floating,
-      ));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please correct the errors'),
+          backgroundColor: AppColors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
       return;
     }
 
@@ -83,48 +85,62 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
 
     try {
       // Use the provider instance (not a new AuthService())
-      final authService  = Provider.of<AuthService>(context, listen: false);
+      final authService = Provider.of<AuthService>(context, listen: false);
       final userProvider = Provider.of<UserProvider>(context, listen: false);
 
       // ── Firebase sign up ──
-      final ok = await authService.signUp(
-        _emailController.text.trim(),
-        _passwordController.text.trim(),
-        _nameController.text.trim(),
-        _confirmController.text.trim(),
-      );
+      final roleMap = ['etudiant', 'enseignant', 'recruteur'];
+      final selectedRole = roleMap[_selectedProfile];
 
+      final ok = await authService.signUp(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+        name: _nameController.text.trim(),
+        confirmPassword: _confirmController.text.trim(),
+        role: selectedRole,
+      );
       if (!ok) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('Sign up failed. Please check your information.'),
-            backgroundColor: AppColors.red,
-            behavior: SnackBarBehavior.floating,
-          ));
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Sign up failed. Please check your information.'),
+              backgroundColor: AppColors.red,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
         }
         return;
       }
 
       // ── Save name + email + role locally ──
-      final roles = [UserRole.etudiant, UserRole.enseignant, UserRole.recruteur];
+      final roles = [
+        UserRole.etudiant,
+        UserRole.enseignant,
+        UserRole.recruteur,
+      ];
       userProvider.setUserWithRole(
-        name:  _nameController.text.trim(),
+        name: _nameController.text.trim(),
         email: _emailController.text.trim(),
-        role:  roles[_selectedProfile],
+        role: roles[_selectedProfile],
       );
 
       // ── Navigate to role-specific home ──
       if (!mounted) return;
-      const routes = ['/etudiant/home', '/enseignant/home', '/recruteur/home'];
-      Navigator.pushNamedAndRemoveUntil(
-        context, routes[_selectedProfile], (r) => false,
-      );
+      if (ok && mounted) {
+        Navigator.pushNamedAndRemoveUntil(context, '/home', (r) => false);
+      }
+      // if (!mounted) return;
+      // const routes = ['/etudiant/home', '/enseignant/home', '/recruteur/home'];
+      // Navigator.pushNamedAndRemoveUntil(
+      //   context,
+      //   routes[_selectedProfile],
+      //   (r) => false,
+      // );
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Error: $e'),
-          backgroundColor: AppColors.red,
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.red),
+        );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -147,24 +163,33 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
               Text(
                 'Create an account',
                 style: TextStyle(
-                  color: c.textPrimary, fontSize: 28,
-                  fontFamily: 'Inter', fontWeight: FontWeight.w700,
+                  color: c.textPrimary,
+                  fontSize: 28,
+                  fontFamily: 'Inter',
+                  fontWeight: FontWeight.w700,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 'Join Formanova today and start your learning journey!',
                 style: TextStyle(
-                    color: c.textSecondary, fontSize: 16, fontFamily: 'Inter'),
+                  color: c.textSecondary,
+                  fontSize: 16,
+                  fontFamily: 'Inter',
+                ),
               ),
               const SizedBox(height: 32),
 
               // ── Role selector ──
-              Text('I am a:',
-                  style: TextStyle(
-                    color: c.textPrimary, fontSize: 14,
-                    fontFamily: 'Inter', fontWeight: FontWeight.w600,
-                  )),
+              Text(
+                'I am a:',
+                style: TextStyle(
+                  color: c.textPrimary,
+                  fontSize: 14,
+                  fontFamily: 'Inter',
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
               const SizedBox(height: 12),
               Row(
                 children: [
@@ -245,7 +270,9 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                           ? Icons.check_circle_rounded
                           : Icons.cancel_rounded,
                       size: 14,
-                      color: _passwordsMatch() ? AppColors.green : AppColors.red,
+                      color: _passwordsMatch()
+                          ? AppColors.green
+                          : AppColors.red,
                     ),
                     const SizedBox(width: 6),
                     Text(
@@ -253,7 +280,9 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                           ? 'The passwords match'
                           : 'The passwords do not match',
                       style: TextStyle(
-                        color: _passwordsMatch() ? AppColors.green : AppColors.red,
+                        color: _passwordsMatch()
+                            ? AppColors.green
+                            : AppColors.red,
                         fontSize: 12,
                         fontFamily: 'Inter',
                         fontWeight: FontWeight.w500,
@@ -285,8 +314,11 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   width: double.infinity,
                   height: 56,
                   decoration: BoxDecoration(
-                    color: [AppColors.primary, AppColors.green,
-                            AppColors.purple][_selectedProfile],
+                    color: [
+                      AppColors.primary,
+                      AppColors.green,
+                      AppColors.purple,
+                    ][_selectedProfile],
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: const [
                       BoxShadow(
@@ -302,8 +334,10 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                         : const Text(
                             'Create my account',
                             style: TextStyle(
-                              color: Colors.white, fontSize: 16,
-                              fontFamily: 'Inter', fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontFamily: 'Inter',
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                   ),
@@ -316,11 +350,21 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
 
               Row(
                 children: [
-                  Expanded(child: SocialButton(
-                      label: 'Google', icon: Icons.g_mobiledata, onTap: () {})),
+                  Expanded(
+                    child: SocialButton(
+                      label: 'Google',
+                      icon: Icons.g_mobiledata,
+                      onTap: () {},
+                    ),
+                  ),
                   const SizedBox(width: 12),
-                  Expanded(child: SocialButton(
-                      label: 'Github', icon: Icons.code, onTap: () {})),
+                  Expanded(
+                    child: SocialButton(
+                      label: 'Github',
+                      icon: Icons.code,
+                      onTap: () {},
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 32),
@@ -330,18 +374,25 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   text: TextSpan(
                     text: 'Already have an account? ',
                     style: TextStyle(
-                        color: c.textSecondary, fontSize: 14,
-                        fontFamily: 'Inter'),
+                      color: c.textSecondary,
+                      fontSize: 14,
+                      fontFamily: 'Inter',
+                    ),
                     children: [
                       TextSpan(
                         text: 'Sign in',
                         style: TextStyle(
-                          color: c.primary, fontWeight: FontWeight.w700,
-                          fontSize: 14, fontFamily: 'Inter',
+                          color: c.primary,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                          fontFamily: 'Inter',
                         ),
                         recognizer: TapGestureRecognizer()
                           ..onTap = () => Navigator.pushNamedAndRemoveUntil(
-                              context, '/signup', (r) => false),
+                            context,
+                            '/signup',
+                            (r) => false,
+                          ),
                       ),
                     ],
                   ),
@@ -367,11 +418,15 @@ class _ErrorLabel extends StatelessWidget {
         const Icon(Icons.error_outline_rounded, color: AppColors.red, size: 13),
         const SizedBox(width: 4),
         Flexible(
-          child: Text(text,
-              style: const TextStyle(
-                color: AppColors.red, fontSize: 12,
-                fontFamily: 'Inter', fontWeight: FontWeight.w500,
-              )),
+          child: Text(
+            text,
+            style: const TextStyle(
+              color: AppColors.red,
+              fontSize: 12,
+              fontFamily: 'Inter',
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ),
       ],
     );
