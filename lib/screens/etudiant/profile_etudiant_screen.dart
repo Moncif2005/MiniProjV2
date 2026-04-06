@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -11,12 +13,43 @@ class ProfileEtudiantScreen extends StatefulWidget {
   const ProfileEtudiantScreen({super.key});
 
   @override
-  State<ProfileEtudiantScreen> createState() =>
-      _ProfileEtudiantScreenState();
+  State<ProfileEtudiantScreen> createState() => _ProfileEtudiantScreenState();
 }
 
 class _ProfileEtudiantScreenState extends State<ProfileEtudiantScreen> {
   int _currentNavIndex = 3;
+  // ── Helper: Build initials avatar ──
+  Widget _buildInitials(ThemeColors c, UserProvider user) {
+    return Container(
+      color: _getAvatarBgColor(), // لون الخلفية حسب الدور
+      child: Center(
+        child: Text(
+          user.initials,
+          style: TextStyle(
+            color: _getAvatarTextColor(), // لون النص حسب الدور
+            fontSize: 28,
+            fontFamily: 'Inter',
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Helper: Get avatar background color by role ──
+  Color _getAvatarBgColor() {
+    // غيّر الألوان حسب الدور في كل ملف
+    return AppColors.primaryLight; // للطلاب
+    // return AppColors.greenLight;  // للمعلمين
+    // return AppColors.purpleLight; // لمسؤولي التوظيف
+  }
+
+  // ── Helper: Get avatar text color by role ──
+  Color _getAvatarTextColor() {
+    return AppColors.primary; // للطلاب
+    // return AppColors.green;  // للمعلمين
+    // return AppColors.purple; // لمسؤولي التوظيف
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,15 +65,24 @@ class _ProfileEtudiantScreenState extends State<ProfileEtudiantScreen> {
           switch (index) {
             case 0:
               Navigator.pushNamedAndRemoveUntil(
-                  context, '/etudiant/home', (route) => false);
+                context,
+                '/etudiant/home',
+                (route) => false,
+              );
               break;
             case 1:
               Navigator.pushNamedAndRemoveUntil(
-                  context, '/etudiant/learn', (route) => false);
+                context,
+                '/etudiant/learn',
+                (route) => false,
+              );
               break;
             case 2:
               Navigator.pushNamedAndRemoveUntil(
-                  context, '/offers', (route) => false);
+                context,
+                '/offers',
+                (route) => false,
+              );
               break;
           }
         },
@@ -51,7 +93,6 @@ class _ProfileEtudiantScreenState extends State<ProfileEtudiantScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-
               // ── Header ──
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -66,8 +107,7 @@ class _ProfileEtudiantScreenState extends State<ProfileEtudiantScreen> {
                     ),
                   ),
                   GestureDetector(
-                    onTap: () =>
-                        Navigator.pushNamed(context, '/edit-profile'),
+                    onTap: () => Navigator.pushNamed(context, '/edit-profile'),
                     child: Container(
                       width: 38,
                       height: 38,
@@ -78,8 +118,11 @@ class _ProfileEtudiantScreenState extends State<ProfileEtudiantScreen> {
                           borderRadius: BorderRadius.circular(14),
                         ),
                       ),
-                      child: Icon(Icons.edit_outlined,
-                          color: c.textSecondary, size: 18),
+                      child: Icon(
+                        Icons.edit_outlined,
+                        color: c.textSecondary,
+                        size: 18,
+                      ),
                     ),
                   ),
                 ],
@@ -142,20 +185,44 @@ class _ProfileEtudiantScreenState extends State<ProfileEtudiantScreen> {
                                   ),
                                   padding: const EdgeInsets.all(4),
                                   child: ClipOval(
-                                    child: Container(
-                                      color: AppColors.primaryLight,
-                                      child: Center(
-                                        child: Text(
-                                          user.initials,
-                                          style: const TextStyle(
-                                            color: AppColors.primary,
-                                            fontSize: 28,
-                                            fontFamily: 'Inter',
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
+                                    child:
+                                        (user.avatarPath != null &&
+                                            user.avatarPath!.isNotEmpty)
+                                        ? (user.avatarPath!.startsWith('http')
+                                              // ✅ صورة من Cloudinary (رابط)
+                                              ? Image.network(
+                                                  user.avatarPath!,
+                                                  fit: BoxFit.cover,
+                                                  loadingBuilder: (_, child, progress) {
+                                                    if (progress == null)
+                                                      return child;
+                                                    return Center(
+                                                      child: CircularProgressIndicator(
+                                                        value:
+                                                            progress.expectedTotalBytes !=
+                                                                null
+                                                            ? progress.cumulativeBytesLoaded /
+                                                                  (progress
+                                                                          .expectedTotalBytes ??
+                                                                      1)
+                                                            : null,
+                                                        color: AppColors
+                                                            .primary, // غيّر للون المناسب لكل دور
+                                                      ),
+                                                    );
+                                                  },
+                                                  errorBuilder: (_, __, ___) =>
+                                                      _buildInitials(c, user),
+                                                )
+                                              // ✅ صورة محلية (مسار)
+                                              : Image.file(
+                                                  File(user.avatarPath!),
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder: (_, __, ___) =>
+                                                      _buildInitials(c, user),
+                                                ))
+                                        // ✅ لا توجد صورة: اعرض الأحرف الأولى
+                                        : _buildInitials(c, user),
                                   ),
                                 ),
                                 Positioned(
@@ -168,10 +235,15 @@ class _ProfileEtudiantScreenState extends State<ProfileEtudiantScreen> {
                                       color: AppColors.primary,
                                       shape: BoxShape.circle,
                                       border: Border.all(
-                                          color: c.surface, width: 2),
+                                        color: c.surface,
+                                        width: 2,
+                                      ),
                                     ),
-                                    child: const Icon(Icons.edit_rounded,
-                                        color: Colors.white, size: 14),
+                                    child: const Icon(
+                                      Icons.edit_rounded,
+                                      color: Colors.white,
+                                      size: 14,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -208,16 +280,17 @@ class _ProfileEtudiantScreenState extends State<ProfileEtudiantScreen> {
                                 // ── Étudiant Badge ──
                                 Container(
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 4),
+                                    horizontal: 12,
+                                    vertical: 4,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: AppColors.primaryLight,
-                                    borderRadius:
-                                        BorderRadius.circular(100),
+                                    borderRadius: BorderRadius.circular(100),
                                   ),
                                   child: Text(
                                     user.roleLabel.isNotEmpty
-                                      ? user.roleLabel
-                                      : 'Étudiant',
+                                        ? user.roleLabel
+                                        : 'Étudiant',
                                     style: const TextStyle(
                                       color: AppColors.primary,
                                       fontSize: 12,
@@ -246,7 +319,9 @@ class _ProfileEtudiantScreenState extends State<ProfileEtudiantScreen> {
                                   width: 1,
                                   height: 32,
                                   color: c.border,
-                                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                  ),
                                 ),
                                 _StatItem(
                                   value: '0',
@@ -300,8 +375,8 @@ class _ProfileEtudiantScreenState extends State<ProfileEtudiantScreen> {
                           ),
                         ),
                         GestureDetector(
-                          onTap: () => Navigator.pushNamed(
-                              context, '/etudiant/learn'),
+                          onTap: () =>
+                              Navigator.pushNamed(context, '/etudiant/learn'),
                           child: const Text(
                             'See all',
                             style: TextStyle(
@@ -321,16 +396,27 @@ class _ProfileEtudiantScreenState extends State<ProfileEtudiantScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         child: Column(
                           children: [
-                            Icon(Icons.school_outlined, color: c.textMuted, size: 40),
+                            Icon(
+                              Icons.school_outlined,
+                              color: c.textMuted,
+                              size: 40,
+                            ),
                             const SizedBox(height: 8),
                             Text(
                               'No courses in progress yet.',
-                              style: TextStyle(color: c.textMuted, fontSize: 13, fontFamily: 'Inter'),
+                              style: TextStyle(
+                                color: c.textMuted,
+                                fontSize: 13,
+                                fontFamily: 'Inter',
+                              ),
                             ),
                             const SizedBox(height: 4),
                             GestureDetector(
                               onTap: () => Navigator.pushNamedAndRemoveUntil(
-                                  context, '/etudiant/learn', (r) => false),
+                                context,
+                                '/etudiant/learn',
+                                (r) => false,
+                              ),
                               child: const Text(
                                 'Browse courses →',
                                 style: TextStyle(
@@ -356,8 +442,7 @@ class _ProfileEtudiantScreenState extends State<ProfileEtudiantScreen> {
                 iconBg: AppColors.primaryLight,
                 iconColor: AppColors.primary,
                 title: 'My Certificates',
-                onTap: () =>
-                    Navigator.pushNamed(context, '/certificates'),
+                onTap: () => Navigator.pushNamed(context, '/certificates'),
               ),
               const SizedBox(height: 8),
               ProfileMenuItem(
@@ -365,8 +450,7 @@ class _ProfileEtudiantScreenState extends State<ProfileEtudiantScreen> {
                 iconBg: c.iconBg,
                 iconColor: c.textSecondary,
                 title: 'Learning History',
-                onTap: () =>
-                    Navigator.pushNamed(context, '/learning-history'),
+                onTap: () => Navigator.pushNamed(context, '/learning-history'),
               ),
               const SizedBox(height: 8),
               ProfileMenuItem(
@@ -374,8 +458,7 @@ class _ProfileEtudiantScreenState extends State<ProfileEtudiantScreen> {
                 iconBg: AppColors.primaryLight,
                 iconColor: AppColors.primary,
                 title: 'Applied Jobs',
-                onTap: () =>
-                    Navigator.pushNamed(context, '/applied-jobs'),
+                onTap: () => Navigator.pushNamed(context, '/applied-jobs'),
               ),
               const SizedBox(height: 8),
               ProfileMenuItem(
@@ -392,29 +475,30 @@ class _ProfileEtudiantScreenState extends State<ProfileEtudiantScreen> {
                 iconColor: AppColors.red,
                 title: 'Log Out',
                 isDestructive: true,
-onTap: () async {
-  debugPrint('🚪 Logout tapped');
-  try {
-    // 1. تسجيل الخروج
-    await FirebaseAuth.instance.signOut();
-    debugPrint('✅ Signed out from Firebase');
+                onTap: () async {
+                  debugPrint('🚪 Logout tapped');
+                  try {
+                    // 1. تسجيل الخروج
+                    await FirebaseAuth.instance.signOut();
+                    debugPrint('✅ Signed out from Firebase');
 
-    // 2. مسح البيانات
-    if (mounted) context.read<UserProvider>().clearUser();
+                    // 2. مسح البيانات
+                    if (mounted) context.read<UserProvider>().clearUser();
 
-    // 3. العودة لنقطة الصفر (AuthWrapper)
-    // هذا يضمن بقاء الحارس حياً ويعيد فحص الحالة
-    if (mounted) {
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        '/home',  // ✅ نعود للحارس وليس لصفحة تسجيل الدخول مباشرة
-        (route) => false,
-      );
-    }
-  } catch (e) {
-    debugPrint('❌ Logout error: $e');
-  }
-}, ),
+                    // 3. العودة لنقطة الصفر (AuthWrapper)
+                    // هذا يضمن بقاء الحارس حياً ويعيد فحص الحالة
+                    if (mounted) {
+                      Navigator.pushNamedAndRemoveUntil(
+                        context,
+                        '/home', // ✅ نعود للحارس وليس لصفحة تسجيل الدخول مباشرة
+                        (route) => false,
+                      );
+                    }
+                  } catch (e) {
+                    debugPrint('❌ Logout error: $e');
+                  }
+                },
+              ),
               const SizedBox(height: 24),
             ],
           ),
@@ -483,9 +567,10 @@ class _ProgressCourseItem extends StatelessWidget {
           Text(
             'Lesson $lessonsCurrent of $lessonsTotal',
             style: TextStyle(
-                color: c.textSecondary,
-                fontSize: 12,
-                fontFamily: 'Inter'),
+              color: c.textSecondary,
+              fontSize: 12,
+              fontFamily: 'Inter',
+            ),
           ),
           const SizedBox(height: 8),
           ClipRRect(
@@ -494,8 +579,7 @@ class _ProgressCourseItem extends StatelessWidget {
               value: progress,
               minHeight: 6,
               backgroundColor: AppColors.primaryLight,
-              valueColor:
-                  const AlwaysStoppedAnimation(AppColors.primary),
+              valueColor: const AlwaysStoppedAnimation(AppColors.primary),
             ),
           ),
         ],

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -16,6 +18,38 @@ class ProfileEnseignantScreen extends StatefulWidget {
 
 class _ProfileEnseignantScreenState extends State<ProfileEnseignantScreen> {
   int _currentNavIndex = 3;
+  // ── Helper: Build initials avatar ──
+  Widget _buildInitials(ThemeColors c, UserProvider user) {
+    return Container(
+      color: _getAvatarBgColor(), // لون الخلفية حسب الدور
+      child: Center(
+        child: Text(
+          user.initials,
+          style: TextStyle(
+            color: _getAvatarTextColor(), // لون النص حسب الدور
+            fontSize: 28,
+            fontFamily: 'Inter',
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Helper: Get avatar background color by role ──
+  Color _getAvatarBgColor() {
+    // غيّر الألوان حسب الدور في كل ملف
+    return AppColors.primaryLight; // للطلاب
+    // return AppColors.greenLight;  // للمعلمين
+    // return AppColors.purpleLight; // لمسؤولي التوظيف
+  }
+
+  // ── Helper: Get avatar text color by role ──
+  Color _getAvatarTextColor() {
+    return AppColors.primary; // للطلاب
+    // return AppColors.green;  // للمعلمين
+    // return AppColors.purple; // لمسؤولي التوظيف
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -141,20 +175,44 @@ class _ProfileEnseignantScreenState extends State<ProfileEnseignantScreen> {
                                     ),
                                   ),
                                   child: ClipOval(
-                                    child: Container(
-                                      color: AppColors.greenLight,
-                                      child: Center(
-                                        child: Text(
-                                          user.initials,
-                                          style: const TextStyle(
-                                            color: AppColors.green,
-                                            fontSize: 28,
-                                            fontFamily: 'Inter',
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
+                                    child:
+                                        (user.avatarPath != null &&
+                                            user.avatarPath!.isNotEmpty)
+                                        ? (user.avatarPath!.startsWith('http')
+                                              // ✅ صورة من Cloudinary (رابط)
+                                              ? Image.network(
+                                                  user.avatarPath!,
+                                                  fit: BoxFit.cover,
+                                                  loadingBuilder: (_, child, progress) {
+                                                    if (progress == null)
+                                                      return child;
+                                                    return Center(
+                                                      child: CircularProgressIndicator(
+                                                        value:
+                                                            progress.expectedTotalBytes !=
+                                                                null
+                                                            ? progress.cumulativeBytesLoaded /
+                                                                  (progress
+                                                                          .expectedTotalBytes ??
+                                                                      1)
+                                                            : null,
+                                                        color: AppColors
+                                                            .primary, // غيّر للون المناسب لكل دور
+                                                      ),
+                                                    );
+                                                  },
+                                                  errorBuilder: (_, __, ___) =>
+                                                      _buildInitials(c, user),
+                                                )
+                                              // ✅ صورة محلية (مسار)
+                                              : Image.file(
+                                                  File(user.avatarPath!),
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder: (_, __, ___) =>
+                                                      _buildInitials(c, user),
+                                                ))
+                                        // ✅ لا توجد صورة: اعرض الأحرف الأولى
+                                        : _buildInitials(c, user),
                                   ),
                                 ),
                                 Positioned(
@@ -322,29 +380,30 @@ class _ProfileEnseignantScreenState extends State<ProfileEnseignantScreen> {
                 iconColor: AppColors.red,
                 title: 'Log Out',
                 isDestructive: true,
-onTap: () async {
-  debugPrint('🚪 Logout tapped');
-  try {
-    // 1. تسجيل الخروج
-    await FirebaseAuth.instance.signOut();
-    debugPrint('✅ Signed out from Firebase');
+                onTap: () async {
+                  debugPrint('🚪 Logout tapped');
+                  try {
+                    // 1. تسجيل الخروج
+                    await FirebaseAuth.instance.signOut();
+                    debugPrint('✅ Signed out from Firebase');
 
-    // 2. مسح البيانات
-    if (mounted) context.read<UserProvider>().clearUser();
+                    // 2. مسح البيانات
+                    if (mounted) context.read<UserProvider>().clearUser();
 
-    // 3. العودة لنقطة الصفر (AuthWrapper)
-    // هذا يضمن بقاء الحارس حياً ويعيد فحص الحالة
-    if (mounted) {
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        '/home',  // ✅ نعود للحارس وليس لصفحة تسجيل الدخول مباشرة
-        (route) => false,
-      );
-    }
-  } catch (e) {
-    debugPrint('❌ Logout error: $e');
-  }
-},             ),
+                    // 3. العودة لنقطة الصفر (AuthWrapper)
+                    // هذا يضمن بقاء الحارس حياً ويعيد فحص الحالة
+                    if (mounted) {
+                      Navigator.pushNamedAndRemoveUntil(
+                        context,
+                        '/home', // ✅ نعود للحارس وليس لصفحة تسجيل الدخول مباشرة
+                        (route) => false,
+                      );
+                    }
+                  } catch (e) {
+                    debugPrint('❌ Logout error: $e');
+                  }
+                },
+              ),
               const SizedBox(height: 24),
             ],
           ),
