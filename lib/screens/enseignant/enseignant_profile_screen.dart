@@ -150,7 +150,7 @@ class _ProfileEnseignantScreenState extends State<ProfileEnseignantScreen> {
                         gradient: LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
-                          colors: AppColors.gradientBlue,
+                          colors: AppColors.gradientGreen,
                         ),
                       ),
                     ),
@@ -168,7 +168,7 @@ class _ProfileEnseignantScreenState extends State<ProfileEnseignantScreen> {
                                   height: 96,
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
-                                    color: c.surface,
+                                    color: Colors.green,
                                     border: Border.all(
                                       color: Colors.white,
                                       width: 3.73,
@@ -198,7 +198,7 @@ class _ProfileEnseignantScreenState extends State<ProfileEnseignantScreen> {
                                                                       1)
                                                             : null,
                                                         color: AppColors
-                                                            .primary, // غيّر للون المناسب لكل دور
+                                                            .green, // غيّر للون المناسب لكل دور
                                                       ),
                                                     );
                                                   },
@@ -223,7 +223,7 @@ class _ProfileEnseignantScreenState extends State<ProfileEnseignantScreen> {
                                     width: 30,
                                     height: 30,
                                     decoration: BoxDecoration(
-                                      color: AppColors.primary,
+                                      color: AppColors.green,
                                       shape: BoxShape.circle,
                                       border: Border.all(
                                         color: c.surface,
