@@ -3,10 +3,10 @@ import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../services/auth_service.dart';
-import '../../theme/app_colors.dart';
-import '../../providers/user_provider.dart';
-import '../../widgets/bottom_nav_bar.dart';
+import '../../../services/auth_service.dart';
+import '../../../theme/app_colors.dart';
+import '../../../providers/user_provider.dart';
+import '../../../widgets/bottom_nav_bar.dart';
 
 class ProfileEnseignantScreen extends StatefulWidget {
   const ProfileEnseignantScreen({super.key});

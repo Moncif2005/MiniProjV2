@@ -7,7 +7,7 @@ import 'package:provider/provider.dart';
 import '../providers/user_provider.dart';
 import 'auth/signin_screen.dart';
 import 'etudiant/home_etudiant_screen.dart';
-import 'enseignant/home_enseignant_screen.dart';
+import 'enseignant/trash/home_enseignant_screen.dart';
 import 'recruteur/home_recruteur_screen.dart';
 
 class AuthWrapper extends StatefulWidget {
