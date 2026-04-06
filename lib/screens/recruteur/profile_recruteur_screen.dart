@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -11,22 +10,22 @@ import '../../widgets/profile_menu_item.dart';
 
 class ProfileRecruteurScreen extends StatefulWidget {
   const ProfileRecruteurScreen({super.key});
-
   @override
   State<ProfileRecruteurScreen> createState() => _ProfileRecruteurScreenState();
 }
 
 class _ProfileRecruteurScreenState extends State<ProfileRecruteurScreen> {
   int _currentNavIndex = 3;
+
   // ── Helper: Build initials avatar ──
   Widget _buildInitials(ThemeColors c, UserProvider user) {
     return Container(
-      color: _getAvatarBgColor(), // لون الخلفية حسب الدور
+      color: AppColors.purpleLight, // ✅ لون الخلفية بنفسجي
       child: Center(
         child: Text(
           user.initials,
-          style: TextStyle(
-            color: _getAvatarTextColor(), // لون النص حسب الدور
+          style: const TextStyle(
+            color: AppColors.purple, // ✅ لون النص بنفسجي غامق
             fontSize: 28,
             fontFamily: 'Inter',
             fontWeight: FontWeight.w700,
@@ -36,25 +35,11 @@ class _ProfileRecruteurScreenState extends State<ProfileRecruteurScreen> {
     );
   }
 
-  // ── Helper: Get avatar background color by role ──
-  Color _getAvatarBgColor() {
-    // غيّر الألوان حسب الدور في كل ملف
-    return AppColors.primaryLight; // للطلاب
-    // return AppColors.greenLight;  // للمعلمين
-    // return AppColors.purpleLight; // لمسؤولي التوظيف
-  }
-
-  // ── Helper: Get avatar text color by role ──
-  Color _getAvatarTextColor() {
-    return AppColors.primary; // للطلاب
-    // return AppColors.green;  // للمعلمين
-    // return AppColors.purple; // لمسؤولي التوظيف
-  }
-
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    final user = context.watch<UserProvider>();
+    final user = context
+        .watch<UserProvider>(); // ✅ هذا السطر يضمن التحديث التلقائي
 
     return Scaffold(
       backgroundColor: c.bg,
@@ -64,10 +49,7 @@ class _ProfileRecruteurScreenState extends State<ProfileRecruteurScreen> {
           setState(() => _currentNavIndex = index);
           switch (index) {
             case 0:
-              Navigator.pushNamed(
-                context,
-                '/recruteur/home',
-              ); // ✅ بدون AndRemoveUntil
+              Navigator.pushNamed(context, '/recruteur/home');
               break;
             case 1:
               Navigator.pushNamed(context, '/recruteur/jobs');
@@ -141,7 +123,6 @@ class _ProfileRecruteurScreenState extends State<ProfileRecruteurScreen> {
                 ),
                 child: Column(
                   children: [
-                    // ── Gradient Banner ──
                     Container(
                       height: 96,
                       decoration: const BoxDecoration(
@@ -156,7 +137,7 @@ class _ProfileRecruteurScreenState extends State<ProfileRecruteurScreen> {
                       padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
                       child: Column(
                         children: [
-                          // ── Avatar ──
+                          // ── Avatar (تم الإصلاح) ──
                           Transform.translate(
                             offset: const Offset(0, -48),
                             child: Stack(
@@ -170,54 +151,41 @@ class _ProfileRecruteurScreenState extends State<ProfileRecruteurScreen> {
                                   ),
                                   padding: const EdgeInsets.all(4),
                                   child: ClipOval(
-                                    child: ClipOval(
-                                      child:
-                                          (user.avatarPath != null &&
-                                              user.avatarPath!.isNotEmpty)
-                                          ? (user.avatarPath!.startsWith('http')
-                                                // ✅ صورة من Cloudinary (رابط)
-                                                ? Image.network(
-                                                    user.avatarPath!,
-                                                    fit: BoxFit.cover,
-                                                    loadingBuilder: (_, child, progress) {
-                                                      if (progress == null)
-                                                        return child;
-                                                      return Center(
-                                                        child: CircularProgressIndicator(
-                                                          value:
-                                                              progress.expectedTotalBytes !=
-                                                                  null
-                                                              ? progress.cumulativeBytesLoaded /
-                                                                    (progress
-                                                                            .expectedTotalBytes ??
-                                                                        1)
-                                                              : null,
-                                                          color: AppColors
-                                                              .primary, // غيّر للون المناسب لكل دور
-                                                        ),
-                                                      );
-                                                    },
-                                                    errorBuilder:
-                                                        (_, __, ___) =>
-                                                            _buildInitials(
-                                                              c,
-                                                              user,
-                                                            ),
-                                                  )
-                                                // ✅ صورة محلية (مسار)
-                                                : Image.file(
-                                                    File(user.avatarPath!),
-                                                    fit: BoxFit.cover,
-                                                    errorBuilder:
-                                                        (_, __, ___) =>
-                                                            _buildInitials(
-                                                              c,
-                                                              user,
-                                                            ),
-                                                  ))
-                                          // ✅ لا توجد صورة: اعرض الأحرف الأولى
-                                          : _buildInitials(c, user),
-                                    ),
+                                    // ✅ تم إزالة ClipOval المكرر هنا
+                                    child:
+                                        (user.avatarPath != null &&
+                                            user.avatarPath!.isNotEmpty)
+                                        ? (user.avatarPath!.startsWith('http')
+                                              ? Image.network(
+                                                  user.avatarPath!,
+                                                  fit: BoxFit.cover,
+                                                  loadingBuilder: (_, child, progress) {
+                                                    if (progress == null)
+                                                      return child;
+                                                    return Center(
+                                                      child: CircularProgressIndicator(
+                                                        value:
+                                                            progress.expectedTotalBytes !=
+                                                                null
+                                                            ? progress.cumulativeBytesLoaded /
+                                                                  (progress
+                                                                          .expectedTotalBytes ??
+                                                                      1)
+                                                            : null,
+                                                        color: AppColors.purple,
+                                                      ),
+                                                    );
+                                                  },
+                                                  errorBuilder: (_, __, ___) =>
+                                                      _buildInitials(c, user),
+                                                )
+                                              : Image.file(
+                                                  File(user.avatarPath!),
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder: (_, __, ___) =>
+                                                      _buildInitials(c, user),
+                                                ))
+                                        : _buildInitials(c, user),
                                   ),
                                 ),
                                 Positioned(
@@ -272,7 +240,6 @@ class _ProfileRecruteurScreenState extends State<ProfileRecruteurScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: 8),
-                                // ── Recruteur Badge ──
                                 Container(
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 12,
@@ -439,22 +406,14 @@ class _ProfileRecruteurScreenState extends State<ProfileRecruteurScreen> {
                 onTap: () async {
                   debugPrint('🚪 Logout tapped');
                   try {
-                    // 1. تسجيل الخروج
                     await FirebaseAuth.instance.signOut();
-                    debugPrint('✅ Signed out from Firebase');
-
-                    // 2. مسح البيانات
                     if (mounted) context.read<UserProvider>().clearUser();
-
-                    // 3. العودة لنقطة الصفر (AuthWrapper)
-                    // هذا يضمن بقاء الحارس حياً ويعيد فحص الحالة
-                    if (mounted) {
+                    if (mounted)
                       Navigator.pushNamedAndRemoveUntil(
                         context,
-                        '/home', // ✅ نعود للحارس وليس لصفحة تسجيل الدخول مباشرة
+                        '/home',
                         (route) => false,
                       );
-                    }
                   } catch (e) {
                     debugPrint('❌ Logout error: $e');
                   }
@@ -469,18 +428,17 @@ class _ProfileRecruteurScreenState extends State<ProfileRecruteurScreen> {
   }
 }
 
+// ── Helper Widgets ──
 class _InfoRow extends StatelessWidget {
   final ThemeColors c;
   final IconData icon;
   final String label, value;
-
   const _InfoRow({
     required this.c,
     required this.icon,
     required this.label,
     required this.value,
   });
-
   @override
   Widget build(BuildContext context) => Row(
     children: [
@@ -524,14 +482,12 @@ class _InfoRow extends StatelessWidget {
 class _StatItem extends StatelessWidget {
   final String value, label;
   final Color textColor, labelColor;
-
   const _StatItem({
     required this.value,
     required this.label,
     required this.textColor,
     required this.labelColor,
   });
-
   @override
   Widget build(BuildContext context) => Column(
     children: [

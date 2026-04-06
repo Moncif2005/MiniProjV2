@@ -53,28 +53,30 @@ class UserService {
     }
   }
 
-  Future<bool> updateProfile({
-    required String uid,
-    String? displayName,
-    String? photoURL,
-    String? bio,
-    Map<String, dynamic>? additionalFields,
-  }) async {
-    try {
-      final updates = <String, dynamic>{};
-      if (displayName != null) updates['displayName'] = displayName;
-      if (photoURL != null) updates['photoURL'] = photoURL;
-      if (bio != null) updates['bio'] = bio;
-      if (additionalFields != null) updates.addAll(additionalFields);
+Future<bool> updateProfile({
+  required String uid,
+  String? displayName,
+  String? photoURL,
+  String? bio,
+  Map<String, dynamic>? additionalFields,
+}) async {
+  try {
+    final updates = <String, dynamic>{};
+    if (displayName != null) updates['displayName'] = displayName;
+    if (photoURL != null) updates['photoURL'] = photoURL;
+    if (bio != null) updates['bio'] = bio;
+    if (additionalFields != null) updates.addAll(additionalFields);
 
-      if (updates.isEmpty) return true;
-      await _usersRef.doc(uid).update(updates);
-      return true;
-    } catch (e) {
-      debugPrint('❌ Error updating profile: $e');
-      return false;
-    }
+    if (updates.isEmpty) return true;
+    
+    // ✅ استخدام set مع merge بدلاً من update
+    await _usersRef.doc(uid).set(updates, SetOptions(merge: true));
+    return true;
+  } catch (e) {
+    debugPrint('❌ Error updating profile: $e');
+    return false;
   }
+}
 
   Future<bool> updateSettings({
     required String uid,

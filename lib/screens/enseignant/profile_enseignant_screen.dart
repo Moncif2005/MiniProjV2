@@ -39,14 +39,14 @@ class _ProfileEnseignantScreenState extends State<ProfileEnseignantScreen> {
   // ── Helper: Get avatar background color by role ──
   Color _getAvatarBgColor() {
     // غيّر الألوان حسب الدور في كل ملف
-    return AppColors.primaryLight; // للطلاب
+    return AppColors.greenLight; // للطلاب
     // return AppColors.greenLight;  // للمعلمين
     // return AppColors.purpleLight; // لمسؤولي التوظيف
   }
 
   // ── Helper: Get avatar text color by role ──
   Color _getAvatarTextColor() {
-    return AppColors.primary; // للطلاب
+    return AppColors.green; // للطلاب
     // return AppColors.green;  // للمعلمين
     // return AppColors.purple; // لمسؤولي التوظيف
   }
