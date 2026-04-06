@@ -184,8 +184,9 @@ class _ProfileEnseignantScreenState extends State<ProfileEnseignantScreen> {
                                                   user.avatarPath!,
                                                   fit: BoxFit.cover,
                                                   loadingBuilder: (_, child, progress) {
-                                                    if (progress == null)
+                                                    if (progress == null) {
                                                       return child;
+                                                    }
                                                     return Center(
                                                       child: CircularProgressIndicator(
                                                         value:

@@ -160,8 +160,9 @@ class _ProfileRecruteurScreenState extends State<ProfileRecruteurScreen> {
                                                   user.avatarPath!,
                                                   fit: BoxFit.cover,
                                                   loadingBuilder: (_, child, progress) {
-                                                    if (progress == null)
+                                                    if (progress == null) {
                                                       return child;
+                                                    }
                                                     return Center(
                                                       child: CircularProgressIndicator(
                                                         value:
@@ -408,12 +409,13 @@ class _ProfileRecruteurScreenState extends State<ProfileRecruteurScreen> {
                   try {
                     await FirebaseAuth.instance.signOut();
                     if (mounted) context.read<UserProvider>().clearUser();
-                    if (mounted)
+                    if (mounted) {
                       Navigator.pushNamedAndRemoveUntil(
                         context,
                         '/home',
                         (route) => false,
                       );
+                    }
                   } catch (e) {
                     debugPrint('❌ Logout error: $e');
                   }

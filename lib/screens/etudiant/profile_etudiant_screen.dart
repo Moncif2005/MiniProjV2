@@ -175,8 +175,9 @@ class _ProfileEtudiantScreenState extends State<ProfileEtudiantScreen> {
                                                   user.avatarPath!,
                                                   fit: BoxFit.cover,
                                                   loadingBuilder: (_, child, progress) {
-                                                    if (progress == null)
+                                                    if (progress == null) {
                                                       return child;
+                                                    }
                                                     return Center(
                                                       child: CircularProgressIndicator(
                                                         value:
@@ -455,12 +456,13 @@ class _ProfileEtudiantScreenState extends State<ProfileEtudiantScreen> {
                   try {
                     await FirebaseAuth.instance.signOut();
                     if (mounted) context.read<UserProvider>().clearUser();
-                    if (mounted)
+                    if (mounted) {
                       Navigator.pushNamedAndRemoveUntil(
                         context,
                         '/home',
                         (route) => false,
                       );
+                    }
                   } catch (e) {
                     debugPrint('❌ Logout error: $e');
                   }

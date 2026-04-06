@@ -238,7 +238,7 @@ Future<void> _save() async {
       Navigator.pop(context);
     }
 
-  } catch (e, stackTrace) {
+  } catch (e) {
     debugPrint('❌ Error in _save: $e');
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
