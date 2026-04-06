@@ -34,24 +34,22 @@ class _HomeEtudiantScreenState extends State<HomeEtudiantScreen> {
       backgroundColor: c.bg,
       bottomNavigationBar: BottomNavBar(
         currentIndex: _currentNavIndex,
-        onTap: (index) {
-          setState(() => _currentNavIndex = index);
-          switch (index) {
-            case 1:
-              Navigator.pushNamedAndRemoveUntil(
-                  context, '/etudiant/learn', (route) => false);
-              break;
-            case 2:
-              Navigator.pushNamedAndRemoveUntil(
-                  context, '/offers', (route) => false);
-              break;
-            case 3:
-              Navigator.pushNamedAndRemoveUntil(
-                  context, '/etudiant/profile', (route) => false);
-              break;
-          }
-        },
-      ),
+onTap: (index) {
+  setState(() => _currentNavIndex = index);
+  switch (index) {
+    case 1:
+      // ❌ كان: Navigator.pushNamedAndRemoveUntil(...)
+      // ✅ الآن: Navigator.pushNamed فقط
+      Navigator.pushNamed(context, '/etudiant/learn');
+      break;
+    case 2:
+      Navigator.pushNamed(context, '/offers'); // ✅ بدون AndRemoveUntil
+      break;
+    case 3:
+      Navigator.pushNamed(context, '/etudiant/profile'); // ✅ بدون AndRemoveUntil
+      break;
+  }
+},      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
