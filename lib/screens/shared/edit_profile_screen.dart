@@ -1,5 +1,7 @@
 import 'dart:io';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:minipr/services/media_service.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../theme/app_colors.dart';
@@ -9,12 +11,10 @@ class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
 
   @override
-  State<EditProfileScreen> createState() =>
-      _EditProfileScreenState();
+  State<EditProfileScreen> createState() => _EditProfileScreenState();
 }
 
-class _EditProfileScreenState
-    extends State<EditProfileScreen> {
+class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController _nameController;
   late TextEditingController _emailController;
   late TextEditingController _phoneController;
@@ -29,15 +29,18 @@ class _EditProfileScreenState
   @override
   void initState() {
     super.initState();
-    final user = context.read<UserProvider>();
-    _nameController     = TextEditingController(text: user.name);
-    _emailController    = TextEditingController(text: user.email);
-    _phoneController    = TextEditingController(text: user.phone);
-    _descController     = TextEditingController(text: user.description);
-    _githubController   = TextEditingController(text: user.github);
+
+    // ✅ استخدم Provider.of بدلاً من context.read هنا لتجنب أخطاء السياق
+    final user = Provider.of<UserProvider>(context, listen: false);
+
+    _nameController = TextEditingController(text: user.name);
+    _emailController = TextEditingController(text: user.email);
+    _phoneController = TextEditingController(text: user.phone);
+    _descController = TextEditingController(text: user.description);
+    _githubController = TextEditingController(text: user.github);
     _linkedinController = TextEditingController(text: user.linkedin);
     _facebookController = TextEditingController(text: user.facebook);
-    _avatarPath         = user.avatarPath;
+    _avatarPath = user.avatarPath;
   }
 
   @override
@@ -79,97 +82,37 @@ class _EditProfileScreenState
   }
 
   // ── Show image source picker ──
-  void _showImagePicker() {
-    final c = context.colors;
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (_) => Container(
-        padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
-        decoration: BoxDecoration(
-          color: c.surface,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(24),
-            topRight: Radius.circular(24),
+void _showImagePicker() {
+  if (!mounted) return;
+  
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.white, // ✅ لون صريح بدلاً من الاعتماد على theme
+    builder: (context) => SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: const Icon(Icons.photo_library),
+            title: const Text('Choose from Gallery'),
+            onTap: () {
+              Navigator.pop(context);
+              _pickImage(ImageSource.gallery);
+            },
           ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment:
-                  MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Change Photo',
-                  style: TextStyle(
-                    color: c.textPrimary,
-                    fontSize: 18,
-                    fontFamily: 'Inter',
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: c.iconBg,
-                      borderRadius:
-                          BorderRadius.circular(14),
-                    ),
-                    child: Icon(
-                      Icons.close_rounded,
-                      size: 16,
-                      color: c.textSecondary,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            _PickerOption(
-              icon: Icons.photo_library_rounded,
-              iconBg: AppColors.primaryLight,
-              iconColor: AppColors.primary,
-              label: 'Choose from Gallery',
-              onTap: () {
-                Navigator.pop(context);
-                _pickImage(ImageSource.gallery);
-              },
-            ),
-            const SizedBox(height: 12),
-            _PickerOption(
-              icon: Icons.camera_alt_rounded,
-              iconBg: AppColors.greenLight,
-              iconColor: AppColors.green,
-              label: 'Take a Photo',
-              onTap: () {
-                Navigator.pop(context);
-                _pickImage(ImageSource.camera);
-              },
-            ),
-            if (_avatarPath != null) ...[
-              const SizedBox(height: 12),
-              _PickerOption(
-                icon: Icons.delete_outline_rounded,
-                iconBg: AppColors.redLight,
-                iconColor: AppColors.red,
-                label: 'Remove Photo',
-                onTap: () {
-                  Navigator.pop(context);
-                  setState(() => _avatarPath = null);
-                },
-              ),
-            ],
-          ],
-        ),
+          ListTile(
+            leading: const Icon(Icons.camera_alt),
+            title: const Text('Take a Photo'),
+            onTap: () {
+              Navigator.pop(context);
+              _pickImage(ImageSource.camera);
+            },
+          ),
+        ],
       ),
-    );
-  }
-
+    ),
+  );
+}
   // ── Save ──
   Future<void> _save() async {
     if (_nameController.text.trim().isEmpty) {
@@ -185,70 +128,90 @@ class _EditProfileScreenState
 
     setState(() => _isSaving = true);
 
-    context.read<UserProvider>().updateProfile(
-      name:        _nameController.text.trim(),
-      email:       _emailController.text.trim(),
-      phone:       _phoneController.text.trim(),
-      description: _descController.text.trim(),
-      github:      _githubController.text.trim(),
-      linkedin:    _linkedinController.text.trim(),
-      facebook:    _facebookController.text.trim(),
-      avatarPath:  _avatarPath,
-    );
+    try {
+      final userProvider = context.read<UserProvider>();
+      final uid = FirebaseAuth.instance.currentUser?.uid; // ✅ نحصل على الـ uid
+      String? finalPhotoUrl = userProvider.avatarPath;
 
-    await Future.delayed(
-        const Duration(milliseconds: 400));
+      // ✅ المنطق الجديد: إذا كانت الصورة مسار محلي (جديدة)، ارفعها أولاً
+      if (_avatarPath != null &&
+          _avatarPath!.isNotEmpty &&
+          !_avatarPath!.startsWith('http')) {
+        if (uid != null) {
+          final uploadedUrl = await MediaService.uploadProfileImage(
+            uid,
+            File(_avatarPath!),
+          );
+          if (uploadedUrl != null) {
+            finalPhotoUrl = uploadedUrl; // ✅ نستخدم الرابط السحابي الجديد
+          } else {
+            throw Exception('Failed to upload image');
+          }
+        }
+      }
 
-    if (mounted) {
-      setState(() => _isSaving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Profile updated successfully ✓'),
-          backgroundColor: AppColors.green,
-          behavior: SnackBarBehavior.floating,
-        ),
+      // ✅ تحديث البروفايدر بالبيانات والرابط النهائي
+      userProvider.updateProfile(
+        name: _nameController.text.trim(),
+        email: _emailController.text.trim(),
+        phone: _phoneController.text.trim(),
+        description: _descController.text.trim(),
+        github: _githubController.text.trim(),
+        linkedin: _linkedinController.text.trim(),
+        facebook: _facebookController.text.trim(),
+        avatarPath: finalPhotoUrl, // ✅ الرابط السحابي أو المحلي
       );
-      Navigator.pop(context);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Profile updated successfully ✓'),
+            backgroundColor: AppColors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final c    = context.colors;
+    final c = context.colors;
     final user = context.watch<UserProvider>();
 
     return Scaffold(
       backgroundColor: c.bg,
       body: Column(
         children: [
-
           // ── App Bar ──
           Container(
-            padding: const EdgeInsets.fromLTRB(
-                24, 48, 24, 16),
+            padding: const EdgeInsets.fromLTRB(24, 48, 24, 16),
             decoration: BoxDecoration(
               color: c.surface,
-              border: Border(
-                bottom: BorderSide(
-                    color: c.border, width: 1.24),
-              ),
+              border: Border(bottom: BorderSide(color: c.border, width: 1.24)),
             ),
             child: Row(
-              mainAxisAlignment:
-                  MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Row(
                   children: [
                     GestureDetector(
-                      onTap: () =>
-                          Navigator.pop(context),
+                      onTap: () => Navigator.pop(context),
                       child: Container(
                         width: 36,
                         height: 36,
                         decoration: BoxDecoration(
                           color: c.bg,
-                          borderRadius:
-                              BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(14),
                         ),
                         child: Icon(
                           Icons.arrow_back_ios_new_rounded,
@@ -274,16 +237,14 @@ class _EditProfileScreenState
                 GestureDetector(
                   onTap: _isSaving ? null : _save,
                   child: AnimatedContainer(
-                    duration:
-                        const Duration(milliseconds: 200),
+                    duration: const Duration(milliseconds: 200),
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 10),
+                      horizontal: 20,
+                      vertical: 10,
+                    ),
                     decoration: BoxDecoration(
-                      color: _isSaving
-                          ? c.border
-                          : AppColors.primary,
-                      borderRadius:
-                          BorderRadius.circular(14),
+                      color: _isSaving ? c.border : AppColors.primary,
+                      borderRadius: BorderRadius.circular(14),
                     ),
                     child: _isSaving
                         ? const SizedBox(
@@ -314,10 +275,8 @@ class _EditProfileScreenState
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(24),
               child: Column(
-                crossAxisAlignment:
-                    CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-
                   // ── Avatar Section ──
                   Center(
                     child: Stack(
@@ -333,25 +292,78 @@ class _EditProfileScreenState
                             ),
                           ),
                           child: ClipOval(
-                            child: _avatarPath != null
-                                ? Image.file(
-                                    File(_avatarPath!),
-                                    fit: BoxFit.cover,
-                                  )
+                            child:
+                                _avatarPath != null && _avatarPath!.isNotEmpty
+                                ? (_avatarPath!.startsWith('http')
+                                      // ✅ رابط سحابي (من Cloudinary)
+                                      ? Image.network(
+                                          _avatarPath!,
+                                          fit: BoxFit.cover,
+                                          loadingBuilder: (_, child, progress) {
+                                            if (progress == null) return child;
+                                            return Center(
+                                              child: CircularProgressIndicator(
+                                                value:
+                                                    progress.expectedTotalBytes !=
+                                                        null
+                                                    ? progress.cumulativeBytesLoaded /
+                                                          (progress
+                                                                  .expectedTotalBytes ??
+                                                              1)
+                                                    : null,
+                                                color: AppColors.primary,
+                                              ),
+                                            );
+                                          },
+                                          errorBuilder: (_, __, ___) =>
+                                              Container(
+                                                color: AppColors.primaryLight,
+                                                child: Center(
+                                                  child: Text(
+                                                    user.initials,
+                                                    style: const TextStyle(
+                                                      color: AppColors.primary,
+                                                      fontSize: 32,
+                                                      fontFamily: 'Inter',
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                        )
+                                      // ✅ مسار محلي (مختار حديثاً)
+                                      : Image.file(
+                                          File(_avatarPath!),
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (_, __, ___) =>
+                                              Container(
+                                                color: AppColors.primaryLight,
+                                                child: Center(
+                                                  child: Text(
+                                                    user.initials,
+                                                    style: const TextStyle(
+                                                      color: AppColors.primary,
+                                                      fontSize: 32,
+                                                      fontFamily: 'Inter',
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                        ))
+                                // ✅ لا توجد صورة: اعرض الأحرف الأولى
                                 : Container(
-                                    color: AppColors
-                                        .primaryLight,
+                                    color: AppColors.primaryLight,
                                     child: Center(
                                       child: Text(
                                         user.initials,
-                                        style:
-                                            const TextStyle(
-                                          color: AppColors
-                                              .primary,
+                                        style: const TextStyle(
+                                          color: AppColors.primary,
                                           fontSize: 32,
                                           fontFamily: 'Inter',
-                                          fontWeight:
-                                              FontWeight.w700,
+                                          fontWeight: FontWeight.w700,
                                         ),
                                       ),
                                     ),
@@ -362,17 +374,20 @@ class _EditProfileScreenState
                           bottom: 0,
                           right: 0,
                           child: GestureDetector(
-                            onTap: _showImagePicker,
+                            behavior: HitTestBehavior
+                                .opaque, // ✅ يضمن استقبال اللمس حتى لو كانت الخلفية شفافة
+                            onTap: () {
+                              // ✅ إضافة طباعة للتأكد من وصول اللمس
+                              debugPrint('📸 Camera icon tapped');
+                              _showImagePicker();
+                            },
                             child: Container(
                               width: 32,
                               height: 32,
                               decoration: BoxDecoration(
                                 color: AppColors.primary,
                                 shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: c.surface,
-                                  width: 2,
-                                ),
+                                border: Border.all(color: c.surface, width: 2),
                               ),
                               child: const Icon(
                                 Icons.camera_alt_rounded,
@@ -403,8 +418,7 @@ class _EditProfileScreenState
                   const SizedBox(height: 32),
 
                   // ── PERSONAL INFO ──
-                  _SectionLabel(
-                      label: 'PERSONAL INFO', c: c),
+                  _SectionLabel(label: 'PERSONAL INFO', c: c),
                   const SizedBox(height: 12),
                   _EditCard(
                     c: c,
@@ -447,8 +461,7 @@ class _EditProfileScreenState
                       Padding(
                         padding: const EdgeInsets.all(16),
                         child: Column(
-                          crossAxisAlignment:
-                              CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               'Description',
@@ -470,16 +483,14 @@ class _EditProfileScreenState
                                 fontFamily: 'Inter',
                               ),
                               decoration: InputDecoration(
-                                hintText:
-                                    'Tell us about yourself...',
+                                hintText: 'Tell us about yourself...',
                                 hintStyle: TextStyle(
                                   color: c.textMuted,
                                   fontSize: 14,
                                   fontFamily: 'Inter',
                                 ),
                                 border: InputBorder.none,
-                                contentPadding:
-                                    EdgeInsets.zero,
+                                contentPadding: EdgeInsets.zero,
                                 counterStyle: TextStyle(
                                   color: c.textMuted,
                                   fontSize: 11,
@@ -494,8 +505,7 @@ class _EditProfileScreenState
                   const SizedBox(height: 24),
 
                   // ── SOCIAL LINKS ──
-                  _SectionLabel(
-                      label: 'SOCIAL LINKS', c: c),
+                  _SectionLabel(label: 'SOCIAL LINKS', c: c),
                   const SizedBox(height: 12),
                   _EditCard(
                     c: c,
@@ -517,8 +527,7 @@ class _EditProfileScreenState
                         hint: 'linkedin.com/in/username',
                         icon: Icons.work_outline_rounded,
                         iconBg: const Color(0xFFE8F4FD),
-                        iconColor:
-                            const Color(0xFF0077B5),
+                        iconColor: const Color(0xFF0077B5),
                         controller: _linkedinController,
                         keyboard: TextInputType.url,
                       ),
@@ -529,8 +538,7 @@ class _EditProfileScreenState
                         hint: 'facebook.com/username',
                         icon: Icons.facebook_rounded,
                         iconBg: const Color(0xFFE7F0FF),
-                        iconColor:
-                            const Color(0xFF1877F2),
+                        iconColor: const Color(0xFF1877F2),
                         controller: _facebookController,
                         keyboard: TextInputType.url,
                       ),
@@ -552,8 +560,7 @@ class _SectionLabel extends StatelessWidget {
   final String label;
   final ThemeColors c;
 
-  const _SectionLabel(
-      {required this.label, required this.c});
+  const _SectionLabel({required this.label, required this.c});
 
   @override
   Widget build(BuildContext context) {
@@ -578,8 +585,7 @@ class _EditCard extends StatelessWidget {
   final List<Widget> children;
   final ThemeColors c;
 
-  const _EditCard(
-      {required this.children, required this.c});
+  const _EditCard({required this.children, required this.c});
 
   @override
   Widget build(BuildContext context) {
@@ -633,15 +639,13 @@ class _EditField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg    = iconBg    ?? AppColors.primaryLight;
+    final bg = iconBg ?? AppColors.primaryLight;
     final color = iconColor ?? AppColors.primary;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(
-          horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Row(
         children: [
-
           // ── Icon ──
           Container(
             width: 36,
@@ -657,8 +661,7 @@ class _EditField extends StatelessWidget {
           // ── Input ──
           Expanded(
             child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   label,
@@ -708,12 +711,7 @@ class _Divider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Divider(
-      color: c.border,
-      thickness: 1,
-      height: 0,
-      indent: 66,
-    );
+    return Divider(color: c.border, thickness: 1, height: 0, indent: 66);
   }
 }
 
@@ -741,13 +739,11 @@ class _PickerOption extends StatelessWidget {
       onTap: onTap,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(
-            horizontal: 16, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         decoration: BoxDecoration(
           color: c.bg,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-              color: c.border, width: 1.24),
+          border: Border.all(color: c.border, width: 1.24),
         ),
         child: Row(
           children: [
@@ -758,8 +754,7 @@ class _PickerOption extends StatelessWidget {
                 color: iconBg,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icon,
-                  color: iconColor, size: 20),
+              child: Icon(icon, color: iconColor, size: 20),
             ),
             const SizedBox(width: 16),
             Text(
@@ -772,11 +767,7 @@ class _PickerOption extends StatelessWidget {
               ),
             ),
             const Spacer(),
-            Icon(
-              Icons.arrow_forward_ios_rounded,
-              color: c.textMuted,
-              size: 14,
-            ),
+            Icon(Icons.arrow_forward_ios_rounded, color: c.textMuted, size: 14),
           ],
         ),
       ),
