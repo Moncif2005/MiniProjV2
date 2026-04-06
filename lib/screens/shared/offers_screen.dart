@@ -238,68 +238,85 @@ class _OffersScreenState extends State<OffersScreen> {
   }
 
   // ✅ إدارة الوظيفة (للمسؤول فقط)
-  void _manageOffer(Map<String, dynamic> offer) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: context.colors.surface,
-      builder: (_) => Container(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Manage Job',
-              style: TextStyle(color: context.colors.textPrimary, fontSize: 20, fontFamily: 'Inter', fontWeight: FontWeight.w700)),
-            const SizedBox(height: 16),
-            ListTile(
-              leading: const Icon(Icons.edit_rounded, color: AppColors.purple),
-              title: const Text('Edit Job Details'),
-              onTap: () {
-                Navigator.pop(context);
-                // TODO: Navigate to edit screen
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.people_outline_rounded, color: AppColors.green),
-              title: Text('View Applicants (${offer['applicationsCount'] ?? 0})'),
-              onTap: () {
-                Navigator.pop(context);
-                // TODO: Navigate to applicants screen
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.close_rounded, color: AppColors.red),
-              title: const Text('Deactivate Job'),
-              titleTextStyle: TextStyle(color: AppColors.red, fontSize: 14, fontFamily: 'Inter', fontWeight: FontWeight.w600),
-              onTap: () async {
-                final confirmed = await showDialog<bool>(
-                  context: context,
-                  builder: (_) => AlertDialog(
-                    title: const Text('Deactivate this job?'),
-                    content: const Text('This will hide it from job seekers.'),
-                    actions: [
-                      TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-                      FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Deactivate')),
-                    ],
-                  ),
-                );
-                if (confirmed == true) {
-                  await _offersService.deactivateOffer(offer['id']);
-                  if (mounted) {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                      content: Text('Job deactivated'),
-                      backgroundColor: AppColors.green,
-                    ));
-                  }
+void _manageOffer(Map<String, dynamic> offer) {
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: context.colors.surface,
+    isScrollControlled: true,
+    builder: (_) => Container(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Manage Job',
+            style: TextStyle(color: context.colors.textPrimary, fontSize: 20, fontFamily: 'Inter', fontWeight: FontWeight.w700)),
+          const SizedBox(height: 16),
+          
+          // ✅ خيار 1: تعديل الوظيفة
+          ListTile(
+            leading: const Icon(Icons.edit_rounded, color: AppColors.purple),
+            title: const Text('Edit Job Details'),
+            onTap: () {
+              Navigator.pop(context);
+              // TODO: Navigate to edit screen with offer data
+              // مثال:
+              // Navigator.pushNamed(context, '/recruteur/edit-job', arguments: offer);
+            },
+          ),
+          
+          // ✅ خيار 2: عرض المتقدمين
+          ListTile(
+            leading: const Icon(Icons.people_outline_rounded, color: AppColors.green),
+            title: Text('View Applicants (${offer['applicationsCount'] ?? 0})'),
+            onTap: () {
+              Navigator.pop(context);
+              // TODO: Navigate to applicants screen
+              // مثال:
+              // Navigator.pushNamed(context, '/recruteur/applicants', arguments: offer['id']);
+            },
+          ),
+          
+          // ✅ خيار 3: إلغاء الوظيفة (مفعّل)
+          ListTile(
+            leading: const Icon(Icons.close_rounded, color: AppColors.red),
+            title: const Text('Deactivate Job'),
+            titleTextStyle: TextStyle(color: AppColors.red, fontSize: 14, fontFamily: 'Inter', fontWeight: FontWeight.w600),
+            onTap: () async {
+              Navigator.pop(context); // أغلق القائمة أولاً
+              
+              final confirmed = await showDialog<bool>(
+                context: context,
+                builder: (_) => AlertDialog(
+                  title: const Text('Deactivate this job?'),
+                  content: const Text('This will hide it from job seekers. You can reactivate it later.'),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+                    FilledButton(
+                      style: FilledButton.styleFrom(backgroundColor: AppColors.red),
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text('Deactivate', style: TextStyle(color: Colors.white)),
+                    ),
+                  ],
+                ),
+              );
+              
+              if (confirmed == true) {
+                final success = await _offersService.deactivateOffer(offer['id']);
+                if (mounted && success) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                    content: Text('Job deactivated'),
+                    backgroundColor: AppColors.green,
+                  ));
                 }
-              },
-            ),
-          ],
-        ),
+              }
+            },
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 

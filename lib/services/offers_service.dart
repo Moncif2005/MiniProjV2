@@ -234,6 +234,42 @@ Future<bool> hasUserAppliedToJob({
     return false;
   }
 }
+
+// ─────────────────────────────────────────────────────────────
+// ✅ WITHDRAW: سحب طلب التقديم (للطالب)
+// ─────────────────────────────────────────────────────────────
+Future<bool> withdrawApplication({
+  required String applicantId,
+  required String offerId,
+}) async {
+  try {
+    // 1. ابحث عن وثيقة التقديم
+    final snapshot = await _applicationsRef
+        .where('applicantId', isEqualTo: applicantId)
+        .where('offerId', isEqualTo: offerId)
+        .limit(1)
+        .get();
+    
+    if (snapshot.docs.isEmpty) return false;
+    
+    final appId = snapshot.docs.first.id;
+    
+    // 2. احذف وثيقة التقديم
+    await _applicationsRef.doc(appId).delete();
+    
+    // 3. ناقص عداد التقديمات في العرض الأصلي
+    await _offersRef.doc(offerId).update({
+      'applicationsCount': FieldValue.increment(-1),
+    });
+    
+    debugPrint('✅ Application withdrawn successfully');
+    return true;
+  } catch (e) {
+    debugPrint('❌ Error withdrawing application: $e');
+    return false;
+  }
+}
+
 }
 
 

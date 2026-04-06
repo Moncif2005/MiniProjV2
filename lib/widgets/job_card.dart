@@ -72,13 +72,7 @@ Future<bool> _checkIfApplied(BuildContext context) async {
     final isActive = _isDynamicMode ? (offer!['isActive'] ?? true) : true;
     final applicantsCount = _isDynamicMode ? offer!['applicationsCount'] : null;
 
-    return GestureDetector(
-      onTap: onTap ?? () {
-        if (_isDynamicMode && isRecruiter == false && onApply != null) {
-          onApply!();
-        }
-      },
-      child: Container(
+    return Container(
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(20),
         decoration: ShapeDecoration(
@@ -175,61 +169,72 @@ Row(
     if (_isDynamicMode && isRecruiter == false)
       Expanded(
         child: FutureBuilder<bool>(
-          // ✅ نتحقق مما إذا كان المستخدم قد قدم مسبقاً
-          future: _checkIfApplied(context),
-          builder: (context, snapshot) {
-            final hasApplied = snapshot.data ?? false;
-            
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              // أثناء التحقق: زر صغير دائري
-              return SizedBox(
-                height: 44,
-                child: OutlinedButton(
-                  onPressed: null,
-                  style: OutlinedButton.styleFrom(
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+  future: _checkIfApplied(context),
+  builder: (context, snapshot) {
+    final hasApplied = snapshot.data ?? false;
+    
+    if (snapshot.connectionState == ConnectionState.waiting) {
+      return SizedBox(
+        height: 44,
+        child: OutlinedButton(
+          onPressed: null,
+          child: const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+        ),
+      );
+    }
+    
+    if (hasApplied) {
+      // ✅ زر "إلغاء التقديم"
+      return Expanded(
+        child: OutlinedButton.icon(
+          onPressed: () async {
+            final confirmed = await showDialog<bool>(
+              context: context,
+              builder: (_) => AlertDialog(
+                title: const Text('Withdraw Application?'),
+                content: const Text('Are you sure you want to cancel your application?'),
+                actions: [
+                  TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Keep')),
+                  FilledButton(
+                    style: FilledButton.styleFrom(backgroundColor: AppColors.red),
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text('Withdraw', style: TextStyle(color: Colors.white)),
                   ),
-                  child: const SizedBox(
-                    width: 16, height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                ),
-              );
-            }
-            
-            if (hasApplied) {
-              // ✅ إذا قدم: زر "تم التقديم" غير قابل للنقر
-              return Container(
-                height: 44,
-                decoration: BoxDecoration(
-                  color: AppColors.green.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppColors.green),
-                ),
-                child: const Center(
-                  child: Text('✓ Applied',
-                    style: TextStyle(
-                      color: AppColors.green,
-                      fontSize: 14, fontFamily: 'Inter', fontWeight: FontWeight.w600)),
-                ),
-              );
-            }
-            
-            // ❌ إذا لم يقدم: زر "Apply Now" عادي
-            return FilledButton.icon(
-              onPressed: onApply,
-              icon: const Icon(Icons.send_rounded, size: 18),
-              label: const Text('Apply Now',
-                style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600)),
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ],
               ),
             );
+            
+            if (confirmed == true && onApply != null) {
+              // نعيد استخدام onApply للسحب (سنعدل منطقها في OffersScreen)
+              // أو نمرر onWithdraw كـ parameter جديد
+            }
           },
+          icon: const Icon(Icons.cancel_rounded, size: 18),
+          label: const Text('Withdraw', style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600)),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.red,
+            side: BorderSide(color: AppColors.red),
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          ),
         ),
+      );
+    }
+    
+    // ❌ زر "تقديم" عادي
+    return FilledButton.icon(
+      onPressed: onApply,
+      icon: const Icon(Icons.send_rounded, size: 18),
+      label: const Text('Apply Now', style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600)),
+      style: FilledButton.styleFrom(
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      ),
+    );
+  },
+)
       ),
     
     // زر الإدارة (للمسؤولين) - كما هو
@@ -259,7 +264,6 @@ Row(
   ],
 ),          ],
         ),
-      ),
     );
   }
 }
