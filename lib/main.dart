@@ -18,7 +18,7 @@ import 'screens/etudiant/profile_etudiant_screen.dart';
 // ── Enseignant ──
 import 'screens/enseignant/trash/home_enseignant_screen.dart';
 import 'screens/enseignant/enseignant_courses_screen.dart';
-import 'screens/enseignant/enseignant_profile_screen.dart';
+import 'screens/enseignant/trash/enseignant_profile_screen.dart';
 import 'screens/enseignant/create_course_screen.dart';
 
 // ── Recruteur ──
