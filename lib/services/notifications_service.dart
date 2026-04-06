@@ -126,7 +126,7 @@ class NotificationsService {
         'type':      type,
         'isUnread':  true,
         'createdAt': FieldValue.serverTimestamp(),
-        if (payload != null) 'payload': payload,
+        'payload': ?payload,
       });
     } catch (e) {
       debugPrint('❌ NotificationsService.pushNotification: $e');

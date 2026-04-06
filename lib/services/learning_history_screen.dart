@@ -28,7 +28,7 @@ class LearningHistoryScreen extends StatelessWidget {
         final minutes = (stats['totalLearningMinutes'] ?? 0) as int;
         final h = minutes ~/ 60;
         final m = minutes % 60;
-        return m == 0 ? '${h}h' : '${h}.${(m / 6).round()}h';
+        return m == 0 ? '${h}h' : '$h.${(m / 6).round()}h';
       default: return '0';
     }
   }

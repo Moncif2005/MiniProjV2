@@ -66,7 +66,7 @@ class LessonModel {
   };
 
   String get durationFormatted {
-    if (durationMinutes < 60) return '${durationMinutes} min';
+    if (durationMinutes < 60) return '$durationMinutes min';
     return '${durationMinutes ~/ 60}h ${durationMinutes % 60}min';
   }
 }

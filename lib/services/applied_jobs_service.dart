@@ -230,7 +230,7 @@ class AppliedJobsService {
     try {
       await _col.doc(applicationId).update({
         'status': ApplicationModel.statusToString(status),
-        if (statusMessage != null) 'statusMessage': statusMessage,
+        'statusMessage': ?statusMessage,
       });
     } catch (e) {
       debugPrint('❌ AppliedJobsService.updateStatus: $e');
