@@ -39,68 +39,51 @@ class _SignUpScreenState extends State<SignUpScreen> {
     return true;
   }
 
-  Future<void> _handleSignIn() async {
-    if (!_validateAll()) {
+Future<void> _handleSignIn() async {
+  if (!_validateAll()) {
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      content: Text('Please fix the errors before continuing.'),
+      backgroundColor: AppColors.red,
+      behavior: SnackBarBehavior.floating,
+    ));
+    return;
+  }
+
+  setState(() => _isLoading = true);
+  final authService = Provider.of<AuthService>(context, listen: false);
+
+  try {
+    final ok = await authService.signIn(
+      _emailController.text.trim(),
+      _passwordController.text.trim(),
+    );
+
+    if (ok && mounted) {
+      // ✅ نجاح! لا تضع أي Navigator هنا.
+      // فقط اعرض رسالة، وسيقوم AuthWrapper بالباقي.
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Please fix the errors before continuing.'),
+        content: Text('Welcome back! 🎉'),
+        backgroundColor: AppColors.green,
+        behavior: SnackBarBehavior.floating,
+      ));
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Sign in failed. Please check your credentials.'),
         backgroundColor: AppColors.red,
         behavior: SnackBarBehavior.floating,
       ));
-      return;
     }
-
-    setState(() => _isLoading = true);
-
-    final authService  = Provider.of<AuthService>(context, listen: false);
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-
-    try {
-      final ok = await authService.signIn(
-        _emailController.text.trim(),
-        _passwordController.text.trim(),
-      );
-
-      if (ok) {
-        // Sync Firebase profile into provider
-        final fbProfile = authService.userProfile;
-        if (fbProfile != null) {
-          userProvider.setUser(
-            name:  fbProfile['name']  ?? '',
-            email: fbProfile['email'] ?? '',
-          );
-        }
-        if (mounted) {
-          // Route based on stored role
-          final routes = {
-            UserRole.enseignant: '/enseignant/home',
-            UserRole.recruteur:  '/recruteur/home',
-            UserRole.etudiant:   '/etudiant/home',
-          };
-          final route = routes[userProvider.role] ?? '/etudiant/home';
-          Navigator.pushNamedAndRemoveUntil(context, route, (r) => false);
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('Sign in failed. Please check your credentials.'),
-            backgroundColor: AppColors.red,
-            behavior: SnackBarBehavior.floating,
-          ));
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('An error occurred. Please try again.'),
-          backgroundColor: AppColors.red,
-          behavior: SnackBarBehavior.floating,
-        ));
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+  } catch (e) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('An error occurred: $e'),
+        backgroundColor: AppColors.red,
+      ));
     }
+  } finally {
+    if (mounted) setState(() => _isLoading = false);
   }
-
+}
   @override
   Widget build(BuildContext context) {
     final c = context.colors;

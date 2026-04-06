@@ -1,8 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import '../../theme/app_colors.dart';
-import '../../widgets/certificate_card.dart';
-import '../../services/certificates_service.dart';
+import '../../../theme/app_colors.dart';
+import '../../../widgets/certificate_card.dart';
+import '../../../services/certificates_service.dart';
 
 class CertificatesScreen extends StatefulWidget {
   const CertificatesScreen({super.key});

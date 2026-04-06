@@ -16,45 +16,55 @@ class EnrolledCourse {
 }
 
 class UserProvider extends ChangeNotifier {
-  String   _name        = '';
-  String   _email       = '';
-  String   _phone       = '';
-  String   _description = '';
-  String   _github      = '';
-  String   _linkedin    = '';
-  String   _facebook    = '';
-  String?  _avatarPath;
-  UserRole _role        = UserRole.etudiant;
+  String _name = '';
+  String _email = '';
+  String _phone = '';
+  String _description = '';
+  String _github = '';
+  String _linkedin = '';
+  String _facebook = '';
+  String? _avatarPath;
+  UserRole _role = UserRole.etudiant;
+
+  // ✅ الجديد: حقل uid لتخزين معرف المستخدم الفريد
+  String? _uid;
 
   // ── Stats (from Auth) ──
-  int _courses  = 0;
-  int _points   = 0;
+  int _courses = 0;
+  int _points = 0;
   int _projects = 0;
 
   // ── Enrolled courses (from Moncif) ──
   final List<EnrolledCourse> _enrolledCourses = [];
 
   // ── Getters ──
-  String   get name           => _name;
-  String   get email          => _email;
-  String   get phone          => _phone;
-  String   get description    => _description;
-  String   get github         => _github;
-  String   get linkedin       => _linkedin;
-  String   get facebook       => _facebook;
-  String?  get avatarPath     => _avatarPath;
-  UserRole get role           => _role;
-  int      get courses        => _courses;
-  int      get points         => _points;
-  int      get projects       => _projects;
-  List<EnrolledCourse> get enrolledCourses => List.unmodifiable(_enrolledCourses);
+  String get name => _name;
+  String get email => _email;
+  String get phone => _phone;
+  String get description => _description;
+  String get github => _github;
+  String get linkedin => _linkedin;
+  String get facebook => _facebook;
+  String? get avatarPath => _avatarPath;
+  UserRole get role => _role;
+  int get courses => _courses;
+  int get points => _points;
+  int get projects => _projects;
+  List<EnrolledCourse> get enrolledCourses =>
+      List.unmodifiable(_enrolledCourses);
   bool get hasEnrolledCourses => _enrolledCourses.isNotEmpty;
+
+  // ✅ الجديد: Getter للـ uid
+  String? get uid => _uid;
 
   String get roleLabel {
     switch (_role) {
-      case UserRole.etudiant:   return 'Étudiant';
-      case UserRole.enseignant: return 'Enseignant';
-      case UserRole.recruteur:  return 'Recruteur';
+      case UserRole.etudiant:
+        return 'Étudiant';
+      case UserRole.enseignant:
+        return 'Enseignant';
+      case UserRole.recruteur:
+        return 'Recruteur';
     }
   }
 
@@ -71,11 +81,16 @@ class UserProvider extends ChangeNotifier {
   }
 
   // ── Called by AuthWrapper after Firebase login (keeps existing role) ──
-  void setUser({required String name, required String email}) {
-    _name     = name;
-    _email    = email;
-    _courses  = 0;
-    _points   = 0;
+  void setUser({
+    required String name,
+    required String email,
+    String? uid, // ✅ جديد: uid اختياري
+  }) {
+    _name = name;
+    _email = email;
+    if (uid != null) _uid = uid; // ✅ تحديثه فقط إذا وُجد
+    _courses = 0;
+    _points = 0;
     _projects = 0;
     notifyListeners();
   }
@@ -85,19 +100,21 @@ class UserProvider extends ChangeNotifier {
     required String name,
     required String email,
     required UserRole role,
+    String? uid, // ✅ جديد: uid اختياري
   }) {
-    _name        = name;
-    _email       = email;
-    _role        = role;
-    _courses     = 0;
-    _points      = 0;
-    _projects    = 0;
-    _phone       = '';
+    _name = name;
+    _email = email;
+    _role = role;
+    if (uid != null) _uid = uid; // ✅ تحديثه فقط إذا وُجد
+    _courses = 0;
+    _points = 0;
+    _projects = 0;
+    _phone = '';
     _description = '';
-    _github      = '';
-    _linkedin    = '';
-    _facebook    = '';
-    _avatarPath  = null;
+    _github = '';
+    _linkedin = '';
+    _facebook = '';
+    _avatarPath = null;
     _enrolledCourses.clear();
     notifyListeners();
   }
@@ -120,13 +137,13 @@ class UserProvider extends ChangeNotifier {
     String? avatarPath,
     bool clearAvatar = false,
   }) {
-    _name        = name;
-    _email       = email;
-    _phone       = phone;
+    _name = name;
+    _email = email;
+    _phone = phone;
     _description = description;
-    _github      = github;
-    _linkedin    = linkedin;
-    _facebook    = facebook;
+    _github = github;
+    _linkedin = linkedin;
+    _facebook = facebook;
     if (clearAvatar) {
       _avatarPath = null;
     } else if (avatarPath != null) {
@@ -136,7 +153,10 @@ class UserProvider extends ChangeNotifier {
   }
 
   // ── Course progress ──
-  void incrementCourses() { _courses++; notifyListeners(); }
+  void incrementCourses() {
+    _courses++;
+    notifyListeners();
+  }
 
   void enrollCourse(EnrolledCourse course) {
     if (!_enrolledCourses.any((c) => c.id == course.id)) {
@@ -155,18 +175,19 @@ class UserProvider extends ChangeNotifier {
 
   // ── Called on Log Out ──
   void clearUser() {
-    _name        = '';
-    _email       = '';
-    _phone       = '';
+    _name = '';
+    _email = '';
+    _phone = '';
     _description = '';
-    _github      = '';
-    _linkedin    = '';
-    _facebook    = '';
-    _avatarPath  = null;
-    _role        = UserRole.etudiant;
-    _courses     = 0;
-    _points      = 0;
-    _projects    = 0;
+    _github = '';
+    _linkedin = '';
+    _facebook = '';
+    _avatarPath = null;
+    _uid = null; // ✅ تصفير الـ uid عند الخروج
+    _role = UserRole.etudiant;
+    _courses = 0;
+    _points = 0;
+    _projects = 0;
     _enrolledCourses.clear();
     notifyListeners();
   }

@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:minipr/providers/user_provider.dart';
 import 'package:minipr/services/auth_service.dart';
@@ -217,22 +218,27 @@ class SettingsScreen extends StatelessWidget {
                     const SizedBox(height: 24),
 
                     // ── Log Out ──
+                    // ── Log Out ──
                     GestureDetector(
                       onTap: () async {
-                        // ── Clear user on logout ──
-                        final authService = Provider.of<AuthService>(
-                          context,
-                          listen: false,
-                        );
-                        await authService.signOut();
-                        context.read<AuthService>().signOut();
-                        context.read<UserProvider>().clearUser();
-                        if (context.mounted) {
+                        debugPrint('🚪 Logout tapped');
+                        try {
+                          // 1. تسجيل الخروج من Firebase
+                          await FirebaseAuth.instance.signOut();
+                          debugPrint('✅ FirebaseAuth signOut completed');
+
+                          // 2. مسح البيانات المحلية (آمن في StatelessWidget)
+                          context.read<UserProvider>().clearUser();
+                          debugPrint('✅ UserProvider cleared');
+
+                          // 3. توجيه صريح مضمون
                           Navigator.pushNamedAndRemoveUntil(
                             context,
-                            '/signup',
+                            '/home', // ✅ يشير لـ AuthWrapper في main.dart
                             (route) => false,
                           );
+                        } catch (e) {
+                          debugPrint('❌ Logout error: $e');
                         }
                       },
                       child: Container(

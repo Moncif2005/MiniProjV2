@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
@@ -29,16 +30,16 @@ class _ProfileRecruteurScreenState extends State<ProfileRecruteurScreen> {
           setState(() => _currentNavIndex = index);
           switch (index) {
             case 0:
-              Navigator.pushNamedAndRemoveUntil(
-                  context, '/recruteur/home', (route) => false);
+              Navigator.pushNamed(
+                context,
+                '/recruteur/home',
+              ); // ✅ بدون AndRemoveUntil
               break;
             case 1:
-              Navigator.pushNamedAndRemoveUntil(
-                  context, '/recruteur/jobs', (route) => false);
+              Navigator.pushNamed(context, '/recruteur/jobs');
               break;
             case 2:
-              Navigator.pushNamedAndRemoveUntil(
-                  context, '/offers', (route) => false);
+              Navigator.pushNamed(context, '/offers');
               break;
           }
         },
@@ -49,20 +50,24 @@ class _ProfileRecruteurScreenState extends State<ProfileRecruteurScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-
               // ── Header ──
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('My Profile',
-                      style: TextStyle(
-                        color: c.textPrimary, fontSize: 24,
-                        fontFamily: 'Inter', fontWeight: FontWeight.w700,
-                      )),
+                  Text(
+                    'My Profile',
+                    style: TextStyle(
+                      color: c.textPrimary,
+                      fontSize: 24,
+                      fontFamily: 'Inter',
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                   GestureDetector(
                     onTap: () => Navigator.pushNamed(context, '/edit-profile'),
                     child: Container(
-                      width: 38, height: 38,
+                      width: 38,
+                      height: 38,
                       decoration: ShapeDecoration(
                         color: c.surface,
                         shape: RoundedRectangleBorder(
@@ -70,8 +75,11 @@ class _ProfileRecruteurScreenState extends State<ProfileRecruteurScreen> {
                           borderRadius: BorderRadius.circular(14),
                         ),
                       ),
-                      child: Icon(Icons.edit_outlined,
-                          color: c.textSecondary, size: 18),
+                      child: Icon(
+                        Icons.edit_outlined,
+                        color: c.textSecondary,
+                        size: 18,
+                      ),
                     ),
                   ),
                 ],
@@ -90,8 +98,10 @@ class _ProfileRecruteurScreenState extends State<ProfileRecruteurScreen> {
                   ),
                   shadows: const [
                     BoxShadow(
-                      color: Color(0x19000000), blurRadius: 2,
-                      offset: Offset(0, 1), spreadRadius: -1,
+                      color: Color(0x19000000),
+                      blurRadius: 2,
+                      offset: Offset(0, 1),
+                      spreadRadius: -1,
                     ),
                   ],
                 ),
@@ -118,7 +128,8 @@ class _ProfileRecruteurScreenState extends State<ProfileRecruteurScreen> {
                             child: Stack(
                               children: [
                                 Container(
-                                  width: 96, height: 96,
+                                  width: 96,
+                                  height: 96,
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
                                     color: c.surface,
@@ -128,28 +139,38 @@ class _ProfileRecruteurScreenState extends State<ProfileRecruteurScreen> {
                                     child: Container(
                                       color: AppColors.purpleLight,
                                       child: Center(
-                                        child: Text(user.initials,
-                                            style: const TextStyle(
-                                              color: AppColors.purple,
-                                              fontSize: 28, fontFamily: 'Inter',
-                                              fontWeight: FontWeight.w700,
-                                            )),
+                                        child: Text(
+                                          user.initials,
+                                          style: const TextStyle(
+                                            color: AppColors.purple,
+                                            fontSize: 28,
+                                            fontFamily: 'Inter',
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
                                       ),
                                     ),
                                   ),
                                 ),
                                 Positioned(
-                                  bottom: 0, right: 0,
+                                  bottom: 0,
+                                  right: 0,
                                   child: Container(
-                                    width: 30, height: 30,
+                                    width: 30,
+                                    height: 30,
                                     decoration: BoxDecoration(
                                       color: AppColors.purple,
                                       shape: BoxShape.circle,
                                       border: Border.all(
-                                          color: c.surface, width: 2),
+                                        color: c.surface,
+                                        width: 2,
+                                      ),
                                     ),
-                                    child: const Icon(Icons.edit_rounded,
-                                        color: Colors.white, size: 14),
+                                    child: const Icon(
+                                      Icons.edit_rounded,
+                                      color: Colors.white,
+                                      size: 14,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -166,31 +187,42 @@ class _ProfileRecruteurScreenState extends State<ProfileRecruteurScreen> {
                                       ? user.name
                                       : 'Your Company',
                                   style: TextStyle(
-                                    color: c.textPrimary, fontSize: 20,
-                                    fontFamily: 'Inter', fontWeight: FontWeight.w700,
+                                    color: c.textPrimary,
+                                    fontSize: 20,
+                                    fontFamily: 'Inter',
+                                    fontWeight: FontWeight.w700,
                                   ),
                                 ),
                                 const SizedBox(height: 4),
-                                Text('HR Manager & Talent Acquisition',
-                                    style: TextStyle(
-                                      color: c.textSecondary, fontSize: 14,
-                                      fontFamily: 'Inter', fontWeight: FontWeight.w500,
-                                    )),
+                                Text(
+                                  'HR Manager & Talent Acquisition',
+                                  style: TextStyle(
+                                    color: c.textSecondary,
+                                    fontSize: 14,
+                                    fontFamily: 'Inter',
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
                                 const SizedBox(height: 8),
                                 // ── Recruteur Badge ──
                                 Container(
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 4),
+                                    horizontal: 12,
+                                    vertical: 4,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: AppColors.purpleLight,
                                     borderRadius: BorderRadius.circular(100),
                                   ),
-                                  child: const Text('Recruteur',
-                                      style: TextStyle(
-                                        color: AppColors.purple, fontSize: 12,
-                                        fontFamily: 'Inter',
-                                        fontWeight: FontWeight.w700,
-                                      )),
+                                  child: const Text(
+                                    'Recruteur',
+                                    style: TextStyle(
+                                      color: AppColors.purple,
+                                      fontSize: 12,
+                                      fontFamily: 'Inter',
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),
@@ -202,21 +234,40 @@ class _ProfileRecruteurScreenState extends State<ProfileRecruteurScreen> {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                _StatItem(value: '3', label: 'JOBS',
-                                    textColor: c.textPrimary,
-                                    labelColor: c.textMuted),
-                                Container(width: 1, height: 32, color: c.border,
-                                    margin: const EdgeInsets.symmetric(
-                                        horizontal: 16)),
-                                _StatItem(value: '73', label: 'CANDIDATES',
-                                    textColor: c.textPrimary,
-                                    labelColor: c.textMuted),
-                                Container(width: 1, height: 32, color: c.border,
-                                    margin: const EdgeInsets.symmetric(
-                                        horizontal: 16)),
-                                _StatItem(value: '8', label: 'HIRED',
-                                    textColor: c.textPrimary,
-                                    labelColor: c.textMuted),
+                                _StatItem(
+                                  value: '3',
+                                  label: 'JOBS',
+                                  textColor: c.textPrimary,
+                                  labelColor: c.textMuted,
+                                ),
+                                Container(
+                                  width: 1,
+                                  height: 32,
+                                  color: c.border,
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                  ),
+                                ),
+                                _StatItem(
+                                  value: '73',
+                                  label: 'CANDIDATES',
+                                  textColor: c.textPrimary,
+                                  labelColor: c.textMuted,
+                                ),
+                                Container(
+                                  width: 1,
+                                  height: 32,
+                                  color: c.border,
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                  ),
+                                ),
+                                _StatItem(
+                                  value: '8',
+                                  label: 'HIRED',
+                                  textColor: c.textPrimary,
+                                  labelColor: c.textMuted,
+                                ),
                               ],
                             ),
                           ),
@@ -242,23 +293,43 @@ class _ProfileRecruteurScreenState extends State<ProfileRecruteurScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Company Info',
-                        style: TextStyle(
-                          color: c.textPrimary, fontSize: 18,
-                          fontFamily: 'Inter', fontWeight: FontWeight.w700,
-                        )),
+                    Text(
+                      'Company Info',
+                      style: TextStyle(
+                        color: c.textPrimary,
+                        fontSize: 18,
+                        fontFamily: 'Inter',
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                     const SizedBox(height: 16),
-                    _InfoRow(c: c, icon: Icons.business_rounded,
-                        label: 'Company', value: 'TechCorp Solutions'),
+                    _InfoRow(
+                      c: c,
+                      icon: Icons.business_rounded,
+                      label: 'Company',
+                      value: 'TechCorp Solutions',
+                    ),
                     const SizedBox(height: 12),
-                    _InfoRow(c: c, icon: Icons.location_on_outlined,
-                        label: 'Location', value: 'Paris, France'),
+                    _InfoRow(
+                      c: c,
+                      icon: Icons.location_on_outlined,
+                      label: 'Location',
+                      value: 'Paris, France',
+                    ),
                     const SizedBox(height: 12),
-                    _InfoRow(c: c, icon: Icons.people_rounded,
-                        label: 'Company Size', value: '50–200 employees'),
+                    _InfoRow(
+                      c: c,
+                      icon: Icons.people_rounded,
+                      label: 'Company Size',
+                      value: '50–200 employees',
+                    ),
                     const SizedBox(height: 12),
-                    _InfoRow(c: c, icon: Icons.language_rounded,
-                        label: 'Industry', value: 'Technology & Software'),
+                    _InfoRow(
+                      c: c,
+                      icon: Icons.language_rounded,
+                      label: 'Industry',
+                      value: 'Technology & Software',
+                    ),
                   ],
                 ),
               ),
@@ -271,8 +342,7 @@ class _ProfileRecruteurScreenState extends State<ProfileRecruteurScreen> {
                 iconColor: AppColors.purple,
                 title: 'My Job Posts',
                 badge: '3',
-                onTap: () =>
-                    Navigator.pushNamed(context, '/recruteur/jobs'),
+                onTap: () => Navigator.pushNamed(context, '/recruteur/jobs'),
               ),
               const SizedBox(height: 8),
               ProfileMenuItem(
@@ -298,13 +368,29 @@ class _ProfileRecruteurScreenState extends State<ProfileRecruteurScreen> {
                 iconColor: AppColors.red,
                 title: 'Log Out',
                 isDestructive: true,
-                onTap: () {
-                  context.read<AuthService>().signOut();
-                  context.read<UserProvider>().clearUser();
-                  Navigator.pushNamedAndRemoveUntil(
-                      context, '/signup', (route) => false);
-                },
-              ),
+onTap: () async {
+  debugPrint('🚪 Logout tapped');
+  try {
+    // 1. تسجيل الخروج
+    await FirebaseAuth.instance.signOut();
+    debugPrint('✅ Signed out from Firebase');
+
+    // 2. مسح البيانات
+    if (mounted) context.read<UserProvider>().clearUser();
+
+    // 3. العودة لنقطة الصفر (AuthWrapper)
+    // هذا يضمن بقاء الحارس حياً ويعيد فحص الحالة
+    if (mounted) {
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        '/home',  // ✅ نعود للحارس وليس لصفحة تسجيل الدخول مباشرة
+        (route) => false,
+      );
+    }
+  } catch (e) {
+    debugPrint('❌ Logout error: $e');
+  }
+},              ),
               const SizedBox(height: 24),
             ],
           ),
@@ -320,15 +406,18 @@ class _InfoRow extends StatelessWidget {
   final String label, value;
 
   const _InfoRow({
-    required this.c, required this.icon,
-    required this.label, required this.value,
+    required this.c,
+    required this.icon,
+    required this.label,
+    required this.value,
   });
 
   @override
   Widget build(BuildContext context) => Row(
     children: [
       Container(
-        width: 36, height: 36,
+        width: 36,
+        height: 36,
         decoration: BoxDecoration(
           color: AppColors.purpleLight,
           borderRadius: BorderRadius.circular(10),
@@ -336,18 +425,29 @@ class _InfoRow extends StatelessWidget {
         child: Icon(icon, color: AppColors.purple, size: 16),
       ),
       const SizedBox(width: 12),
-      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(label,
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
             style: TextStyle(
-              color: c.textSecondary, fontSize: 11,
-              fontFamily: 'Inter', fontWeight: FontWeight.w500,
-            )),
-        Text(value,
+              color: c.textSecondary,
+              fontSize: 11,
+              fontFamily: 'Inter',
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          Text(
+            value,
             style: TextStyle(
-              color: c.textPrimary, fontSize: 14,
-              fontFamily: 'Inter', fontWeight: FontWeight.w600,
-            )),
-      ]),
+              color: c.textPrimary,
+              fontSize: 14,
+              fontFamily: 'Inter',
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
     ],
   );
 }
@@ -357,21 +457,34 @@ class _StatItem extends StatelessWidget {
   final Color textColor, labelColor;
 
   const _StatItem({
-    required this.value, required this.label,
-    required this.textColor, required this.labelColor,
+    required this.value,
+    required this.label,
+    required this.textColor,
+    required this.labelColor,
   });
 
   @override
-  Widget build(BuildContext context) => Column(children: [
-    Text(value,
+  Widget build(BuildContext context) => Column(
+    children: [
+      Text(
+        value,
         style: TextStyle(
-          color: textColor, fontSize: 18,
-          fontFamily: 'Inter', fontWeight: FontWeight.w700,
-        )),
-    Text(label,
+          color: textColor,
+          fontSize: 18,
+          fontFamily: 'Inter',
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+      Text(
+        label,
         style: TextStyle(
-          color: labelColor, fontSize: 10,
-          fontFamily: 'Inter', fontWeight: FontWeight.w700, letterSpacing: 1,
-        )),
-  ]);
+          color: labelColor,
+          fontSize: 10,
+          fontFamily: 'Inter',
+          fontWeight: FontWeight.w700,
+          letterSpacing: 1,
+        ),
+      ),
+    ],
+  );
 }

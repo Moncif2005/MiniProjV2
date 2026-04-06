@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
@@ -13,8 +14,7 @@ class ProfileEnseignantScreen extends StatefulWidget {
       _ProfileEnseignantScreenState();
 }
 
-class _ProfileEnseignantScreenState
-    extends State<ProfileEnseignantScreen> {
+class _ProfileEnseignantScreenState extends State<ProfileEnseignantScreen> {
   int _currentNavIndex = 3;
 
   @override
@@ -30,16 +30,16 @@ class _ProfileEnseignantScreenState
           setState(() => _currentNavIndex = index);
           switch (index) {
             case 0:
-              Navigator.pushNamedAndRemoveUntil(
-                  context, '/enseignant/home', (route) => false);
+              Navigator.pushNamed(
+                context,
+                '/enseignant/home',
+              ); // ✅ بدون AndRemoveUntil
               break;
             case 1:
-              Navigator.pushNamedAndRemoveUntil(
-                  context, '/enseignant/courses', (route) => false);
+              Navigator.pushNamed(context, '/enseignant/courses');
               break;
             case 2:
-              Navigator.pushNamedAndRemoveUntil(
-                  context, '/offers', (route) => false);
+              Navigator.pushNamed(context, '/offers');
               break;
           }
         },
@@ -52,30 +52,32 @@ class _ProfileEnseignantScreenState
             children: [
               // ── Header ──
               Row(
-                mainAxisAlignment:
-                    MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('My Profile',
-                      style: TextStyle(
-                        color: c.textPrimary,
-                        fontSize: 24,
-                        fontFamily: 'Inter',
-                        fontWeight: FontWeight.w700,
-                      )),
+                  Text(
+                    'My Profile',
+                    style: TextStyle(
+                      color: c.textPrimary,
+                      fontSize: 24,
+                      fontFamily: 'Inter',
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                   Container(
                     width: 38,
                     height: 38,
                     decoration: ShapeDecoration(
                       color: c.surface,
                       shape: RoundedRectangleBorder(
-                        side: BorderSide(
-                            width: 1.24, color: c.border),
-                        borderRadius:
-                            BorderRadius.circular(14),
+                        side: BorderSide(width: 1.24, color: c.border),
+                        borderRadius: BorderRadius.circular(14),
                       ),
                     ),
-                    child: Icon(Icons.edit_outlined,
-                        color: c.textSecondary, size: 18),
+                    child: Icon(
+                      Icons.edit_outlined,
+                      color: c.textSecondary,
+                      size: 18,
+                    ),
                   ),
                 ],
               ),
@@ -88,20 +90,21 @@ class _ProfileEnseignantScreenState
                 decoration: ShapeDecoration(
                   color: c.surface,
                   shape: RoundedRectangleBorder(
-                    side: BorderSide(
-                        width: 1.24, color: c.border),
+                    side: BorderSide(width: 1.24, color: c.border),
                     borderRadius: BorderRadius.circular(40),
                   ),
                   shadows: const [
                     BoxShadow(
-                        color: Color(0x19000000),
-                        blurRadius: 2,
-                        offset: Offset(0, 1),
-                        spreadRadius: -1),
+                      color: Color(0x19000000),
+                      blurRadius: 2,
+                      offset: Offset(0, 1),
+                      spreadRadius: -1,
+                    ),
                     BoxShadow(
-                        color: Color(0x19000000),
-                        blurRadius: 3,
-                        offset: Offset(0, 1)),
+                      color: Color(0x19000000),
+                      blurRadius: 3,
+                      offset: Offset(0, 1),
+                    ),
                   ],
                 ),
                 child: Column(
@@ -119,8 +122,7 @@ class _ProfileEnseignantScreenState
                     ),
 
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(
-                          24, 0, 24, 24),
+                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
                       child: Column(
                         children: [
                           Transform.translate(
@@ -134,8 +136,9 @@ class _ProfileEnseignantScreenState
                                     shape: BoxShape.circle,
                                     color: c.surface,
                                     border: Border.all(
-                                        color: Colors.white,
-                                        width: 3.73),
+                                      color: Colors.white,
+                                      width: 3.73,
+                                    ),
                                   ),
                                   child: ClipOval(
                                     child: Container(
@@ -147,8 +150,7 @@ class _ProfileEnseignantScreenState
                                             color: AppColors.green,
                                             fontSize: 28,
                                             fontFamily: 'Inter',
-                                            fontWeight:
-                                                FontWeight.w700,
+                                            fontWeight: FontWeight.w700,
                                           ),
                                         ),
                                       ),
@@ -165,13 +167,15 @@ class _ProfileEnseignantScreenState
                                       color: AppColors.primary,
                                       shape: BoxShape.circle,
                                       border: Border.all(
-                                          color: c.surface,
-                                          width: 2),
+                                        color: c.surface,
+                                        width: 2,
+                                      ),
                                     ),
                                     child: const Icon(
-                                        Icons.edit_rounded,
-                                        color: Colors.white,
-                                        size: 14),
+                                      Icons.edit_rounded,
+                                      color: Colors.white,
+                                      size: 14,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -207,15 +211,13 @@ class _ProfileEnseignantScreenState
 
                                 // ── Enseignant badge ──
                                 Container(
-                                  padding:
-                                      const EdgeInsets.symmetric(
-                                          horizontal: 12,
-                                          vertical: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 4,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: AppColors.greenLight,
-                                    borderRadius:
-                                        BorderRadius.circular(
-                                            100),
+                                    borderRadius: BorderRadius.circular(100),
                                   ),
                                   child: const Text(
                                     'Enseignant',
@@ -235,26 +237,28 @@ class _ProfileEnseignantScreenState
                           Transform.translate(
                             offset: const Offset(0, -24),
                             child: Row(
-                              mainAxisAlignment:
-                                  MainAxisAlignment.center,
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 _StatItem(
-                                    value: '12',
-                                    label: 'COURSES',
-                                    textColor: c.textPrimary,
-                                    labelColor: c.textMuted),
+                                  value: '12',
+                                  label: 'COURSES',
+                                  textColor: c.textPrimary,
+                                  labelColor: c.textMuted,
+                                ),
                                 Container(
-                                    width: 1,
-                                    height: 32,
-                                    color: c.border,
-                                    margin:
-                                        const EdgeInsets.symmetric(
-                                            horizontal: 16)),
+                                  width: 1,
+                                  height: 32,
+                                  color: c.border,
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                  ),
+                                ),
                                 _StatItem(
-                                    value: '8',
-                                    label: 'PROJECTS',
-                                    textColor: c.textPrimary,
-                                    labelColor: c.textMuted),
+                                  value: '8',
+                                  label: 'PROJECTS',
+                                  textColor: c.textPrimary,
+                                  labelColor: c.textMuted,
+                                ),
                               ],
                             ),
                           ),
@@ -270,8 +274,8 @@ class _ProfileEnseignantScreenState
               _SectionCard(
                 title: 'My Courses',
                 action: '+ Create New',
-                onActionTap: () => Navigator.pushNamed(
-                    context, '/enseignant/create-course'),
+                onActionTap: () =>
+                    Navigator.pushNamed(context, '/enseignant/create-course'),
                 children: const [
                   _CourseItem(
                     title: 'Arabic for Professionals',
@@ -301,8 +305,7 @@ class _ProfileEnseignantScreenState
                 iconBg: AppColors.primaryLight,
                 iconColor: AppColors.primary,
                 title: 'My Certificates',
-                onTap: () => Navigator.pushNamed(
-                    context, '/certificates'),
+                onTap: () => Navigator.pushNamed(context, '/certificates'),
               ),
               const SizedBox(height: 8),
               _ProfileMenuItem(
@@ -310,8 +313,7 @@ class _ProfileEnseignantScreenState
                 iconBg: const Color(0xFFFAFAFA),
                 iconColor: const Color(0xFF737373),
                 title: 'Parameters',
-                onTap: () =>
-                    Navigator.pushNamed(context, '/settings'),
+                onTap: () => Navigator.pushNamed(context, '/settings'),
               ),
               const SizedBox(height: 8),
               _ProfileMenuItem(
@@ -320,13 +322,29 @@ class _ProfileEnseignantScreenState
                 iconColor: AppColors.red,
                 title: 'Log Out',
                 isDestructive: true,
-                onTap: () {
-                  context.read<AuthService>().signOut();
-                  context.read<UserProvider>().clearUser();
-                  Navigator.pushNamedAndRemoveUntil(
-                      context, '/signup', (route) => false);
-                },
-              ),
+onTap: () async {
+  debugPrint('🚪 Logout tapped');
+  try {
+    // 1. تسجيل الخروج
+    await FirebaseAuth.instance.signOut();
+    debugPrint('✅ Signed out from Firebase');
+
+    // 2. مسح البيانات
+    if (mounted) context.read<UserProvider>().clearUser();
+
+    // 3. العودة لنقطة الصفر (AuthWrapper)
+    // هذا يضمن بقاء الحارس حياً ويعيد فحص الحالة
+    if (mounted) {
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        '/home',  // ✅ نعود للحارس وليس لصفحة تسجيل الدخول مباشرة
+        (route) => false,
+      );
+    }
+  } catch (e) {
+    debugPrint('❌ Logout error: $e');
+  }
+},             ),
               const SizedBox(height: 24),
             ],
           ),
@@ -353,21 +371,25 @@ class _StatItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(value,
-            style: TextStyle(
-              color: textColor,
-              fontSize: 18,
-              fontFamily: 'Inter',
-              fontWeight: FontWeight.w700,
-            )),
-        Text(label,
-            style: TextStyle(
-              color: labelColor,
-              fontSize: 10,
-              fontFamily: 'Inter',
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1,
-            )),
+        Text(
+          value,
+          style: TextStyle(
+            color: textColor,
+            fontSize: 18,
+            fontFamily: 'Inter',
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            color: labelColor,
+            fontSize: 10,
+            fontFamily: 'Inter',
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1,
+          ),
+        ),
       ],
     );
   }
@@ -399,14 +421,16 @@ class _SectionCard extends StatelessWidget {
         ),
         shadows: const [
           BoxShadow(
-              color: Color(0x19000000),
-              blurRadius: 2,
-              offset: Offset(0, 1),
-              spreadRadius: -1),
+            color: Color(0x19000000),
+            blurRadius: 2,
+            offset: Offset(0, 1),
+            spreadRadius: -1,
+          ),
           BoxShadow(
-              color: Color(0x19000000),
-              blurRadius: 3,
-              offset: Offset(0, 1)),
+            color: Color(0x19000000),
+            blurRadius: 3,
+            offset: Offset(0, 1),
+          ),
         ],
       ),
       child: Column(
@@ -415,23 +439,27 @@ class _SectionCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(title,
-                  style: TextStyle(
-                    color: c.textPrimary,
-                    fontSize: 18,
-                    fontFamily: 'Inter',
-                    fontWeight: FontWeight.w700,
-                  )),
+              Text(
+                title,
+                style: TextStyle(
+                  color: c.textPrimary,
+                  fontSize: 18,
+                  fontFamily: 'Inter',
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
               if (action != null)
                 GestureDetector(
                   onTap: onActionTap,
-                  child: Text(action!,
-                      style: const TextStyle(
-                        color: AppColors.green,
-                        fontSize: 14,
-                        fontFamily: 'Inter',
-                        fontWeight: FontWeight.w700,
-                      )),
+                  child: Text(
+                    action!,
+                    style: const TextStyle(
+                      color: AppColors.green,
+                      fontSize: 14,
+                      fontFamily: 'Inter',
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ),
             ],
           ),
@@ -475,43 +503,54 @@ class _CourseItem extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title,
-                    style: TextStyle(
-                      color: c.textPrimary,
-                      fontSize: 16,
-                      fontFamily: 'Inter',
-                      fontWeight: FontWeight.w700,
-                    )),
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: c.textPrimary,
+                    fontSize: 16,
+                    fontFamily: 'Inter',
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    Text('$students students',
-                        style: TextStyle(
-                            color: c.textSecondary,
-                            fontSize: 12,
-                            fontFamily: 'Inter')),
+                    Text(
+                      '$students students',
+                      style: TextStyle(
+                        color: c.textSecondary,
+                        fontSize: 12,
+                        fontFamily: 'Inter',
+                      ),
+                    ),
                     const SizedBox(width: 12),
-                    Text('⭐ $rating',
-                        style: TextStyle(
-                            color: c.textSecondary,
-                            fontSize: 12,
-                            fontFamily: 'Inter')),
+                    Text(
+                      '⭐ $rating',
+                      style: TextStyle(
+                        color: c.textSecondary,
+                        fontSize: 12,
+                        fontFamily: 'Inter',
+                      ),
+                    ),
                     const SizedBox(width: 12),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 2),
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.greenLight,
-                        borderRadius:
-                            BorderRadius.circular(100),
+                        borderRadius: BorderRadius.circular(100),
                       ),
-                      child: Text(status,
-                          style: const TextStyle(
-                            color: AppColors.green,
-                            fontSize: 12,
-                            fontFamily: 'Inter',
-                            fontWeight: FontWeight.w700,
-                          )),
+                      child: Text(
+                        status,
+                        style: const TextStyle(
+                          color: AppColors.green,
+                          fontSize: 12,
+                          fontFamily: 'Inter',
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -527,8 +566,11 @@ class _CourseItem extends StatelessWidget {
                   color: AppColors.primaryLight,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(Icons.edit_outlined,
-                    color: AppColors.primary, size: 16),
+                child: const Icon(
+                  Icons.edit_outlined,
+                  color: AppColors.primary,
+                  size: 16,
+                ),
               ),
               const SizedBox(width: 8),
               Container(
@@ -539,9 +581,10 @@ class _CourseItem extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(
-                    Icons.delete_outline_rounded,
-                    color: Color(0xFFFB2C36),
-                    size: 16),
+                  Icons.delete_outline_rounded,
+                  color: Color(0xFFFB2C36),
+                  size: 16,
+                ),
               ),
             ],
           ),
@@ -576,8 +619,7 @@ class _ProfileMenuItem extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(
-            horizontal: 16, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         decoration: ShapeDecoration(
           color: c.surface,
           shape: RoundedRectangleBorder(
@@ -586,10 +628,11 @@ class _ProfileMenuItem extends StatelessWidget {
           ),
           shadows: const [
             BoxShadow(
-                color: Color(0x19000000),
-                blurRadius: 2,
-                offset: Offset(0, 1),
-                spreadRadius: -1),
+              color: Color(0x19000000),
+              blurRadius: 2,
+              offset: Offset(0, 1),
+              spreadRadius: -1,
+            ),
           ],
         ),
         child: Row(
@@ -607,15 +650,15 @@ class _ProfileMenuItem extends StatelessWidget {
                   child: Icon(icon, color: iconColor, size: 18),
                 ),
                 const SizedBox(width: 16),
-                Text(title,
-                    style: TextStyle(
-                      color: isDestructive
-                          ? AppColors.red
-                          : c.textPrimary,
-                      fontSize: 14,
-                      fontFamily: 'Inter',
-                      fontWeight: FontWeight.w700,
-                    )),
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: isDestructive ? AppColors.red : c.textPrimary,
+                    fontSize: 14,
+                    fontFamily: 'Inter',
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ],
             ),
             Row(
@@ -623,24 +666,30 @@ class _ProfileMenuItem extends StatelessWidget {
                 if (badge != null) ...[
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 2),
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.primaryLight,
-                      borderRadius:
-                          BorderRadius.circular(100),
+                      borderRadius: BorderRadius.circular(100),
                     ),
-                    child: Text(badge!,
-                        style: const TextStyle(
-                          color: AppColors.primary,
-                          fontSize: 10,
-                          fontFamily: 'Inter',
-                          fontWeight: FontWeight.w900,
-                        )),
+                    child: Text(
+                      badge!,
+                      style: const TextStyle(
+                        color: AppColors.primary,
+                        fontSize: 10,
+                        fontFamily: 'Inter',
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
                   ),
                   const SizedBox(width: 8),
                 ],
-                Icon(Icons.arrow_forward_ios_rounded,
-                    color: c.textMuted, size: 16),
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  color: c.textMuted,
+                  size: 16,
+                ),
               ],
             ),
           ],

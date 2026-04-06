@@ -1,8 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import '../../theme/app_colors.dart';
-import '../../services/lessons_service.dart';
-import '../../services/learning_history_service.dart';
+import '../../../theme/app_colors.dart';
+import '../../../services/lessons_service.dart';
+import '../../../services/learning_history_service.dart';
 
 // ── Route args ──────────────────────────────────────────────────────────────
 class LessonScreenArgs {

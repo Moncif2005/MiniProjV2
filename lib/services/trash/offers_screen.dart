@@ -1,12 +1,12 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../theme/app_colors.dart';
-import '../../widgets/bottom_nav_bar.dart';
-import '../../widgets/offer_card.dart';
-import '../../providers/user_provider.dart';
-import '../../services/offers_service.dart';
-import '../../services/applied_jobs_service.dart';
+import '../../../theme/app_colors.dart';
+import '../../../widgets/bottom_nav_bar.dart';
+import '../../../widgets/offer_card.dart';
+import '../../../providers/user_provider.dart';
+import '../../../services/offers_service.dart';
+import '../../../services/applied_jobs_service.dart';
 
 class OffersScreen extends StatefulWidget {
   const OffersScreen({super.key});

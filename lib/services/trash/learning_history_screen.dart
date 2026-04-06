@@ -1,8 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:minipr/theme/app_colors.dart';
-import '../../services/learning_history_service.dart';
-import '../../widgets/learning_course_card.dart';
+import '../../../services/learning_history_service.dart';
+import '../../../widgets/learning_course_card.dart';
 
 class LearningHistoryScreen extends StatelessWidget {
   const LearningHistoryScreen({super.key});

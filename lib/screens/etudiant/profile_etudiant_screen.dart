@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
@@ -391,13 +392,29 @@ class _ProfileEtudiantScreenState extends State<ProfileEtudiantScreen> {
                 iconColor: AppColors.red,
                 title: 'Log Out',
                 isDestructive: true,
-                onTap: () {
-                  context.read<AuthService>().signOut();
-                  context.read<UserProvider>().clearUser();
-                  Navigator.pushNamedAndRemoveUntil(
-                      context, '/signup', (route) => false);
-                },
-              ),
+onTap: () async {
+  debugPrint('🚪 Logout tapped');
+  try {
+    // 1. تسجيل الخروج
+    await FirebaseAuth.instance.signOut();
+    debugPrint('✅ Signed out from Firebase');
+
+    // 2. مسح البيانات
+    if (mounted) context.read<UserProvider>().clearUser();
+
+    // 3. العودة لنقطة الصفر (AuthWrapper)
+    // هذا يضمن بقاء الحارس حياً ويعيد فحص الحالة
+    if (mounted) {
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        '/home',  // ✅ نعود للحارس وليس لصفحة تسجيل الدخول مباشرة
+        (route) => false,
+      );
+    }
+  } catch (e) {
+    debugPrint('❌ Logout error: $e');
+  }
+}, ),
               const SizedBox(height: 24),
             ],
           ),
