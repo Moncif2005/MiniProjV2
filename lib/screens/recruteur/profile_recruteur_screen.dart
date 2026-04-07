@@ -7,6 +7,7 @@ import '../../theme/app_colors.dart';
 import '../../providers/user_provider.dart';
 import '../../widgets/bottom_nav_bar.dart';
 import '../../widgets/profile_menu_item.dart';
+import '../../services/offers_service.dart';
 
 class ProfileRecruteurScreen extends StatefulWidget {
   const ProfileRecruteurScreen({super.key});
@@ -16,16 +17,53 @@ class ProfileRecruteurScreen extends StatefulWidget {
 
 class _ProfileRecruteurScreenState extends State<ProfileRecruteurScreen> {
   int _currentNavIndex = 3;
+  Map<String, dynamic> _stats = {
+    'jobsPosted': 0,
+    'totalApplicants': 0,
+    'hiredCount': 0,
+  };
+  bool _statsLoading = true;
+  final _offersService = OffersService();
+
+  // ✅ تحميل الإحصائيات عند فتح الشاشة
+  @override
+  void initState() {
+    super.initState();
+    _loadStats();
+  }
+
+  Future<void> _loadStats() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) {
+      final stats = await _offersService.getRecruiterStats(uid);
+      if (mounted) {
+        setState(() {
+          _stats = stats;
+          _statsLoading = false;
+        });
+      }
+    }
+  }
+
+  // ✅ إعادة تحميل الإحصائيات عند العودة من شاشة التعديل
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // إعادة التحميل إذا عدنا من EditProfileScreen
+    if (ModalRoute.of(context)?.settings.name == '/edit-profile') {
+      _loadStats();
+    }
+  }
 
   // ── Helper: Build initials avatar ──
   Widget _buildInitials(ThemeColors c, UserProvider user) {
     return Container(
-      color: AppColors.purpleLight, // ✅ لون الخلفية بنفسجي
+      color: AppColors.purpleLight,
       child: Center(
         child: Text(
           user.initials,
           style: const TextStyle(
-            color: AppColors.purple, // ✅ لون النص بنفسجي غامق
+            color: AppColors.purple,
             fontSize: 28,
             fontFamily: 'Inter',
             fontWeight: FontWeight.w700,
@@ -38,8 +76,7 @@ class _ProfileRecruteurScreenState extends State<ProfileRecruteurScreen> {
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    final user = context
-        .watch<UserProvider>(); // ✅ هذا السطر يضمن التحديث التلقائي
+    final user = context.watch<UserProvider>();
 
     return Scaffold(
       backgroundColor: c.bg,
@@ -52,6 +89,7 @@ class _ProfileRecruteurScreenState extends State<ProfileRecruteurScreen> {
               Navigator.pushNamed(context, '/recruteur/home');
               break;
             case 1:
+              // ✅ "My Job Posts" → شاشة وظائف المسؤول فقط
               Navigator.pushNamed(context, '/recruteur/jobs');
               break;
             case 2:
@@ -137,7 +175,7 @@ class _ProfileRecruteurScreenState extends State<ProfileRecruteurScreen> {
                       padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
                       child: Column(
                         children: [
-                          // ── Avatar (تم الإصلاح) ──
+                          // ── Avatar ──
                           Transform.translate(
                             offset: const Offset(0, -48),
                             child: Stack(
@@ -151,7 +189,6 @@ class _ProfileRecruteurScreenState extends State<ProfileRecruteurScreen> {
                                   ),
                                   padding: const EdgeInsets.all(4),
                                   child: ClipOval(
-                                    // ✅ تم إزالة ClipOval المكرر هنا
                                     child:
                                         (user.avatarPath != null &&
                                             user.avatarPath!.isNotEmpty)
@@ -160,9 +197,8 @@ class _ProfileRecruteurScreenState extends State<ProfileRecruteurScreen> {
                                                   user.avatarPath!,
                                                   fit: BoxFit.cover,
                                                   loadingBuilder: (_, child, progress) {
-                                                    if (progress == null) {
+                                                    if (progress == null)
                                                       return child;
-                                                    }
                                                     return Center(
                                                       child: CircularProgressIndicator(
                                                         value:
@@ -192,21 +228,27 @@ class _ProfileRecruteurScreenState extends State<ProfileRecruteurScreen> {
                                 Positioned(
                                   bottom: 0,
                                   right: 0,
-                                  child: Container(
-                                    width: 30,
-                                    height: 30,
-                                    decoration: BoxDecoration(
-                                      color: AppColors.purple,
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: c.surface,
-                                        width: 2,
-                                      ),
+                                  child: GestureDetector(
+                                    onTap: () => Navigator.pushNamed(
+                                      context,
+                                      '/edit-profile',
                                     ),
-                                    child: const Icon(
-                                      Icons.edit_rounded,
-                                      color: Colors.white,
-                                      size: 14,
+                                    child: Container(
+                                      width: 30,
+                                      height: 30,
+                                      decoration: BoxDecoration(
+                                        color: AppColors.purple,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: c.surface,
+                                          width: 2,
+                                        ),
+                                      ),
+                                      child: const Icon(
+                                        Icons.edit_rounded,
+                                        color: Colors.white,
+                                        size: 14,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -232,7 +274,9 @@ class _ProfileRecruteurScreenState extends State<ProfileRecruteurScreen> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  'HR Manager & Talent Acquisition',
+                                  user.bio.isNotEmpty
+                                      ? user.bio
+                                      : 'HR Manager & Talent Acquisition',
                                   style: TextStyle(
                                     color: c.textSecondary,
                                     fontSize: 14,
@@ -250,9 +294,11 @@ class _ProfileRecruteurScreenState extends State<ProfileRecruteurScreen> {
                                     color: AppColors.purpleLight,
                                     borderRadius: BorderRadius.circular(100),
                                   ),
-                                  child: const Text(
-                                    'Recruteur',
-                                    style: TextStyle(
+                                  child: Text(
+                                    user.roleLabel.isNotEmpty
+                                        ? user.roleLabel
+                                        : 'Recruteur',
+                                    style: const TextStyle(
                                       color: AppColors.purple,
                                       fontSize: 12,
                                       fontFamily: 'Inter',
@@ -264,48 +310,57 @@ class _ProfileRecruteurScreenState extends State<ProfileRecruteurScreen> {
                             ),
                           ),
 
-                          // ── Stats ──
+                          // ── Stats (ديناميكية من Firestore) ──
                           Transform.translate(
                             offset: const Offset(0, -24),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                _StatItem(
-                                  value: '3',
-                                  label: 'JOBS',
-                                  textColor: c.textPrimary,
-                                  labelColor: c.textMuted,
-                                ),
-                                Container(
-                                  width: 1,
-                                  height: 32,
-                                  color: c.border,
-                                  margin: const EdgeInsets.symmetric(
-                                    horizontal: 16,
+                            child: _statsLoading
+                                ? const SizedBox(
+                                    height: 32,
+                                    child: Center(
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    ),
+                                  )
+                                : Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      _StatItem(
+                                        value: '${_stats['jobsPosted']}',
+                                        label: 'JOBS',
+                                        textColor: c.textPrimary,
+                                        labelColor: c.textMuted,
+                                      ),
+                                      Container(
+                                        width: 1,
+                                        height: 32,
+                                        color: c.border,
+                                        margin: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                        ),
+                                      ),
+                                      _StatItem(
+                                        value: '${_stats['totalApplicants']}',
+                                        label: 'CANDIDATES',
+                                        textColor: c.textPrimary,
+                                        labelColor: c.textMuted,
+                                      ),
+                                      Container(
+                                        width: 1,
+                                        height: 32,
+                                        color: c.border,
+                                        margin: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                        ),
+                                      ),
+                                      _StatItem(
+                                        value: '${_stats['hiredCount']}',
+                                        label: 'HIRED',
+                                        textColor: c.textPrimary,
+                                        labelColor: c.textMuted,
+                                      ),
+                                    ],
                                   ),
-                                ),
-                                _StatItem(
-                                  value: '73',
-                                  label: 'CANDIDATES',
-                                  textColor: c.textPrimary,
-                                  labelColor: c.textMuted,
-                                ),
-                                Container(
-                                  width: 1,
-                                  height: 32,
-                                  color: c.border,
-                                  margin: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                  ),
-                                ),
-                                _StatItem(
-                                  value: '8',
-                                  label: 'HIRED',
-                                  textColor: c.textPrimary,
-                                  labelColor: c.textMuted,
-                                ),
-                              ],
-                            ),
                           ),
                         ],
                       ),
@@ -315,7 +370,7 @@ class _ProfileRecruteurScreenState extends State<ProfileRecruteurScreen> {
               ),
               const SizedBox(height: 24),
 
-              // ── Company Info ──
+              // ── Company Info (مع زر تعديل) ──
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
@@ -329,28 +384,49 @@ class _ProfileRecruteurScreenState extends State<ProfileRecruteurScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Company Info',
-                      style: TextStyle(
-                        color: c.textPrimary,
-                        fontSize: 18,
-                        fontFamily: 'Inter',
-                        fontWeight: FontWeight.w700,
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Company Info',
+                          style: TextStyle(
+                            color: c.textPrimary,
+                            fontSize: 18,
+                            fontFamily: 'Inter',
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        // ✅ زر تعديل معلومات الشركة
+                        TextButton.icon(
+                          onPressed: () =>
+                              Navigator.pushNamed(context, '/edit-profile'),
+                          icon: const Icon(Icons.edit_rounded, size: 16),
+                          label: const Text(
+                            'Edit',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppColors.purple,
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 16),
                     _InfoRow(
                       c: c,
                       icon: Icons.business_rounded,
                       label: 'Company',
-                      value: 'TechCorp Solutions',
+                      value: user.name.isNotEmpty ? user.name : '—',
                     ),
                     const SizedBox(height: 12),
                     _InfoRow(
                       c: c,
                       icon: Icons.location_on_outlined,
                       label: 'Location',
-                      value: 'Paris, France',
+                      value: user.phone.isNotEmpty ? user.phone : '—',
                     ),
                     const SizedBox(height: 12),
                     _InfoRow(
@@ -377,8 +453,11 @@ class _ProfileRecruteurScreenState extends State<ProfileRecruteurScreen> {
                 iconBg: AppColors.purpleLight,
                 iconColor: AppColors.purple,
                 title: 'My Job Posts',
-                badge: '3',
-                onTap: () => Navigator.pushNamed(context, '/recruteur/jobs'),
+                badge: _statsLoading ? null : '${_stats['jobsPosted']}',
+                onTap: () => Navigator.pushNamed(
+                  context,
+                  '/recruteur/jobs',
+                ), // ✅ شاشة وظائف المسؤول
               ),
               const SizedBox(height: 8),
               ProfileMenuItem(
@@ -386,10 +465,11 @@ class _ProfileRecruteurScreenState extends State<ProfileRecruteurScreen> {
                 iconBg: AppColors.primaryLight,
                 iconColor: AppColors.primary,
                 title: 'Candidates',
-                badge: '73',
-                onTap: () {
-                  Navigator.pushNamed(context, '/recruteur/applicants');
-                },
+                badge: _statsLoading ? null : '${_stats['totalApplicants']}',
+                onTap: () => Navigator.pushNamed(
+                  context,
+                  '/recruteur/applicants',
+                ), // ✅ شاشة جميع المتقدمين
               ),
               const SizedBox(height: 8),
               ProfileMenuItem(

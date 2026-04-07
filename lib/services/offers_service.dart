@@ -218,6 +218,72 @@ Future<bool> updateApplicationStatus({
     }
   }
 
+// ─────────────────────────────────────────────────────────────
+// ✅ STATS: جلب إحصائيات مسؤول التوظيف
+// ─────────────────────────────────────────────────────────────
+Future<Map<String, dynamic>> getRecruiterStats(String recruiterId) async {
+  try {
+    // 1. عدد الوظائف النشطة
+    final jobsSnapshot = await _offersRef
+        .where('recruiterId', isEqualTo: recruiterId)
+        .where('isActive', isEqualTo: true)
+        .count()
+        .get();
+    
+    // 2. إجمالي المتقدمين لكل الوظائف
+    final appsSnapshot = await _applicationsRef
+        .where('offerId', whereIn: await _offersRef
+            .where('recruiterId', isEqualTo: recruiterId)
+            .get()
+            .then((s) => s.docs.map((d) => d.id).toList()))
+        .count()
+        .get();
+    
+    // 3. عدد المقبولين (hired)
+    final hiredSnapshot = await _applicationsRef
+        .where('offerId', whereIn: await _offersRef
+            .where('recruiterId', isEqualTo: recruiterId)
+            .get()
+            .then((s) => s.docs.map((d) => d.id).toList()))
+        .where('status', isEqualTo: 'accepted')
+        .count()
+        .get();
+
+    return {
+      'jobsPosted': jobsSnapshot.count ?? 0,
+      'totalApplicants': appsSnapshot.count ?? 0,
+      'hiredCount': hiredSnapshot.count ?? 0,
+    };
+  } catch (e) {
+    debugPrint('❌ Error fetching recruiter stats: $e');
+    return {'jobsPosted': 0, 'totalApplicants': 0, 'hiredCount': 0};
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// ✅ READ: جلب جميع المتقدمين لوظائف مسؤول معين
+// ─────────────────────────────────────────────────────────────
+Stream<List<Map<String, dynamic>>> getAllApplicantsForRecruiter(String recruiterId) {
+  // نحتاج أولاً لجلب معرفات وظائف هذا المسؤول
+  return _offersRef
+      .where('recruiterId', isEqualTo: recruiterId)
+      .snapshots()
+      .asyncMap((offersSnapshot) async {
+        final offerIds = offersSnapshot.docs.map((d) => d.id).toList();
+        if (offerIds.isEmpty) return <Map<String, dynamic>>[];
+        
+        final appsSnapshot = await _applicationsRef
+            .where('offerId', whereIn: offerIds)
+            .orderBy('appliedAt', descending: true)
+            .get();
+        
+        return appsSnapshot.docs.map((doc) {
+          final data = doc.data();
+          data['id'] = doc.id;
+          return data;
+        }).toList();
+      });
+}
 
   // ─────────────────────────────────────────────────────────────
 // ✅ CHECK: هل قدم هذا المستخدم على هذه الوظيفة من قبل؟

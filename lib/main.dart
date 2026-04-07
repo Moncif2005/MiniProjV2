@@ -5,6 +5,7 @@ import 'package:minipr/screens/auth_wrapper.dart';
 import 'package:minipr/screens/recruteur/applicants_screen.dart';
 import 'package:minipr/screens/recruteur/edit_offer_screen.dart';
 import 'package:minipr/screens/recruteur/manage_offer_screen.dart';
+import 'package:minipr/screens/recruteur/recruiter_applicants_screen.dart';
 import 'package:minipr/services/auth_service.dart';
 import 'package:provider/provider.dart';
 import 'theme/app_theme.dart';
@@ -110,17 +111,7 @@ class MyApp extends StatelessWidget {
             return const Scaffold(body: Center(child: Text('Invalid')));
           return EditOfferScreen(offer: args);
         },
-        '/recruteur/applicants': (context) {
-          final args =
-              ModalRoute.of(context)?.settings.arguments
-                  as Map<String, dynamic>?;
-          if (args == null)
-            return const Scaffold(body: Center(child: Text('Invalid')));
-          return ApplicantsScreen(
-            offerId: args['offerId'],
-            offerTitle: args['offerTitle'],
-          );
-        },
+        '/recruteur/applicants': (context) => const RecruiterApplicantsScreen(),
 
         // ── Shared routes (role-aware navigation) ──
         '/offers': (context) => const OffersScreen(),
