@@ -2,6 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:minipr/firebase_options.dart';
 import 'package:minipr/screens/auth_wrapper.dart';
+import 'package:minipr/screens/enseignant/enseignant_home_screen.dart';
 import 'package:minipr/screens/recruteur/applicants_screen.dart';
 import 'package:minipr/screens/recruteur/edit_offer_screen.dart';
 import 'package:minipr/screens/recruteur/manage_offer_screen.dart';
@@ -20,8 +21,6 @@ import 'screens/etudiant/learn_etudiant_screen.dart';
 import 'screens/etudiant/profile_etudiant_screen.dart';
 
 // ── Enseignant ──
-import 'screens/enseignant/trash/home_enseignant_screen.dart';
-import 'screens/enseignant/enseignant_courses_screen.dart';
 import 'screens/enseignant/enseignant_profile_screen.dart';
 import 'screens/enseignant/create_course_screen.dart';
 
@@ -33,7 +32,6 @@ import 'screens/recruteur/post_job_screen.dart';
 
 // ── Shared (role-aware navigation) ──
 import 'screens/shared/offers_screen.dart';
-import 'screens/shared/learn_screen.dart';
 import 'screens/shared/lesson_screen.dart';
 import 'screens/shared/notification_screen.dart';
 import 'screens/shared/edit_profile_screen.dart';
@@ -83,39 +81,41 @@ class MyApp extends StatelessWidget {
         '/etudiant/profile': (context) => const ProfileEtudiantScreen(),
 
         // ── Enseignant routes ──
-        '/enseignant/home': (context) => const HomeEnseignantScreen(),
-        '/enseignant/courses': (context) => const EnseignantCoursesScreen(),
+        '/enseignant/home': (context) =>
+            const EnseignantHomeScreen(), // ← نفس اسم الكلاس في الملف        '/enseignant/courses': (context) => const EnseignantCoursesScreen(),
         '/enseignant/profile': (context) => const ProfileEnseignantScreen(),
         '/enseignant/create-course': (context) => const CreateCourseScreen(),
 
         // ── Recruteur routes ──
-        '/recruteur/home': (context) => const HomeRecruteurScreen(),
-        '/recruteur/jobs': (context) => const JobsRecruteurScreen(),
+        '/recruteur/home': (context) =>
+            const HomeRecruteurScreen(), // ← نفس اسم الكلاس        '/recruteur/jobs': (context) => const JobsRecruteurScreen(),
         '/recruteur/profile': (context) => const ProfileRecruteurScreen(),
         '/recruteur/post-job': (context) => const PostJobScreen(),
         '/recruteur/manage-offer': (context) {
           final args =
               ModalRoute.of(context)?.settings.arguments
                   as Map<String, dynamic>?;
-          if (args == null)
+          if (args == null) {
             return const Scaffold(
               body: Center(child: Text('Invalid arguments')),
             );
+          }
           return ManageOfferScreen(offer: args);
         },
         '/recruteur/edit-offer': (context) {
           final args =
               ModalRoute.of(context)?.settings.arguments
                   as Map<String, dynamic>?;
-          if (args == null)
+          if (args == null) {
             return const Scaffold(body: Center(child: Text('Invalid')));
+          }
           return EditOfferScreen(offer: args);
         },
         '/recruteur/applicants': (context) => const RecruiterApplicantsScreen(),
 
         // ── Shared routes (role-aware navigation) ──
         '/offers': (context) => const OffersScreen(),
-        '/learn': (context) => const LearnScreen(),
+        // '/learn': (context) => const LearnScreen(),
         '/lesson': (context) => const LessonScreen(),
         '/notifications': (context) => const NotificationScreen(),
         '/edit-profile': (context) => const EditProfileScreen(),

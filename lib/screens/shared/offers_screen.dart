@@ -29,6 +29,7 @@ class _OffersScreenState extends State<OffersScreen> {
   // ✅ 1. منطق التقديم
   Future<void> _applyToJob(Map<String, dynamic> offer) async {
     final user = FirebaseAuth.instance.currentUser;
+    
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     
     if (user == null) {
@@ -107,15 +108,16 @@ class _OffersScreenState extends State<OffersScreen> {
     }
   }
 
-// ✅ دالة إدارة الوظيفة - تستخدم Navigator.push لتجنب مشاكل الـ Context
-void _manageOffer(Map<String, dynamic> offer) {
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (_) => ManageOfferScreen(offer: offer),
-    ),
-  );
-}
+  // ✅ دالة إدارة الوظيفة - تستخدم Navigator.push لتجنب مشاكل الـ Context
+  void _manageOffer(Map<String, dynamic> offer) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ManageOfferScreen(offer: offer),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
@@ -139,8 +141,15 @@ void _manageOffer(Map<String, dynamic> offer) {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Job Offers',
-                      style: TextStyle(color: c.textPrimary, fontSize: 24, fontFamily: 'Inter', fontWeight: FontWeight.w700)),
+                    Text(
+                      'Job Offers',
+                      style: TextStyle(
+                        color: c.textPrimary,
+                        fontSize: 24,
+                        fontFamily: 'Inter',
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                     // زر نشر وظيفة (يظهر للمسؤول فقط)
                     if (isRecruiter)
                       GestureDetector(
@@ -151,11 +160,21 @@ void _manageOffer(Map<String, dynamic> offer) {
                             color: AppColors.purple,
                             borderRadius: BorderRadius.circular(14),
                           ),
-                          child: const Row(children: [
-                            Icon(Icons.add_rounded, color: Colors.white, size: 18),
-                            SizedBox(width: 4),
-                            Text('Post Job', style: TextStyle(color: Colors.white, fontSize: 14, fontFamily: 'Inter', fontWeight: FontWeight.w600)),
-                          ]),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.add_rounded, color: Colors.white, size: 18),
+                              SizedBox(width: 4),
+                              Text(
+                                'Post Job',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  fontFamily: 'Inter',
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                   ],
@@ -181,7 +200,7 @@ void _manageOffer(Map<String, dynamic> offer) {
                       border: InputBorder.none,
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     ),
-                    onChanged: (_) => setState(() {}), // تحديث عند الكتابة
+                    onChanged: (_) => setState(() {}),
                   ),
                 ),
               ],
@@ -202,7 +221,7 @@ void _manageOffer(Map<String, dynamic> offer) {
                     decoration: BoxDecoration(
                       color: isSelected ? AppColors.purple : c.surface,
                       borderRadius: BorderRadius.circular(100),
-                      border: Border.all(color: isSelected ? AppColors.purple : c.border!),
+                      border: Border.all(color: isSelected ? AppColors.purple : c.border),
                     ),
                     child: Material(
                       color: Colors.transparent,
@@ -211,13 +230,15 @@ void _manageOffer(Map<String, dynamic> offer) {
                         onTap: () => setState(() => _selectedType = type == 'All' ? null : type),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          child: Text(type,
+                          child: Text(
+                            type,
                             style: TextStyle(
                               color: isSelected ? Colors.white : c.textPrimary,
                               fontSize: 13,
                               fontFamily: 'Inter',
                               fontWeight: FontWeight.w600,
-                            )),
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -240,7 +261,12 @@ void _manageOffer(Map<String, dynamic> offer) {
                 }
                 
                 if (snapshot.hasError) {
-                  return Center(child: Text('Error loading offers', style: TextStyle(color: c.textMuted)));
+                  return Center(
+                    child: Text(
+                      'Error loading offers',
+                      style: TextStyle(color: c.textMuted),
+                    ),
+                  );
                 }
 
                 final offers = snapshot.data ?? [];
@@ -252,30 +278,41 @@ void _manageOffer(Map<String, dynamic> offer) {
                       children: [
                         Icon(Icons.work_outline_rounded, size: 64, color: c.textMuted),
                         const SizedBox(height: 16),
-                        Text('No jobs found',
-                          style: TextStyle(color: c.textPrimary, fontSize: 18, fontFamily: 'Inter', fontWeight: FontWeight.w600)),
+                        Text(
+                          'No jobs found',
+                          style: TextStyle(
+                            color: c.textPrimary,
+                            fontSize: 18,
+                            fontFamily: 'Inter',
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                         const SizedBox(height: 8),
-                        Text('Try adjusting your filters or search terms',
-                          style: TextStyle(color: c.textMuted, fontSize: 14)),
+                        Text(
+                          'Try adjusting your filters or search terms',
+                          style: TextStyle(color: c.textMuted, fontSize: 14),
+                        ),
                       ],
                     ),
                   );
                 }
 
+                // ✅ ListView.builder مع itemBuilder الصحيح
                 return ListView.builder(
                   padding: const EdgeInsets.all(24),
                   itemCount: offers.length,
-                  itemBuilder: (_, index) {
-                    final offer = offers[index];
-                    return JobCard(
-                      offer: offer,
-                      isRecruiter: isRecruiter,
-                      onApply: () => _applyToJob(offer),          // ✅ ربط التقديم
-                      onWithdraw: () => _withdrawFromJob(offer),  // ✅ ربط السحب
-                      onManage: () => _manageOffer(offer),        // ✅ ربط الإدارة
-                    );
-                  },
-                );
+itemBuilder: (context, index) {
+  final offer = offers[index];
+  
+  return JobCard(
+    offer: offer,
+    isRecruiter: isRecruiter,
+    isOwner: false,  // ✅ دائماً false في OffersScreen
+    onApply: () => _applyToJob(offer),
+    onWithdraw: () => _withdrawFromJob(offer),
+    onManage: null,  // ✅ null في OffersScreen (لا يظهر زر Manage)
+  );
+},                );
               },
             ),
           ),

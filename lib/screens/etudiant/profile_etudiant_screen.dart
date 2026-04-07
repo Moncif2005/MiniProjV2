@@ -42,35 +42,35 @@ class _ProfileEtudiantScreenState extends State<ProfileEtudiantScreen> {
 
     return Scaffold(
       backgroundColor: c.bg,
-      bottomNavigationBar: BottomNavBar(
-        currentIndex: _currentNavIndex,
-        onTap: (index) {
-          setState(() => _currentNavIndex = index);
-          switch (index) {
-            case 0:
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                '/etudiant/home',
-                (route) => false,
-              );
-              break;
-            case 1:
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                '/etudiant/learn',
-                (route) => false,
-              );
-              break;
-            case 2:
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                '/offers',
-                (route) => false,
-              );
-              break;
-          }
-        },
-      ),
+      // bottomNavigationBar: BottomNavBar(
+      //   currentIndex: _currentNavIndex,
+      //   onTap: (index) {
+      //     setState(() => _currentNavIndex = index);
+      //     switch (index) {
+      //       case 0:
+      //         Navigator.pushNamedAndRemoveUntil(
+      //           context,
+      //           '/etudiant/home',
+      //           (route) => false,
+      //         );
+      //         break;
+      //       case 1:
+      //         Navigator.pushNamedAndRemoveUntil(
+      //           context,
+      //           '/etudiant/learn',
+      //           (route) => false,
+      //         );
+      //         break;
+      //       case 2:
+      //         Navigator.pushNamedAndRemoveUntil(
+      //           context,
+      //           '/offers',
+      //           (route) => false,
+      //         );
+      //         break;
+      //     }
+      //   },
+      // ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),

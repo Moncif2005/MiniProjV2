@@ -5,7 +5,6 @@ import '../../theme/app_colors.dart';
 import '../../providers/user_provider.dart';
 import '../../services/offers_service.dart';
 import '../../widgets/job_card.dart';
-import '../../widgets/bottom_nav_bar.dart';
 
 class JobsRecruteurScreen extends StatefulWidget {
   const JobsRecruteurScreen({super.key});
@@ -14,8 +13,7 @@ class JobsRecruteurScreen extends StatefulWidget {
 }
 
 class _JobsRecruteurScreenState extends State<JobsRecruteurScreen> {
-  int _currentNavIndex = 1;
-  int _selectedTab = 0; // 0=Active, 1=Closed
+  int _selectedTab = 0;
   final _offersService = OffersService();
 
   @override
@@ -25,23 +23,6 @@ class _JobsRecruteurScreenState extends State<JobsRecruteurScreen> {
 
     return Scaffold(
       backgroundColor: c.bg,
-      bottomNavigationBar: BottomNavBar(
-        currentIndex: _currentNavIndex,
-        onTap: (index) {
-          setState(() => _currentNavIndex = index);
-          switch (index) {
-            case 0:
-              Navigator.pushNamed(context, '/recruteur/home');
-              break;
-            case 2:
-              Navigator.pushNamed(context, '/offers');
-              break;
-            case 3:
-              Navigator.pushNamed(context, '/recruteur/profile');
-              break;
-          }
-        },
-      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => Navigator.pushNamed(context, '/recruteur/post-job'),
         backgroundColor: AppColors.purple,
@@ -53,6 +34,7 @@ class _JobsRecruteurScreenState extends State<JobsRecruteurScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Header
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
               child: Row(
@@ -76,6 +58,7 @@ class _JobsRecruteurScreenState extends State<JobsRecruteurScreen> {
             ),
             const SizedBox(height: 16),
 
+            // Filter Tabs
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Row(
@@ -88,6 +71,7 @@ class _JobsRecruteurScreenState extends State<JobsRecruteurScreen> {
             ),
             const SizedBox(height: 16),
 
+            // Jobs List
             Expanded(
               child: recruiterId == null
                   ? const Center(child: Text('Please sign in'))
@@ -111,10 +95,7 @@ class _JobsRecruteurScreenState extends State<JobsRecruteurScreen> {
                               children: [
                                 Icon(_selectedTab == 0 ? Icons.work_outline_rounded : Icons.work_off_outlined, color: c.textMuted, size: 48),
                                 const SizedBox(height: 16),
-                                Text(
-                                  allJobs.isEmpty ? 'No jobs posted yet' : 'No ${_selectedTab == 0 ? 'active' : 'closed'} jobs',
-                                  style: TextStyle(color: c.textMuted, fontSize: 16, fontFamily: 'Inter'),
-                                ),
+                                Text(allJobs.isEmpty ? 'No jobs posted yet' : 'No ${_selectedTab == 0 ? 'active' : 'closed'} jobs', style: TextStyle(color: c.textMuted, fontSize: 16, fontFamily: 'Inter')),
                                 if (allJobs.isEmpty) ...[
                                   const SizedBox(height: 8),
                                   Text('Tap "+ Post Job" to create one!', style: TextStyle(color: c.textMuted, fontSize: 14, fontFamily: 'Inter')),
@@ -133,7 +114,9 @@ class _JobsRecruteurScreenState extends State<JobsRecruteurScreen> {
                             return JobCard(
                               offer: job,
                               isRecruiter: true,
-                              onManage: () => _manageJob(context, job),
+                              isOwner: true,
+                              // ✅ نمرّر دالة تأخذ السياق الصحيح من الشاشة الرئيسية
+                              onManage: () => _manageJob(job),
                             );
                           },
                         );
@@ -146,61 +129,67 @@ class _JobsRecruteurScreenState extends State<JobsRecruteurScreen> {
     );
   }
 
-  void _manageJob(BuildContext context, Map<String, dynamic> job) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: context.colors.surface,
-      builder: (_) => Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.edit_rounded, color: AppColors.purple),
-              title: const Text('Edit Job'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, '/recruteur/edit-offer', arguments: job);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.people_outline_rounded, color: AppColors.green),
-              title: Text('View Applicants (${job['applicationsCount'] ?? 0})'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, '/recruteur/applicants', arguments: {'offerId': job['id'], 'offerTitle': job['title']});
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.close_rounded, color: AppColors.red),
-              title: const Text('Deactivate'),
-              titleTextStyle: const TextStyle(color: AppColors.red, fontWeight: FontWeight.w600),
-              onTap: () async {
-                Navigator.pop(context);
-                final confirmed = await showDialog<bool>(
-                  context: context,
-                  builder: (_) => AlertDialog(
-                    title: const Text('Deactivate?'),
-                    content: const Text('Hide this job from seekers.'),
-                    actions: [
-                      TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-                      FilledButton(style: FilledButton.styleFrom(backgroundColor: AppColors.red), onPressed: () => Navigator.pop(context, true), child: const Text('Deactivate', style: TextStyle(color: Colors.white))),
-                    ],
-                  ),
-                );
-                if (confirmed == true) {
-                  await _offersService.deactivateOffer(job['id']);
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Job deactivated'), backgroundColor: AppColors.green));
-                  }
+  // ✅ دالة إدارة الوظيفة - لا تأخذ context كمعامل، تستخدم هذا السياق
+void _manageJob(Map<String, dynamic> job) {
+  showModalBottomSheet(
+    context: context,  // ✅ هذا هو الـ context الصحيح للشاشة
+    backgroundColor: context.colors.surface,
+    isScrollControlled: true,
+    builder: (sheetContext) => Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: const Icon(Icons.edit_rounded, color: AppColors.purple),
+            title: const Text('Edit Job'),
+            onTap: () {
+              Navigator.pop(sheetContext);
+              Navigator.pushNamed(context, '/recruteur/edit-offer', arguments: job);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.people_outline_rounded, color: AppColors.green),
+            title: Text('View Applicants (${job['applicationsCount'] ?? 0})'),
+            onTap: () {
+              Navigator.pop(sheetContext);
+              Navigator.pushNamed(context, '/recruteur/applicants', arguments: {'offerId': job['id'], 'offerTitle': job['title']});
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.close_rounded, color: AppColors.red),
+            title: const Text('Deactivate'),
+            titleTextStyle: const TextStyle(color: AppColors.red, fontWeight: FontWeight.w600),
+            onTap: () async {
+              Navigator.pop(sheetContext);
+              await Future.delayed(const Duration(milliseconds: 200));
+              if (!mounted) return;
+              
+              final confirmed = await showDialog<bool>(
+                context: context,
+                builder: (dialogContext) => AlertDialog(
+                  title: const Text('Deactivate?'),
+                  content: const Text('Hide this job from seekers.'),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancel')),
+                    FilledButton(style: FilledButton.styleFrom(backgroundColor: AppColors.red), onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Deactivate', style: TextStyle(color: Colors.white))),
+                  ],
+                ),
+              );
+              
+              if (confirmed == true && mounted) {
+                await _offersService.deactivateOffer(job['id']);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Job deactivated'), backgroundColor: AppColors.green));
                 }
-              },
-            ),
-          ],
-        ),
+              }
+            },
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}  // ✅ قوس واحد فقط هنا
 }
 
 class _Tab extends StatelessWidget {

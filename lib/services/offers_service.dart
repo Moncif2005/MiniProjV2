@@ -111,7 +111,7 @@ Future<bool> updateOffer({
       'salary': salary,
       'jobType': jobType,
       'description': description,
-      if (company != null) 'company': company,
+      'company': ?company,
       'updatedAt': FieldValue.serverTimestamp(),
     });
     debugPrint('✅ Offer updated: $offerId');

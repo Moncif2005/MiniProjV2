@@ -80,24 +80,24 @@ class _ProfileRecruteurScreenState extends State<ProfileRecruteurScreen> {
 
     return Scaffold(
       backgroundColor: c.bg,
-      bottomNavigationBar: BottomNavBar(
-        currentIndex: _currentNavIndex,
-        onTap: (index) {
-          setState(() => _currentNavIndex = index);
-          switch (index) {
-            case 0:
-              Navigator.pushNamed(context, '/recruteur/home');
-              break;
-            case 1:
-              // ✅ "My Job Posts" → شاشة وظائف المسؤول فقط
-              Navigator.pushNamed(context, '/recruteur/jobs');
-              break;
-            case 2:
-              Navigator.pushNamed(context, '/offers');
-              break;
-          }
-        },
-      ),
+      // bottomNavigationBar: BottomNavBar(
+      //   currentIndex: _currentNavIndex,
+      //   onTap: (index) {
+      //     setState(() => _currentNavIndex = index);
+      //     switch (index) {
+      //       case 0:
+      //         Navigator.pushNamed(context, '/recruteur/home');
+      //         break;
+      //       case 1:
+      //         // ✅ "My Job Posts" → شاشة وظائف المسؤول فقط
+      //         Navigator.pushNamed(context, '/recruteur/jobs');
+      //         break;
+      //       case 2:
+      //         Navigator.pushNamed(context, '/offers');
+      //         break;
+      //     }
+      //   },
+      // ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -197,8 +197,9 @@ class _ProfileRecruteurScreenState extends State<ProfileRecruteurScreen> {
                                                   user.avatarPath!,
                                                   fit: BoxFit.cover,
                                                   loadingBuilder: (_, child, progress) {
-                                                    if (progress == null)
+                                                    if (progress == null) {
                                                       return child;
+                                                    }
                                                     return Center(
                                                       child: CircularProgressIndicator(
                                                         value:

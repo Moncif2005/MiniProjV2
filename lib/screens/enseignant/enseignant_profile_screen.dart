@@ -58,26 +58,26 @@ class _ProfileEnseignantScreenState extends State<ProfileEnseignantScreen> {
 
     return Scaffold(
       backgroundColor: c.bg,
-      bottomNavigationBar: BottomNavBar(
-        currentIndex: _currentNavIndex,
-        onTap: (index) {
-          setState(() => _currentNavIndex = index);
-          switch (index) {
-            case 0:
-              Navigator.pushNamed(
-                context,
-                '/enseignant/home',
-              ); // ✅ بدون AndRemoveUntil
-              break;
-            case 1:
-              Navigator.pushNamed(context, '/enseignant/courses');
-              break;
-            case 2:
-              Navigator.pushNamed(context, '/offers');
-              break;
-          }
-        },
-      ),
+      // bottomNavigationBar: BottomNavBar(
+      //   currentIndex: _currentNavIndex,
+      //   onTap: (index) {
+      //     setState(() => _currentNavIndex = index);
+      //     switch (index) {
+      //       case 0:
+      //         Navigator.pushNamed(
+      //           context,
+      //           '/enseignant/home',
+      //         ); // ✅ بدون AndRemoveUntil
+      //         break;
+      //       case 1:
+      //         Navigator.pushNamed(context, '/enseignant/courses');
+      //         break;
+      //       case 2:
+      //         Navigator.pushNamed(context, '/offers');
+      //         break;
+      //     }
+      //   },
+      // ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),

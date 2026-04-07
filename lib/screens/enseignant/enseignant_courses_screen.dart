@@ -47,26 +47,26 @@ class _EnseignantCoursesScreenState
 
     return Scaffold(
       backgroundColor: c.bg,
-      bottomNavigationBar: BottomNavBar(
-        currentIndex: _currentNavIndex,
-        onTap: (index) {
-          setState(() => _currentNavIndex = index);
-          switch (index) {
-            case 0:
-              Navigator.pushNamedAndRemoveUntil(
-                  context, '/enseignant/home', (r) => false);
-              break;
-            case 2:
-              Navigator.pushNamedAndRemoveUntil(
-                  context, '/offers', (r) => false);
-              break;
-            case 3:
-              Navigator.pushNamedAndRemoveUntil(
-                  context, '/enseignant/profile', (r) => false);
-              break;
-          }
-        },
-      ),
+      // bottomNavigationBar: BottomNavBar(
+      //   currentIndex: _currentNavIndex,
+      //   onTap: (index) {
+      //     setState(() => _currentNavIndex = index);
+      //     switch (index) {
+      //       case 0:
+      //         Navigator.pushNamedAndRemoveUntil(
+      //             context, '/enseignant/home', (r) => false);
+      //         break;
+      //       case 2:
+      //         Navigator.pushNamedAndRemoveUntil(
+      //             context, '/offers', (r) => false);
+      //         break;
+      //       case 3:
+      //         Navigator.pushNamedAndRemoveUntil(
+      //             context, '/enseignant/profile', (r) => false);
+      //         break;
+      //     }
+      //   },
+      // ),
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
