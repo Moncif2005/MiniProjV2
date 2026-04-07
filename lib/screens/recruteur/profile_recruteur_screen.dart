@@ -387,7 +387,9 @@ class _ProfileRecruteurScreenState extends State<ProfileRecruteurScreen> {
                 iconColor: AppColors.primary,
                 title: 'Candidates',
                 badge: '73',
-                onTap: () {},
+                onTap: () {
+                  Navigator.pushNamed(context, '/recruteur/applicants');
+                },
               ),
               const SizedBox(height: 8),
               ProfileMenuItem(

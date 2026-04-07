@@ -2,6 +2,9 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:minipr/firebase_options.dart';
 import 'package:minipr/screens/auth_wrapper.dart';
+import 'package:minipr/screens/recruteur/applicants_screen.dart';
+import 'package:minipr/screens/recruteur/edit_offer_screen.dart';
+import 'package:minipr/screens/recruteur/manage_offer_screen.dart';
 import 'package:minipr/services/auth_service.dart';
 import 'package:provider/provider.dart';
 import 'theme/app_theme.dart';
@@ -40,9 +43,7 @@ import 'screens/shared/learning_history_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(
     MultiProvider(
       providers: [
@@ -70,37 +71,66 @@ class MyApp extends StatelessWidget {
       themeMode: themeProvider.themeMode,
       home: const AuthWrapper(),
       routes: {
-        '/signup':          (context) => const SignUpScreen(),
-        '/create-account':  (context) => const CreateAccountScreen(),
+        '/signup': (context) => const SignUpScreen(),
+        '/create-account': (context) => const CreateAccountScreen(),
         //انا بدلتها هاذي لما يكون المستخدم مسجل دخول يروح لهوم سكرين واذا ماكانش مسجل دخول يروح لصفحة تسجيل الدخول
-        '/home':            (context) => const AuthWrapper(),
+        '/home': (context) => const AuthWrapper(),
 
         // ── Étudiant routes ──
-        '/etudiant/home':    (context) => const HomeEtudiantScreen(),
-        '/etudiant/learn':   (context) => const LearnEtudiantScreen(),
+        '/etudiant/home': (context) => const HomeEtudiantScreen(),
+        '/etudiant/learn': (context) => const LearnEtudiantScreen(),
         '/etudiant/profile': (context) => const ProfileEtudiantScreen(),
 
         // ── Enseignant routes ──
-        '/enseignant/home':          (context) => const HomeEnseignantScreen(),
-        '/enseignant/courses':       (context) => const EnseignantCoursesScreen(),
-        '/enseignant/profile':       (context) => const ProfileEnseignantScreen(),
+        '/enseignant/home': (context) => const HomeEnseignantScreen(),
+        '/enseignant/courses': (context) => const EnseignantCoursesScreen(),
+        '/enseignant/profile': (context) => const ProfileEnseignantScreen(),
         '/enseignant/create-course': (context) => const CreateCourseScreen(),
 
         // ── Recruteur routes ──
-        '/recruteur/home':     (context) => const HomeRecruteurScreen(),
-        '/recruteur/jobs':     (context) => const JobsRecruteurScreen(),
-        '/recruteur/profile':  (context) => const ProfileRecruteurScreen(),
+        '/recruteur/home': (context) => const HomeRecruteurScreen(),
+        '/recruteur/jobs': (context) => const JobsRecruteurScreen(),
+        '/recruteur/profile': (context) => const ProfileRecruteurScreen(),
         '/recruteur/post-job': (context) => const PostJobScreen(),
+        '/recruteur/manage-offer': (context) {
+          final args =
+              ModalRoute.of(context)?.settings.arguments
+                  as Map<String, dynamic>?;
+          if (args == null)
+            return const Scaffold(
+              body: Center(child: Text('Invalid arguments')),
+            );
+          return ManageOfferScreen(offer: args);
+        },
+        '/recruteur/edit-offer': (context) {
+          final args =
+              ModalRoute.of(context)?.settings.arguments
+                  as Map<String, dynamic>?;
+          if (args == null)
+            return const Scaffold(body: Center(child: Text('Invalid')));
+          return EditOfferScreen(offer: args);
+        },
+        '/recruteur/applicants': (context) {
+          final args =
+              ModalRoute.of(context)?.settings.arguments
+                  as Map<String, dynamic>?;
+          if (args == null)
+            return const Scaffold(body: Center(child: Text('Invalid')));
+          return ApplicantsScreen(
+            offerId: args['offerId'],
+            offerTitle: args['offerTitle'],
+          );
+        },
 
         // ── Shared routes (role-aware navigation) ──
-        '/offers':           (context) => const OffersScreen(),
-        '/learn':            (context) => const LearnScreen(),
-        '/lesson':           (context) => const LessonScreen(),
-        '/notifications':    (context) => const NotificationScreen(),
-        '/edit-profile':     (context) => const EditProfileScreen(),
-        '/certificates':     (context) => const CertificatesScreen(),
-        '/applied-jobs':     (context) => const AppliedJobsScreen(),
-        '/settings':         (context) => const SettingsScreen(),
+        '/offers': (context) => const OffersScreen(),
+        '/learn': (context) => const LearnScreen(),
+        '/lesson': (context) => const LessonScreen(),
+        '/notifications': (context) => const NotificationScreen(),
+        '/edit-profile': (context) => const EditProfileScreen(),
+        '/certificates': (context) => const CertificatesScreen(),
+        '/applied-jobs': (context) => const AppliedJobsScreen(),
+        '/settings': (context) => const SettingsScreen(),
         '/learning-history': (context) => const LearningHistoryScreen(),
       },
     );

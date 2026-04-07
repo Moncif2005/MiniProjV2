@@ -1,10 +1,10 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:minipr/services/offers_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../theme/app_colors.dart';
+import '../services/offers_service.dart';
 
 class JobCard extends StatelessWidget {
-  // ✅ النمط البسيط (للصفحات الرئيسية - بيانات ثابتة)
+  // ✅ النمط البسيط: للصفحات الرئيسية (بيانات ثابتة)
   final String? title;
   final String? company;
   final String? type;
@@ -13,10 +13,11 @@ class JobCard extends StatelessWidget {
   final VoidCallback? onBookmark;
   final VoidCallback? onTap;
 
-  // ✅ النمط الديناميكي (لصفحة Offers - بيانات من Firestore)
+  // ✅ النمط الديناميكي: لصفحة Offers (بيانات من Firestore)
   final Map<String, dynamic>? offer;
-  final bool? isRecruiter;
+  final bool isRecruiter;
   final VoidCallback? onApply;
+  final VoidCallback? onWithdraw;
   final VoidCallback? onManage;
 
   const JobCard({
@@ -31,48 +32,39 @@ class JobCard extends StatelessWidget {
     this.onTap,
     // للنمط الديناميكي
     this.offer,
-    this.isRecruiter,
+    this.isRecruiter = false,
     this.onApply,
+    this.onWithdraw,
     this.onManage,
   });
 
-// ── Helper: Check if user has applied to this job ──
-Future<bool> _checkIfApplied(BuildContext context) async {
-  if (!_isDynamicMode || isRecruiter == true) return false;
-  
-  final user = FirebaseAuth.instance.currentUser;
-  if (user == null || offer == null) return false;
-  
-  final offersService = OffersService();
-  return await offersService.hasUserAppliedToJob(
-    applicantId: user.uid,
-    offerId: offer!['id'],
-  );
-}
-
-  // ✅ دالة مساعدة لتحديد أي نمط نستخدم
-  bool get _isDynamicMode => offer != null;
+  bool get _isDynamic => offer != null;
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
     
     // ✅ استخراج البيانات حسب النمط
-    final displayTitle = _isDynamicMode ? offer!['title'] : title;
-    final displayCompany = _isDynamicMode ? offer!['company'] : company;
-    final displayType = _isDynamicMode ? offer!['jobType'] : type;
-    final displaySalary = _isDynamicMode ? offer!['salary'] : salary;
-    final displayLocation = _isDynamicMode ? offer!['location'] : location;
+    final displayTitle = _isDynamic ? offer!['title'] ?? 'Untitled' : title ?? 'Untitled';
+    final displayCompany = _isDynamic ? offer!['company'] ?? 'Company' : company ?? 'Company';
+    final displayType = _isDynamic ? offer!['jobType'] ?? type ?? 'Full-time' : type ?? 'Full-time';
+    final displaySalary = _isDynamic ? offer!['salary'] ?? salary ?? 'Negotiable' : salary ?? 'Negotiable';
+    final displayLocation = _isDynamic ? offer!['location'] ?? location ?? 'Remote' : location ?? 'Remote';
     
     // للألوان والرموز (فقط في النمط الديناميكي)
-    final companyBg = _isDynamicMode ? Color(offer!['companyBgColor'] ?? 4293848063) : AppColors.primaryLight;
-    final companyColor = _isDynamicMode ? Color(offer!['companyColor'] ?? 4283322870) : AppColors.primary;
-    final companyInitial = _isDynamicMode ? (offer!['companyInitial'] ?? 'C') : (displayCompany?.isNotEmpty == true ? displayCompany![0].toUpperCase() : 'J');
+    final companyBg = _isDynamic ? Color(offer!['companyBgColor'] ?? 4293848063) : AppColors.primaryLight;
+    final companyColor = _isDynamic ? Color(offer!['companyColor'] ?? 4283322870) : AppColors.primary;
+    final companyInitial = _isDynamic 
+        ? (offer!['companyInitial'] ?? 'C') 
+        : (displayCompany.isNotEmpty ? displayCompany[0].toUpperCase() : 'J');
     
-    final isActive = _isDynamicMode ? (offer!['isActive'] ?? true) : true;
-    final applicantsCount = _isDynamicMode ? offer!['applicationsCount'] : null;
+    final isActive = _isDynamic ? (offer!['isActive'] ?? true) : true;
+    final applicantsCount = _isDynamic ? offer!['applicationsCount'] : null;
 
-    return Container(
+    return GestureDetector(
+      // ✅ النمط البسيط: النقر على الكارت كله يفعّل onTap
+      onTap: !_isDynamic ? onTap : null,
+      child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(20),
         decoration: ShapeDecoration(
@@ -111,17 +103,17 @@ Future<bool> _checkIfApplied(BuildContext context) async {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(displayTitle ?? 'Untitled',
+                      Text(displayTitle,
                         style: TextStyle(color: c.textPrimary, fontSize: 16, fontFamily: 'Inter', fontWeight: FontWeight.w700)),
                       const SizedBox(height: 4),
-                      Text(displayCompany ?? 'Company',
+                      Text(displayCompany,
                         style: TextStyle(color: c.textSecondary, fontSize: 14, fontFamily: 'Inter')),
                     ],
                   ),
                 ),
                 
                 // Status Badge (فقط في النمط الديناميكي)
-                if (_isDynamicMode)
+                if (_isDynamic)
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
@@ -144,17 +136,18 @@ Future<bool> _checkIfApplied(BuildContext context) async {
             Wrap(
               spacing: 12, runSpacing: 8,
               children: [
-                if (displayLocation != null) _DetailChip(icon: Icons.location_on_outlined, text: displayLocation, color: c.textSecondary),
-                if (displaySalary != null) _DetailChip(icon: Icons.attach_money_rounded, text: displaySalary, color: AppColors.green),
-                if (displayType != null) _DetailChip(icon: Icons.schedule_rounded, text: displayType, color: AppColors.purple),
-                if (applicantsCount != null) _DetailChip(icon: Icons.people_outline_rounded, text: '$applicantsCount applicants', color: AppColors.primary),
+                _DetailChip(icon: Icons.location_on_outlined, text: displayLocation, color: c.textSecondary),
+                _DetailChip(icon: Icons.attach_money_rounded, text: displaySalary, color: AppColors.green),
+                _DetailChip(icon: Icons.schedule_rounded, text: displayType, color: AppColors.purple),
+                if (_isDynamic && applicantsCount != null)
+                  _DetailChip(icon: Icons.people_outline_rounded, text: '$applicantsCount applicants', color: AppColors.primary),
               ],
             ),
             
             const SizedBox(height: 16),
             
             // ── Description (فقط في النمط الديناميكي) ──
-            if (_isDynamicMode && offer!['description'] != null && offer!['description'].toString().isNotEmpty) ...[
+            if (_isDynamic && offer!['description'] != null && offer!['description'].toString().isNotEmpty) ...[
               Text(offer!['description'].toString().length > 100 
                   ? '${offer!['description'].toString().substring(0, 100)}...' 
                   : offer!['description'],
@@ -162,109 +155,86 @@ Future<bool> _checkIfApplied(BuildContext context) async {
               const SizedBox(height: 16),
             ],
             
-// ── Actions ──
-Row(
-  children: [
-    // زر التقديم (للطلاب في النمط الديناميكي)
-    if (_isDynamicMode && isRecruiter == false)
-      Expanded(
-        child: FutureBuilder<bool>(
-  future: _checkIfApplied(context),
-  builder: (context, snapshot) {
-    final hasApplied = snapshot.data ?? false;
-    
-    if (snapshot.connectionState == ConnectionState.waiting) {
-      return SizedBox(
-        height: 44,
-        child: OutlinedButton(
-          onPressed: null,
-          child: const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
-        ),
-      );
-    }
-    
-    if (hasApplied) {
-      // ✅ زر "إلغاء التقديم"
-      return Expanded(
-        child: OutlinedButton.icon(
-          onPressed: () async {
-            final confirmed = await showDialog<bool>(
-              context: context,
-              builder: (_) => AlertDialog(
-                title: const Text('Withdraw Application?'),
-                content: const Text('Are you sure you want to cancel your application?'),
-                actions: [
-                  TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Keep')),
-                  FilledButton(
-                    style: FilledButton.styleFrom(backgroundColor: AppColors.red),
-                    onPressed: () => Navigator.pop(context, true),
-                    child: const Text('Withdraw', style: TextStyle(color: Colors.white)),
+            // ── Actions ──
+            Row(
+              children: [
+                // ✅ النمط الديناميكي: أزرار التقديم/السحب/الإدارة
+                if (_isDynamic) ...[
+                  if (!isRecruiter)
+                    Expanded(
+                      child: FutureBuilder<bool>(
+                        future: _hasApplied(context),
+                        builder: (ctx, snap) {
+                          if (snap.connectionState == ConnectionState.waiting) {
+                            return SizedBox(height: 44, child: OutlinedButton(onPressed: null, 
+                              child: const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))));
+                          }
+                          bool applied = snap.data ?? false;
+                          return applied
+                              ? OutlinedButton.icon(
+                                  onPressed: onWithdraw,
+                                  icon: const Icon(Icons.cancel_rounded, size: 18),
+                                  label: const Text('Withdraw', style: TextStyle(fontWeight: FontWeight.w600)),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: AppColors.red, 
+                                    side: BorderSide(color: AppColors.red), 
+                                    minimumSize: const Size(double.infinity, 44)),
+                                )
+                              : FilledButton.icon(
+                                  onPressed: onApply,
+                                  icon: const Icon(Icons.send_rounded, size: 18),
+                                  label: const Text('Apply Now', style: TextStyle(fontWeight: FontWeight.w600)),
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor: AppColors.primary, 
+                                    foregroundColor: Colors.white, 
+                                    minimumSize: const Size(double.infinity, 44)),
+                                );
+                        },
+                      ),
+                    ),
+                  if (isRecruiter && onManage != null)
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: onManage,
+                        icon: const Icon(Icons.manage_accounts_rounded, size: 18),
+                        label: const Text('Manage', style: TextStyle(fontWeight: FontWeight.w600)),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.purple,
+                          side: BorderSide(color: AppColors.purple),
+                          minimumSize: const Size(double.infinity, 44)),
+                      ),
+                    ),
+                ]
+                // ✅ النمط البسيط: زر المفضلة فقط
+                else if (onBookmark != null) ...[
+                  const Spacer(),
+                  IconButton(
+                    onPressed: onBookmark,
+                    icon: const Icon(Icons.bookmark_border_rounded),
+                    color: c.textSecondary,
                   ),
                 ],
-              ),
-            );
-            
-            if (confirmed == true && onApply != null) {
-              // نعيد استخدام onApply للسحب (سنعدل منطقها في OffersScreen)
-              // أو نمرر onWithdraw كـ parameter جديد
-            }
-          },
-          icon: const Icon(Icons.cancel_rounded, size: 18),
-          label: const Text('Withdraw', style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600)),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: AppColors.red,
-            side: BorderSide(color: AppColors.red),
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          ),
+              ],
+            ),
+          ],
         ),
+      ),
+    );
+  }
+
+  // ✅ دالة التحقق من التقديم (فقط للنمط الديناميكي)
+  Future<bool> _hasApplied(BuildContext context) async {
+    if (!_isDynamic) return false;
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return false;
+    try {
+      return await OffersService().hasUserAppliedToJob(
+        applicantId: user.uid,
+        offerId: offer!['id'],
       );
+    } catch (e) {
+      return false;
     }
-    
-    // ❌ زر "تقديم" عادي
-    return FilledButton.icon(
-      onPressed: onApply,
-      icon: const Icon(Icons.send_rounded, size: 18),
-      label: const Text('Apply Now', style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600)),
-      style: FilledButton.styleFrom(
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      ),
-    );
-  },
-)
-      ),
-    
-    // زر الإدارة (للمسؤولين) - كما هو
-    if (_isDynamicMode && isRecruiter == true && onManage != null)
-      Expanded(
-        child: OutlinedButton.icon(
-          onPressed: onManage,
-          icon: const Icon(Icons.manage_accounts_rounded, size: 18),
-          label: const Text('Manage',
-            style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600)),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: AppColors.purple,
-            side: BorderSide(color: AppColors.purple),
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          ),
-        ),
-      ),
-    
-    // زر المفضلة (للنمط البسيط) - كما هو
-    if (!_isDynamicMode && onBookmark != null)
-      IconButton(
-        onPressed: onBookmark,
-        icon: const Icon(Icons.bookmark_border_rounded),
-        color: c.textSecondary,
-      ),
-  ],
-),          ],
-        ),
-    );
   }
 }
 
@@ -273,20 +243,16 @@ class _DetailChip extends StatelessWidget {
   final IconData icon;
   final String text;
   final Color color;
-
   const _DetailChip({required this.icon, required this.text, required this.color});
-
   @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 14, color: color),
-        const SizedBox(width: 4),
-        Text(text, style: TextStyle(color: color, fontSize: 12, fontFamily: 'Inter', fontWeight: FontWeight.w500)),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Icon(icon, size: 14, color: color),
+      const SizedBox(width: 4),
+      Text(text, style: TextStyle(color: color, fontSize: 12, fontFamily: 'Inter', fontWeight: FontWeight.w500)),
+    ],
+  );
 }
 
 // import 'package:flutter/material.dart';

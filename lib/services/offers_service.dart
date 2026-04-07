@@ -92,32 +92,72 @@ class OffersService {
             }).toList());
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // ✅ UPDATE: تعديل عرض موجود
-  // ─────────────────────────────────────────────────────────────
-  Future<bool> updateOffer({
-    required String offerId,
-    required String title,
-    required String location,
-    required String salary,
-    required String jobType,
-    required String description,
-  }) async {
-    try {
-      await _offersRef.doc(offerId).update({
-        'title': title,
-        'location': location,
-        'salary': salary,
-        'jobType': jobType,
-        'description': description,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-      return true;
-    } catch (e) {
-      debugPrint('❌ Error updating offer: $e');
-      return false;
-    }
+// ─────────────────────────────────────────────────────────────
+// ✅ UPDATE: تعديل عرض وظيفة موجود
+// ─────────────────────────────────────────────────────────────
+Future<bool> updateOffer({
+  required String offerId,
+  required String title,
+  required String location,
+  required String salary,
+  required String jobType,
+  required String description,
+  String? company, // اختياري
+}) async {
+  try {
+    await _offersRef.doc(offerId).update({
+      'title': title,
+      'location': location,
+      'salary': salary,
+      'jobType': jobType,
+      'description': description,
+      if (company != null) 'company': company,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+    debugPrint('✅ Offer updated: $offerId');
+    return true;
+  } catch (e) {
+    debugPrint('❌ Error updating offer: $e');
+    return false;
   }
+}
+
+// ─────────────────────────────────────────────────────────────
+// ✅ READ: جلب طلبات التقديم لوظيفة معينة
+// ─────────────────────────────────────────────────────────────
+Stream<List<Map<String, dynamic>>> getApplicationsForOffer(String offerId) {
+  return _applicationsRef
+      .where('offerId', isEqualTo: offerId)
+      .orderBy('appliedAt', descending: true)
+      .snapshots()
+      .map((snapshot) => snapshot.docs.map((doc) {
+            final data = doc.data();
+            data['id'] = doc.id;
+            return data;
+          }).toList());
+}
+
+// ─────────────────────────────────────────────────────────────
+// ✅ UPDATE: تحديث حالة طلب التقديم
+// ─────────────────────────────────────────────────────────────
+Future<bool> updateApplicationStatus({
+  required String applicationId,
+  required String status, // reviewing, interview, accepted, rejected
+  String? message,
+}) async {
+  try {
+    await _applicationsRef.doc(applicationId).update({
+      'status': status,
+      'statusMessage': message,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+    debugPrint('✅ Application status updated: $applicationId → $status');
+    return true;
+  } catch (e) {
+    debugPrint('❌ Error updating application: $e');
+    return false;
+  }
+}
 
   // ─────────────────────────────────────────────────────────────
   // ✅ DELETE: إلغاء عرض (Soft Delete)
@@ -178,41 +218,6 @@ class OffersService {
     }
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // ✅ READ: جلب طلبات التقديم لوظيفة معينة (للمسؤول)
-  // ─────────────────────────────────────────────────────────────
-  Stream<List<Map<String, dynamic>>> getApplicationsForOffer(String offerId) {
-    return _applicationsRef
-        .where('offerId', isEqualTo: offerId)
-        .orderBy('appliedAt', descending: true)
-        .snapshots()
-        .map((snapshot) => snapshot.docs.map((doc) {
-              final data = doc.data();
-              data['id'] = doc.id;
-              return data;
-            }).toList());
-  }
-
-  // ─────────────────────────────────────────────────────────────
-  // ✅ UPDATE: تحديث حالة الطلب (للمسؤول)
-  // ─────────────────────────────────────────────────────────────
-  Future<bool> updateApplicationStatus({
-    required String applicationId,
-    required String status, // reviewing, interview, accepted, rejected
-    String? message,
-  }) async {
-    try {
-      await _applicationsRef.doc(applicationId).update({
-        'status': status,
-        'statusMessage': message,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-      return true;
-    } catch (e) {
-      debugPrint('❌ Error updating application: $e');
-      return false;
-    }
-  }
 
   // ─────────────────────────────────────────────────────────────
 // ✅ CHECK: هل قدم هذا المستخدم على هذه الوظيفة من قبل؟

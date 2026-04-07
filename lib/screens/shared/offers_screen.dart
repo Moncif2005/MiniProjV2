@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:minipr/screens/recruteur/manage_offer_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../theme/app_colors.dart';
 import '../../providers/user_provider.dart';
 import '../../services/offers_service.dart';
-import '../../widgets/job_card.dart'; // ✅ سننشئه بعد قليل
+import '../../widgets/job_card.dart';
 
 class OffersScreen extends StatefulWidget {
   const OffersScreen({super.key});
@@ -25,15 +26,14 @@ class _OffersScreenState extends State<OffersScreen> {
     super.dispose();
   }
 
-  // ✅ تقديم على وظيفة
+  // ✅ 1. منطق التقديم
   Future<void> _applyToJob(Map<String, dynamic> offer) async {
     final user = FirebaseAuth.instance.currentUser;
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Please sign in to apply'),
-        backgroundColor: AppColors.red,
+        content: Text('Please sign in to apply'), backgroundColor: AppColors.red,
       ));
       return;
     }
@@ -42,7 +42,7 @@ class _OffersScreenState extends State<OffersScreen> {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Apply for this job?'),
-        content: Text('Are you sure you want to apply for "${offer['title']}" at ${offer['company']}?'),
+        content: Text('Submit your application for "${offer['title']}" at ${offer['company']}?'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
           FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Apply')),
@@ -71,6 +71,51 @@ class _OffersScreenState extends State<OffersScreen> {
     }
   }
 
+  // ✅ 2. منطق سحب الطلب (الجديد)
+  Future<void> _withdrawFromJob(Map<String, dynamic> offer) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Withdraw Application?'),
+        content: const Text('This will remove your application and decrease the applicant count.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Keep')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.red),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Withdraw', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      final success = await _offersService.withdrawApplication(
+        applicantId: user.uid,
+        offerId: offer['id'],
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(success ? 'Application withdrawn ✓' : 'Failed to withdraw'),
+          backgroundColor: success ? AppColors.green : AppColors.red,
+        ));
+      }
+    }
+  }
+
+// ✅ دالة إدارة الوظيفة - تستخدم Navigator.push لتجنب مشاكل الـ Context
+void _manageOffer(Map<String, dynamic> offer) {
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => ManageOfferScreen(offer: offer),
+    ),
+  );
+}
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
@@ -96,6 +141,7 @@ class _OffersScreenState extends State<OffersScreen> {
                   children: [
                     Text('Job Offers',
                       style: TextStyle(color: c.textPrimary, fontSize: 24, fontFamily: 'Inter', fontWeight: FontWeight.w700)),
+                    // زر نشر وظيفة (يظهر للمسؤول فقط)
                     if (isRecruiter)
                       GestureDetector(
                         onTap: () => Navigator.pushNamed(context, '/recruteur/post-job'),
@@ -135,7 +181,7 @@ class _OffersScreenState extends State<OffersScreen> {
                       border: InputBorder.none,
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     ),
-                    onChanged: (_) => setState(() {}),
+                    onChanged: (_) => setState(() {}), // تحديث عند الكتابة
                   ),
                 ),
               ],
@@ -194,7 +240,7 @@ class _OffersScreenState extends State<OffersScreen> {
                 }
                 
                 if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}', style: TextStyle(color: c.textMuted)));
+                  return Center(child: Text('Error loading offers', style: TextStyle(color: c.textMuted)));
                 }
 
                 final offers = snapshot.data ?? [];
@@ -224,8 +270,9 @@ class _OffersScreenState extends State<OffersScreen> {
                     return JobCard(
                       offer: offer,
                       isRecruiter: isRecruiter,
-                      onApply: isRecruiter ? null : () => _applyToJob(offer),
-                      onManage: isRecruiter ? () => _manageOffer(offer) : null,
+                      onApply: () => _applyToJob(offer),          // ✅ ربط التقديم
+                      onWithdraw: () => _withdrawFromJob(offer),  // ✅ ربط السحب
+                      onManage: () => _manageOffer(offer),        // ✅ ربط الإدارة
                     );
                   },
                 );
@@ -236,87 +283,6 @@ class _OffersScreenState extends State<OffersScreen> {
       ),
     );
   }
-
-  // ✅ إدارة الوظيفة (للمسؤول فقط)
-void _manageOffer(Map<String, dynamic> offer) {
-  showModalBottomSheet(
-    context: context,
-    backgroundColor: context.colors.surface,
-    isScrollControlled: true,
-    builder: (_) => Container(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Manage Job',
-            style: TextStyle(color: context.colors.textPrimary, fontSize: 20, fontFamily: 'Inter', fontWeight: FontWeight.w700)),
-          const SizedBox(height: 16),
-          
-          // ✅ خيار 1: تعديل الوظيفة
-          ListTile(
-            leading: const Icon(Icons.edit_rounded, color: AppColors.purple),
-            title: const Text('Edit Job Details'),
-            onTap: () {
-              Navigator.pop(context);
-              // TODO: Navigate to edit screen with offer data
-              // مثال:
-              // Navigator.pushNamed(context, '/recruteur/edit-job', arguments: offer);
-            },
-          ),
-          
-          // ✅ خيار 2: عرض المتقدمين
-          ListTile(
-            leading: const Icon(Icons.people_outline_rounded, color: AppColors.green),
-            title: Text('View Applicants (${offer['applicationsCount'] ?? 0})'),
-            onTap: () {
-              Navigator.pop(context);
-              // TODO: Navigate to applicants screen
-              // مثال:
-              // Navigator.pushNamed(context, '/recruteur/applicants', arguments: offer['id']);
-            },
-          ),
-          
-          // ✅ خيار 3: إلغاء الوظيفة (مفعّل)
-          ListTile(
-            leading: const Icon(Icons.close_rounded, color: AppColors.red),
-            title: const Text('Deactivate Job'),
-            titleTextStyle: TextStyle(color: AppColors.red, fontSize: 14, fontFamily: 'Inter', fontWeight: FontWeight.w600),
-            onTap: () async {
-              Navigator.pop(context); // أغلق القائمة أولاً
-              
-              final confirmed = await showDialog<bool>(
-                context: context,
-                builder: (_) => AlertDialog(
-                  title: const Text('Deactivate this job?'),
-                  content: const Text('This will hide it from job seekers. You can reactivate it later.'),
-                  actions: [
-                    TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-                    FilledButton(
-                      style: FilledButton.styleFrom(backgroundColor: AppColors.red),
-                      onPressed: () => Navigator.pop(context, true),
-                      child: const Text('Deactivate', style: TextStyle(color: Colors.white)),
-                    ),
-                  ],
-                ),
-              );
-              
-              if (confirmed == true) {
-                final success = await _offersService.deactivateOffer(offer['id']);
-                if (mounted && success) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                    content: Text('Job deactivated'),
-                    backgroundColor: AppColors.green,
-                  ));
-                }
-              }
-            },
-          ),
-        ],
-      ),
-    ),
-  );
-}
 }
 
 
