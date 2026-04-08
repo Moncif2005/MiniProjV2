@@ -7,6 +7,7 @@ import 'package:minipr/screens/recruteur/applicants_screen.dart';
 import 'package:minipr/screens/recruteur/edit_offer_screen.dart';
 import 'package:minipr/screens/recruteur/manage_offer_screen.dart';
 import 'package:minipr/screens/recruteur/recruiter_applicants_screen.dart';
+import 'package:minipr/screens/shared/public_profile_screen.dart';
 import 'package:minipr/services/auth_service.dart';
 import 'package:provider/provider.dart';
 import 'theme/app_theme.dart';
@@ -88,7 +89,8 @@ class MyApp extends StatelessWidget {
 
         // ── Recruteur routes ──
         '/recruteur/home': (context) =>
-            const HomeRecruteurScreen(), // ← نفس اسم الكلاس        '/recruteur/jobs': (context) => const JobsRecruteurScreen(),
+            const HomeRecruteurScreen(), // ← نفس اسم الكلاس
+        '/recruteur/jobs': (context) => const JobsRecruteurScreen(),
         '/recruteur/profile': (context) => const ProfileRecruteurScreen(),
         '/recruteur/post-job': (context) => const PostJobScreen(),
         '/recruteur/manage-offer': (context) {
@@ -111,7 +113,33 @@ class MyApp extends StatelessWidget {
           }
           return EditOfferScreen(offer: args);
         },
-        '/recruteur/applicants': (context) => const RecruiterApplicantsScreen(),
+        // '/recruteur/applicants': (context) {
+        //   final args =
+        //       ModalRoute.of(context)?.settings.arguments
+        //           as Map<String, dynamic>?;
+        //   if (args == null || args['offerId'] == null) {
+        //     return Scaffold(body: Center(child: Text('Invalid job selection')));
+        //   }
+        //   return ApplicantsScreen(
+        //     offerId: args['offerId'],
+        //     offerTitle: args['offerTitle'] ?? 'Unknown Job',
+        //   );
+        // },
+        '/recruteur/candidates': (context) => const RecruiterApplicantsScreen(),
+
+        // ✅ المسار القديم: لعرض متقدمي وظيفة واحدة فقط (من داخل Manage Job)
+        '/recruteur/applicants': (context) {
+          final args =
+              ModalRoute.of(context)?.settings.arguments
+                  as Map<String, dynamic>?;
+          if (args == null || args['offerId'] == null) {
+            return Scaffold(body: Center(child: Text('Invalid job selection')));
+          }
+          return ApplicantsScreen(
+            offerId: args['offerId'],
+            offerTitle: args['offerTitle'] ?? 'Unknown Job',
+          );
+        },
 
         // ── Shared routes (role-aware navigation) ──
         '/offers': (context) => const OffersScreen(),
@@ -123,6 +151,18 @@ class MyApp extends StatelessWidget {
         '/applied-jobs': (context) => const AppliedJobsScreen(),
         '/settings': (context) => const SettingsScreen(),
         '/learning-history': (context) => const LearningHistoryScreen(),
+
+        // ✅ Public Profile Screen - شاشة البروفايل العام الموحدة
+'/public/profile': (context) {
+  final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+  if (args == null || args['userId'] == null || args['role'] == null) {
+    return Scaffold(body: Center(child: Text('Invalid profile request')));
+  }
+  return PublicProfileScreen(
+    userId: args['userId'],
+    role: args?['role'] ?? 'user', // 'etudiant' | 'recruteur' | 'enseignant'
+  );
+},
       },
     );
   }

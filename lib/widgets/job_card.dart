@@ -19,6 +19,8 @@ class JobCard extends StatelessWidget {
   final VoidCallback? onWithdraw;
   final VoidCallback? onManage;
 
+  final VoidCallback? onAvatarTap;
+
   const JobCard({
     super.key,
     this.title,
@@ -34,6 +36,7 @@ class JobCard extends StatelessWidget {
     this.onApply,
     this.onWithdraw,
     this.onManage,
+    this.onAvatarTap,
   });
 
   bool get _isDynamic => offer != null;
@@ -69,10 +72,13 @@ class JobCard extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 48, height: 48,
-                  decoration: BoxDecoration(color: companyBg.withOpacity(0.15), borderRadius: BorderRadius.circular(14)),
-                  child: Center(child: Text(companyInitial, style: TextStyle(color: companyColor, fontSize: 20, fontFamily: 'Inter', fontWeight: FontWeight.w700))),
+                GestureDetector(
+                  onTap: onAvatarTap,
+                  child: Container(
+                    width: 48, height: 48,
+                    decoration: BoxDecoration(color: companyBg.withOpacity(0.15), borderRadius: BorderRadius.circular(14)),
+                    child: Center(child: Text(companyInitial, style: TextStyle(color: companyColor, fontSize: 20, fontFamily: 'Inter', fontWeight: FontWeight.w700))),
+                  ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -113,7 +119,7 @@ class JobCard extends StatelessWidget {
               children: [
                 if (_isDynamic) ...[
                   // ✅ زر Manage: يظهر فقط إذا كان onManage موجوداً
-                  if (onManage != null)
+                  if (isRecruiter && isOwner && onManage != null)
                     Expanded(
                       child: OutlinedButton.icon(
                         onPressed: onManage, // ✅ مباشر وبسيط

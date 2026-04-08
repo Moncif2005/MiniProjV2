@@ -27,6 +27,9 @@ class UserProvider extends ChangeNotifier {
   String _linkedin = '';
   String _facebook = '';
   UserRole _role = UserRole.etudiant;
+    String _location = '';
+  String _companySize = '';
+  String _industry = '';
 
   // ── Settings & Privacy (from Firestore) ──
   String _theme = 'system';
@@ -66,6 +69,9 @@ class UserProvider extends ChangeNotifier {
   String get linkedin => _linkedin;
   String get facebook => _facebook;
   UserRole get role => _role;
+    String get location => _location;
+  String get companySize => _companySize;
+  String get industry => _industry;
   
   // Settings & Privacy getters
   String get theme => _theme;
@@ -124,6 +130,9 @@ class UserProvider extends ChangeNotifier {
     _github = data['github'] ?? '';
     _linkedin = data['linkedin'] ?? '';
     _facebook = data['facebook'] ?? '';
+        _location = data['location'] ?? '';
+    _companySize = data['companySize'] ?? '';
+    _industry = data['industry'] ?? '';
     
     final roleStr = data['role']?.toString().toLowerCase();
     switch (roleStr) {
@@ -208,6 +217,10 @@ class UserProvider extends ChangeNotifier {
     required String facebook,
     String? avatarPath,
     bool clearAvatar = false,
+        String? location,
+    String? companySize,
+    String? industry,
+
   }) {
     _name = name;
     _email = email;
@@ -216,12 +229,17 @@ class UserProvider extends ChangeNotifier {
     _github = github;
     _linkedin = linkedin;
     _facebook = facebook;
+        if (location != null) _location = location;
+    if (companySize != null) _companySize = companySize;
+    if (industry != null) _industry = industry;
+
     if (clearAvatar) {
       _avatarPath = null;
     } else if (avatarPath != null) {
       _avatarPath = avatarPath;
     }
     notifyListeners();
+
   }
 
   // ── Course progress (local only) ──
@@ -254,6 +272,11 @@ class UserProvider extends ChangeNotifier {
     _coursesCreated = 0; _totalStudents = 0; _averageRating = 0.0;
     _jobsPosted = 0; _totalApplicants = 0;
     _enrolledCourses.clear();
+    
+    // ✅ مسح الحقول الجديدة عند الخروج
+    _location = '';
+    _companySize = '';
+    _industry = '';
+    
     notifyListeners();
-  }
-}
+  }}

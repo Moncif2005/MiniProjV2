@@ -59,6 +59,8 @@ class RecruiterApplicantsScreen extends StatelessWidget {
                   separatorBuilder: (_, __) => const SizedBox(height: 12),
                   itemBuilder: (_, index) {
                     final app = applicants[index];
+                    final applicantId = app['applicantId']; // ✅ استخراج معرف الطالب
+                    
                     return _ApplicantCard(
                       application: app,
                       onUpdateStatus: (status, message) async {
@@ -73,6 +75,13 @@ class RecruiterApplicantsScreen extends StatelessWidget {
                           ));
                         }
                       },
+                      // ✅ عند النقر على الصورة: اذهب للبروفايل العام للطالب
+                      onAvatarTap: applicantId != null ? () {
+                        Navigator.pushNamed(context, '/public/profile', arguments: {
+                          'userId': applicantId,
+                          'role': 'etudiant',
+                        });
+                      } : null,
                     );
                   },
                 );
@@ -82,17 +91,25 @@ class RecruiterApplicantsScreen extends StatelessWidget {
   }
 }
 
-// ── Applicant Card (نفس الكود السابق) ──
+// ── Applicant Card (مُحدّث مع Avatar قابل للنقر) ──
 class _ApplicantCard extends StatefulWidget {
   final Map<String, dynamic> application;
   final Function(String, String?) onUpdateStatus;
-  const _ApplicantCard({required this.application, required this.onUpdateStatus});
+  final VoidCallback? onAvatarTap;  // ✅ جديد: استدعاء عند النقر على الصورة
+
+  const _ApplicantCard({
+    required this.application, 
+    required this.onUpdateStatus,
+    this.onAvatarTap,  // ✅ جديد
+  });
+
   @override
   State<_ApplicantCard> createState() => _ApplicantCardState();
 }
 
 class _ApplicantCardState extends State<_ApplicantCard> {
   late String _currentStatus;
+
   @override
   void initState() {
     super.initState();
@@ -109,10 +126,20 @@ class _ApplicantCardState extends State<_ApplicantCard> {
     }
   }
 
+  // ✅ دالة مساعدة: توليد الأحرف الأولى من الاسم (مثل: "Ahmed Hassan" → "AH")
+  String _getInitials(String name) {
+    if (name.isEmpty) return '?';
+    final parts = name.trim().split(' ');
+    if (parts.length == 1) return parts[0][0].toUpperCase();
+    return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
     final app = widget.application;
+    final applicantName = app['applicantName'] ?? 'Anonymous';
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: ShapeDecoration(
@@ -120,11 +147,51 @@ class _ApplicantCardState extends State<_ApplicantCard> {
         shape: RoundedRectangleBorder(side: BorderSide(width: 1.24, color: c.border), borderRadius: BorderRadius.circular(16)),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          Expanded(child: Text(app['applicantName'] ?? 'Anonymous', style: TextStyle(color: c.textPrimary, fontSize: 16, fontFamily: 'Inter', fontWeight: FontWeight.w700))),
-          Text(_formatDate(app['appliedAt']), style: TextStyle(color: c.textMuted, fontSize: 12, fontFamily: 'Inter')),
-        ]),
+        
+        // ✅ الصف الجديد: Avatar (Initials) + اسم المتقدم (قابل للنقر)
+        Row(
+          children: [
+            // ✅ Avatar: GestureDetector يغلف الـ Container
+            GestureDetector(
+              onTap: widget.onAvatarTap,  // ✅ يستدعي الدالة الممررة من الشاشة الأب
+              child: Container(
+                width: 44, height: 44,
+                decoration: BoxDecoration(
+                  color: AppColors.primaryLight,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Center(
+                  child: Text(
+                    _getInitials(applicantName),  // ✅ يولد الأحرف الأولى
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontSize: 16,
+                      fontFamily: 'Inter',
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            
+            // ✅ اسم المتقدم
+            Expanded(
+              child: Text(
+                applicantName,
+                style: TextStyle(color: c.textPrimary, fontSize: 16, fontFamily: 'Inter', fontWeight: FontWeight.w700),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            
+            // ✅ تاريخ التقديم (ينقل للأسفل ليترك مساحة للاسم)
+            Text(_formatDate(app['appliedAt']), style: TextStyle(color: c.textMuted, fontSize: 11, fontFamily: 'Inter')),
+          ],
+        ),
         const SizedBox(height: 12),
+        
+        // ✅ صف الحالة + Dropdown (لم يتغير)
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -145,6 +212,8 @@ class _ApplicantCardState extends State<_ApplicantCard> {
           ),
         ]),
         const SizedBox(height: 12),
+        
+        // ✅ الوظيفة المُقدَّم عليها (لم يتغير)
         Row(children: [
           Icon(Icons.work_outline_rounded, size: 14, color: c.textMuted),
           const SizedBox(width: 4),

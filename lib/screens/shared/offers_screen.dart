@@ -16,8 +16,15 @@ class OffersScreen extends StatefulWidget {
 class _OffersScreenState extends State<OffersScreen> {
   final _searchCtrl = TextEditingController();
   String? _selectedType;
-  final _jobTypes = ['All', 'Full-time', 'Part-time', 'Remote', 'Hybrid', 'Contract'];
-  
+  final _jobTypes = [
+    'All',
+    'Full-time',
+    'Part-time',
+    'Remote',
+    'Hybrid',
+    'Contract',
+  ];
+
   final _offersService = OffersService();
 
   @override
@@ -29,13 +36,16 @@ class _OffersScreenState extends State<OffersScreen> {
   // ✅ 1. منطق التقديم
   Future<void> _applyToJob(Map<String, dynamic> offer) async {
     final user = FirebaseAuth.instance.currentUser;
-    
+
     final userProvider = Provider.of<UserProvider>(context, listen: false);
-    
+
     if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Please sign in to apply'), backgroundColor: AppColors.red,
-      ));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please sign in to apply'),
+          backgroundColor: AppColors.red,
+        ),
+      );
       return;
     }
 
@@ -43,10 +53,18 @@ class _OffersScreenState extends State<OffersScreen> {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Apply for this job?'),
-        content: Text('Submit your application for "${offer['title']}" at ${offer['company']}?'),
+        content: Text(
+          'Submit your application for "${offer['title']}" at ${offer['company']}?',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Apply')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Apply'),
+          ),
         ],
       ),
     );
@@ -64,10 +82,14 @@ class _OffersScreenState extends State<OffersScreen> {
       );
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(success ? 'Application submitted! ✓' : 'Failed to apply'),
-          backgroundColor: success ? AppColors.green : AppColors.red,
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              success ? 'Application submitted! ✓' : 'Failed to apply',
+            ),
+            backgroundColor: success ? AppColors.green : AppColors.red,
+          ),
+        );
       }
     }
   }
@@ -81,13 +103,21 @@ class _OffersScreenState extends State<OffersScreen> {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Withdraw Application?'),
-        content: const Text('This will remove your application and decrease the applicant count.'),
+        content: const Text(
+          'This will remove your application and decrease the applicant count.',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Keep')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Keep'),
+          ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: AppColors.red),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Withdraw', style: TextStyle(color: Colors.white)),
+            child: const Text(
+              'Withdraw',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -100,24 +130,193 @@ class _OffersScreenState extends State<OffersScreen> {
       );
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(success ? 'Application withdrawn ✓' : 'Failed to withdraw'),
-          backgroundColor: success ? AppColors.green : AppColors.red,
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              success ? 'Application withdrawn ✓' : 'Failed to withdraw',
+            ),
+            backgroundColor: success ? AppColors.green : AppColors.red,
+          ),
+        );
       }
     }
   }
-
-  // ✅ دالة إدارة الوظيفة - تستخدم Navigator.push لتجنب مشاكل الـ Context
-  void _manageOffer(Map<String, dynamic> offer) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ManageOfferScreen(offer: offer),
-      ),
+  Widget _buildMenuOption({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      leading: Icon(icon, color: color),
+      title: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+      onTap: onTap,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     );
   }
 
+void _manageOffer(Map<String, dynamic> job) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (context) => Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // شريط سحب صغير
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Manage: ${job['title']}',
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, fontFamily: 'Inter'),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          
+          // ✅ خيار 1: تعديل الوظيفة
+          _buildMenuOption(
+            icon: Icons.edit_outlined,
+            label: 'Edit Job Details',
+            color: Colors.blue,
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/recruteur/edit-offer', arguments: job);
+            },
+          ),
+          
+          // ✅ خيار 2: عرض المتقدمين
+                    _buildMenuOption(
+            icon: Icons.people_outline_rounded,
+            label: 'View Applicants (${job['applicationsCount'] ?? 0})',
+            color: AppColors.purple,
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(
+                context, 
+                '/recruteur/applicants', 
+                arguments: {'offerId': job['id'], 'offerTitle': job['title']},
+              );
+            },
+          ),
+
+// ✅ خيار ذكي: غلق/فتح الوظيفة حسب حالتها
+_buildMenuOption(
+  icon: (job['isActive'] == true) ? Icons.lock_outline_rounded : Icons.lock_open_rounded,
+  label: (job['isActive'] == true) ? 'Close Job' : 'Open Job',  // ✅ يتغير النص ديناميكياً
+  color: (job['isActive'] == true) ? Colors.orange : Colors.green, // ✅ يتغير اللون أيضاً
+  onTap: () async {
+    Navigator.pop(context);
+    await Future.delayed(const Duration(milliseconds: 200));
+    if (!mounted) return;
+    
+    final isActive = job['isActive'] == true;
+    
+    // نصوص ورسائل ديناميكية حسب الحالة
+    final title = isActive ? 'Close Job?' : 'Open Job?';
+    final content = isActive 
+        ? 'This will hide the job from seekers. You can reopen it later.'
+        : 'This will make the job visible to seekers again.';
+    final actionText = isActive ? 'Close' : 'Open';
+    final actionColor = isActive ? Colors.orange : Colors.green;
+    
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(title),
+        content: Text(content),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancel')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: actionColor),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(actionText, style: const TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+    
+    if (confirmed == true && mounted) {
+      bool success = false;
+      
+      if (isActive) {
+        // ✅ غلق الوظيفة
+        success = await _offersService.deactivateOffer(job['id']);
+      } else {
+        // ✅ فتح الوظيفة
+        success = await _offersService.activateOffer(job['id']);
+      }
+      
+      if (mounted && success) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(isActive ? 'Job closed ✓' : 'Job opened ✓'),
+          backgroundColor: AppColors.green,
+        ));
+      }
+    }
+  },
+),
+          
+          // ✅ خيار 4: حذف الوظيفة نهائياً (جديد - يحذف من القاعدة)
+          _buildMenuOption(
+            icon: Icons.delete_outline_rounded,
+            label: 'Delete Permanently',  // ✅ زر جديد للحذف النهائي
+            color: Colors.red,
+            onTap: () async {
+              Navigator.pop(context);
+              await Future.delayed(const Duration(milliseconds: 200));
+              if (!mounted) return;
+              
+              final confirmed = await showDialog<bool>(
+                context: context,
+                builder: (dialogContext) => AlertDialog(
+                  title: const Text('Delete Permanently?'),
+                  content: const Text('This will permanently delete the job and all its applications. This action cannot be undone!'),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancel')),
+                    FilledButton(
+                      style: FilledButton.styleFrom(backgroundColor: Colors.red),
+                      onPressed: () => Navigator.pop(dialogContext, true),
+                      child: const Text('Delete', style: TextStyle(color: Colors.white)),
+                    ),
+                  ],
+                ),
+              );
+              
+              if (confirmed == true && mounted) {
+                // ✅ نستخدم deleteOffer للحذف النهائي من Firestore
+                await _offersService.deleteOffer(job['id']);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                    content: Text('Job deleted permanently ✓'), backgroundColor: AppColors.green));
+                }
+              }
+            },
+          ),
+          
+          const SizedBox(height: 16),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+          ),
+          const SizedBox(height: 10),
+        ],
+      ),
+    ),
+  );
+}
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
@@ -125,6 +324,12 @@ class _OffersScreenState extends State<OffersScreen> {
     final isRecruiter = userRole == UserRole.recruteur;
 
     return Scaffold(
+      //     appBar: AppBar(
+      //       leading: IconButton(
+      //   icon: const Icon(Icons.arrow_back_ios), // أو أي أيقونة تفضلها
+      //   onPressed: () => Navigator.pop(context), // هذه الدالة هي التي ترجعك للخلف
+      // ),
+      //     ),
       backgroundColor: c.bg,
       body: Column(
         children: [
@@ -141,6 +346,36 @@ class _OffersScreenState extends State<OffersScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
+                    GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: Container(
+                        width: 38,
+                        height: 38,
+                        decoration: ShapeDecoration(
+                          color: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            side: const BorderSide(
+                              width: 1.24,
+                              color: Color(0xFFF5F5F5),
+                            ),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          shadows: const [
+                            BoxShadow(
+                              color: Color(0x19000000),
+                              blurRadius: 2,
+                              offset: Offset(0, 1),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          size: 16,
+                          color: Color(0xFF171717),
+                        ),
+                      ),
+                    ),
+
                     Text(
                       'Job Offers',
                       style: TextStyle(
@@ -153,26 +388,34 @@ class _OffersScreenState extends State<OffersScreen> {
                     // زر نشر وظيفة (يظهر للمسؤول فقط)
                     if (isRecruiter)
                       GestureDetector(
-                        onTap: () => Navigator.pushNamed(context, '/recruteur/post-job'),
+                        onTap: () =>
+                            Navigator.pushNamed(context, '/recruteur/post-job'),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
                           decoration: BoxDecoration(
                             color: AppColors.purple,
                             borderRadius: BorderRadius.circular(14),
                           ),
                           child: const Row(
                             children: [
-                              Icon(Icons.add_rounded, color: Colors.white, size: 18),
-                              SizedBox(width: 4),
-                              Text(
-                                'Post Job',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 14,
-                                  fontFamily: 'Inter',
-                                  fontWeight: FontWeight.w600,
-                                ),
+                              Icon(
+                                Icons.add_rounded,
+                                color: Colors.white,
+                                size: 18,
                               ),
+                              SizedBox(width: 4),
+                              // Text(
+                              //   'Post Job',
+                              //   style: TextStyle(
+                              //     color: Colors.white,
+                              //     fontSize: 14,
+                              //     fontFamily: 'Inter',
+                              //     fontWeight: FontWeight.w600,
+                              //   ),
+                              // ),
                             ],
                           ),
                         ),
@@ -180,7 +423,7 @@ class _OffersScreenState extends State<OffersScreen> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                
+
                 // 🔍 Search Bar
                 Container(
                   decoration: ShapeDecoration(
@@ -196,9 +439,15 @@ class _OffersScreenState extends State<OffersScreen> {
                     decoration: InputDecoration(
                       hintText: 'Search jobs, companies...',
                       hintStyle: TextStyle(color: c.textMuted),
-                      prefixIcon: Icon(Icons.search_rounded, color: c.textMuted),
+                      prefixIcon: Icon(
+                        Icons.search_rounded,
+                        color: c.textMuted,
+                      ),
                       border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
                     ),
                     onChanged: (_) => setState(() {}),
                   ),
@@ -215,21 +464,30 @@ class _OffersScreenState extends State<OffersScreen> {
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: _jobTypes.map((type) {
-                  final isSelected = _selectedType == type || (type == 'All' && _selectedType == null);
+                  final isSelected =
+                      _selectedType == type ||
+                      (type == 'All' && _selectedType == null);
                   return Container(
                     margin: const EdgeInsets.only(right: 8),
                     decoration: BoxDecoration(
                       color: isSelected ? AppColors.purple : c.surface,
                       borderRadius: BorderRadius.circular(100),
-                      border: Border.all(color: isSelected ? AppColors.purple : c.border),
+                      border: Border.all(
+                        color: isSelected ? AppColors.purple : c.border,
+                      ),
                     ),
                     child: Material(
                       color: Colors.transparent,
                       child: InkWell(
                         borderRadius: BorderRadius.circular(100),
-                        onTap: () => setState(() => _selectedType = type == 'All' ? null : type),
+                        onTap: () => setState(
+                          () => _selectedType = type == 'All' ? null : type,
+                        ),
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
                           child: Text(
                             type,
                             style: TextStyle(
@@ -259,7 +517,7 @@ class _OffersScreenState extends State<OffersScreen> {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
-                
+
                 if (snapshot.hasError) {
                   return Center(
                     child: Text(
@@ -270,13 +528,17 @@ class _OffersScreenState extends State<OffersScreen> {
                 }
 
                 final offers = snapshot.data ?? [];
-                
+
                 if (offers.isEmpty) {
                   return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.work_outline_rounded, size: 64, color: c.textMuted),
+                        Icon(
+                          Icons.work_outline_rounded,
+                          size: 64,
+                          color: c.textMuted,
+                        ),
                         const SizedBox(height: 16),
                         Text(
                           'No jobs found',
@@ -301,18 +563,43 @@ class _OffersScreenState extends State<OffersScreen> {
                 return ListView.builder(
                   padding: const EdgeInsets.all(24),
                   itemCount: offers.length,
-itemBuilder: (context, index) {
-  final offer = offers[index];
-  
-  return JobCard(
-    offer: offer,
-    isRecruiter: isRecruiter,
-    isOwner: false,  // ✅ دائماً false في OffersScreen
-    onApply: () => _applyToJob(offer),
-    onWithdraw: () => _withdrawFromJob(offer),
-    onManage: null,  // ✅ null في OffersScreen (لا يظهر زر Manage)
-  );
-},                );
+                  itemBuilder: (context, index) {
+                    final offer = offers[index];
+                    final currentUserId =
+                        FirebaseAuth.instance.currentUser?.uid;
+                    final recruiterId = offer['recruiterId'] as String?;
+
+                    // ✅ 1. حساب isOwner محلياً قبل استخدامه
+                    final isOwner =
+                        currentUserId != null && recruiterId == currentUserId;
+
+                    return JobCard(
+                      offer: offer,
+                      isRecruiter: isRecruiter,
+                      isOwner: isOwner, // ✅ الآن المتغير معرف بشكل صحيح
+                      onManage: isOwner
+                          ? () => _manageOffer(offer)
+                          : null, // ✅ تمرير فقط للمالك
+
+                      onApply: () => _applyToJob(offer),
+                      onWithdraw: () => _withdrawFromJob(offer),
+
+                      // ✅ 2. رابط البروفايل عند النقر على الشعار
+                      onAvatarTap: recruiterId != null
+                          ? () {
+                              Navigator.pushNamed(
+                                context,
+                                '/public/profile',
+                                arguments: {
+                                  'userId': recruiterId,
+                                  'role': 'recruteur',
+                                },
+                              );
+                            }
+                          : null,
+                    );
+                  },
+                );
               },
             ),
           ),
@@ -321,7 +608,6 @@ itemBuilder: (context, index) {
     );
   }
 }
-
 
 // import 'package:flutter/material.dart';
 // import 'package:provider/provider.dart';

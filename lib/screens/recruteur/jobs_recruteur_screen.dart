@@ -281,16 +281,24 @@ _buildMenuOption(
                           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                           itemCount: filtered.length,
                           separatorBuilder: (_, __) => const SizedBox(height: 16),
-                          itemBuilder: (context, index) {
-                            final job = filtered[index];
-                            // ✅ التحسين 2: التأكد من تمرير onManage بشكل صحيح
-                            return JobCard(
-                              offer: job,
-                              isRecruiter: true,
-                              isOwner: true, 
-                              onManage: () => _manageJob(job), 
-                            );
-                          },
+                      itemBuilder: (context, index) {
+  final job = filtered[index];
+  final recruiterId = job['recruiterId'] as String?; // ✅ استخراج معرف الناشر
+  
+  return JobCard(
+    offer: job,
+    isRecruiter: true,
+    isOwner: true,
+    onManage: () => _manageJob(job),
+    // ✅ عند النقر على الشعار: اذهب لبروفايل الشركة (نفسها)
+    onAvatarTap: recruiterId != null ? () {
+      Navigator.pushNamed(context, '/public/profile', arguments: {
+        'userId': recruiterId,
+        'role': 'recruteur',
+      });
+    } : null,
+  );
+},
                         );
                       },
                     ),

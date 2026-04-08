@@ -138,6 +138,42 @@ Stream<List<Map<String, dynamic>>> getApplicationsForOffer(String offerId) {
 }
 
 // ─────────────────────────────────────────────────────────────
+// ✅ COUNT HIRED: حساب عدد المقبولين (المُوظَّفين) فعلياً من Firestore
+// ─────────────────────────────────────────────────────────────
+Stream<int> getHiredCountStream(String recruiterId) {
+  return _offersRef
+      .where('recruiterId', isEqualTo: recruiterId)
+      .snapshots()
+      .asyncMap((offersSnapshot) async {
+    final offerIds = offersSnapshot.docs.map((d) => d.id).toList();
+    
+    if (offerIds.isEmpty) return 0;
+    
+    // ⚠️ ملاحظة: whereIn يقبل حد أقصى 10 قيم في استعلام واحد
+    // إذا كان لديك أكثر من 10 وظائف نشطة، ستحتاج لتقسيم الاستعلام أو استخدام Cloud Function
+    if (offerIds.length <= 10) {
+      final hiredSnap = await _applicationsRef
+          .where('offerId', whereIn: offerIds)
+          .where('status', isEqualTo: 'accepted')
+          .count()
+          .get();
+      return hiredSnap.count ?? 0;
+    } else {
+      // حل بديل للكميات الكبيرة: جمع العداد يدوياً (أقل كفاءة لكن يعمل)
+      int count = 0;
+      for (var offerId in offerIds) {
+        final snap = await _applicationsRef
+            .where('offerId', isEqualTo: offerId)
+            .where('status', isEqualTo: 'accepted')
+            .count()
+            .get();
+        count += (snap.count ?? 0);
+      }
+      return count;
+    }
+  });
+}
+// ─────────────────────────────────────────────────────────────
 // ✅ UPDATE: تحديث حالة طلب التقديم
 // ─────────────────────────────────────────────────────────────
 Future<bool> updateApplicationStatus({

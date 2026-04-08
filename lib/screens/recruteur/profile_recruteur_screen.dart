@@ -1,6 +1,8 @@
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:minipr/screens/recruteur/recruiter_applicants_screen.dart';
 import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
 import '../../theme/app_colors.dart';
@@ -16,6 +18,39 @@ class ProfileRecruteurScreen extends StatefulWidget {
 }
 
 class _ProfileRecruteurScreenState extends State<ProfileRecruteurScreen> {
+  // ✅ أضف هذه الدالة داخل كلاس _ProfileRecruteurScreenState
+  Stream<Map<String, dynamic>> _buildStatsStream(String recruiterId) {
+    return FirebaseFirestore.instance
+        .collection('offers')
+        .where('recruiterId', isEqualTo: recruiterId)
+        .snapshots()
+        .asyncMap((snapshot) async {
+          int jobsPosted = 0, totalApplicants = 0, hiredCount = 0;
+          final offerIds = snapshot.docs.map((d) => d.id).toList();
+
+          for (var doc in snapshot.docs) {
+            if (doc['isActive'] == true) jobsPosted++;
+            totalApplicants += (doc['applicationsCount'] as num?)?.toInt() ?? 0;
+          }
+
+          if (offerIds.isNotEmpty) {
+            final hired = await FirebaseFirestore.instance
+                .collection('applications')
+                .where('offerId', whereIn: offerIds)
+                .where('status', isEqualTo: 'accepted')
+                .count()
+                .get();
+            hiredCount = hired.count ?? 0;
+          }
+
+          return {
+            'jobsPosted': jobsPosted,
+            'totalApplicants': totalApplicants,
+            'hiredCount': hiredCount,
+          };
+        });
+  }
+
   int _currentNavIndex = 3;
   Map<String, dynamic> _stats = {
     'jobsPosted': 0,
@@ -54,7 +89,16 @@ class _ProfileRecruteurScreenState extends State<ProfileRecruteurScreen> {
       _loadStats();
     }
   }
-
+// ✅ دالة ذكية لاستخراج الموقع من أفضل حقل متاح
+String _getUserLocation(UserProvider user) {
+  // نجرب عدة حقول محتملة للموقع
+  if (user.phone?.isNotEmpty == true && user.phone!.contains(RegExp(r'[a-zA-Z]'))) {
+    // إذا كان الهاتف يحتوي على نص، ربما هو موقع
+    return user.phone!;
+  }
+  // يمكن إضافة حقول أخرى مستقبلاً مثل: user.location, user.address
+  return '—'; // عرض شرطة إذا لم يوجد موقع
+}
   // ── Helper: Build initials avatar ──
   Widget _buildInitials(ThemeColors c, UserProvider user) {
     return Container(
@@ -312,56 +356,77 @@ class _ProfileRecruteurScreenState extends State<ProfileRecruteurScreen> {
                           ),
 
                           // ── Stats (ديناميكية من Firestore) ──
+                          // ── Stats (لحظية عبر Stream) ──
                           Transform.translate(
                             offset: const Offset(0, -24),
-                            child: _statsLoading
-                                ? const SizedBox(
+                            child: StreamBuilder<Map<String, dynamic>>(
+                              stream:
+                                  FirebaseAuth.instance.currentUser?.uid != null
+                                  ? _buildStatsStream(
+                                      FirebaseAuth.instance.currentUser!.uid,
+                                    )
+                                  : null,
+                              builder: (context, snapshot) {
+                                if (snapshot.connectionState ==
+                                    ConnectionState.waiting) {
+                                  return const SizedBox(
                                     height: 32,
                                     child: Center(
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
                                       ),
                                     ),
-                                  )
-                                : Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      _StatItem(
-                                        value: '${_stats['jobsPosted']}',
-                                        label: 'JOBS',
-                                        textColor: c.textPrimary,
-                                        labelColor: c.textMuted,
+                                  );
+                                }
+                                final stats =
+                                    snapshot.data ??
+                                    {
+                                      'jobsPosted': 0,
+                                      'totalApplicants': 0,
+                                      'hiredCount': 0,
+                                    };
+
+                                return Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    _StatItem(
+                                      value: '${stats['jobsPosted']}',
+                                      label: 'JOBS',
+                                      textColor: c.textPrimary,
+                                      labelColor: c.textMuted,
+                                    ),
+                                    Container(
+                                      width: 1,
+                                      height: 32,
+                                      color: c.border,
+                                      margin: const EdgeInsets.symmetric(
+                                        horizontal: 16,
                                       ),
-                                      Container(
-                                        width: 1,
-                                        height: 32,
-                                        color: c.border,
-                                        margin: const EdgeInsets.symmetric(
-                                          horizontal: 16,
-                                        ),
+                                    ),
+                                    _StatItem(
+                                      value: '${stats['totalApplicants']}',
+                                      label: 'CANDIDATES',
+                                      textColor: c.textPrimary,
+                                      labelColor: c.textMuted,
+                                    ),
+                                    Container(
+                                      width: 1,
+                                      height: 32,
+                                      color: c.border,
+                                      margin: const EdgeInsets.symmetric(
+                                        horizontal: 16,
                                       ),
-                                      _StatItem(
-                                        value: '${_stats['totalApplicants']}',
-                                        label: 'CANDIDATES',
-                                        textColor: c.textPrimary,
-                                        labelColor: c.textMuted,
-                                      ),
-                                      Container(
-                                        width: 1,
-                                        height: 32,
-                                        color: c.border,
-                                        margin: const EdgeInsets.symmetric(
-                                          horizontal: 16,
-                                        ),
-                                      ),
-                                      _StatItem(
-                                        value: '${_stats['hiredCount']}',
-                                        label: 'HIRED',
-                                        textColor: c.textPrimary,
-                                        labelColor: c.textMuted,
-                                      ),
-                                    ],
-                                  ),
+                                    ),
+                                    _StatItem(
+                                      value: '${stats['hiredCount']}',
+                                      label: 'HIRED',
+                                      textColor: c.textPrimary,
+                                      labelColor: c.textMuted,
+                                    ),
+                                  ],
+                                );
+                              },
+                            ),
                           ),
                         ],
                       ),
@@ -370,82 +435,41 @@ class _ProfileRecruteurScreenState extends State<ProfileRecruteurScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-
-              // ── Company Info (مع زر تعديل) ──
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: ShapeDecoration(
-                  color: c.surface,
-                  shape: RoundedRectangleBorder(
-                    side: BorderSide(width: 1.24, color: c.border),
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Company Info',
-                          style: TextStyle(
-                            color: c.textPrimary,
-                            fontSize: 18,
-                            fontFamily: 'Inter',
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        // ✅ زر تعديل معلومات الشركة
-                        TextButton.icon(
-                          onPressed: () =>
-                              Navigator.pushNamed(context, '/edit-profile'),
-                          icon: const Icon(Icons.edit_rounded, size: 16),
-                          label: const Text(
-                            'Edit',
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          style: TextButton.styleFrom(
-                            foregroundColor: AppColors.purple,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    _InfoRow(
-                      c: c,
-                      icon: Icons.business_rounded,
-                      label: 'Company',
-                      value: user.name.isNotEmpty ? user.name : '—',
-                    ),
-                    const SizedBox(height: 12),
-                    _InfoRow(
-                      c: c,
-                      icon: Icons.location_on_outlined,
-                      label: 'Location',
-                      value: user.phone.isNotEmpty ? user.phone : '—',
-                    ),
-                    const SizedBox(height: 12),
-                    _InfoRow(
-                      c: c,
-                      icon: Icons.people_rounded,
-                      label: 'Company Size',
-                      value: '50–200 employees',
-                    ),
-                    const SizedBox(height: 12),
-                    _InfoRow(
-                      c: c,
-                      icon: Icons.language_rounded,
-                      label: 'Industry',
-                      value: 'Technology & Software',
-                    ),
-                  ],
-                ),
-              ),
+// ── Company Info (ديناميكي من الحقول الجديدة) ──
+Container(
+  width: double.infinity,
+  padding: const EdgeInsets.all(20),
+  decoration: ShapeDecoration(
+    color: c.surface,
+    shape: RoundedRectangleBorder(
+      side: BorderSide(width: 1.24, color: c.border),
+      borderRadius: BorderRadius.circular(24),
+    ),
+  ),
+  child: Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text('Company Info', style: TextStyle(color: c.textPrimary, fontSize: 18, fontFamily: 'Inter', fontWeight: FontWeight.w700)),
+          TextButton.icon(
+            onPressed: () => Navigator.pushNamed(context, '/edit-profile'),
+            icon: const Icon(Icons.edit_rounded, size: 16),
+            label: const Text('Edit', style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600)),
+            style: TextButton.styleFrom(foregroundColor: AppColors.purple),
+          ),
+        ],
+      ),
+      const SizedBox(height: 16),
+      
+      _InfoRow(c: c, icon: Icons.business_rounded, label: 'Company', value: user.name.isNotEmpty ? user.name : '—'),
+      const SizedBox(height: 12),
+_InfoRow(c: c, icon: Icons.location_on_outlined, label: 'Location', value: user.location.isNotEmpty ? user.location : '—'),
+_InfoRow(c: c, icon: Icons.people_rounded, label: 'Company Size', value: user.companySize.isNotEmpty ? user.companySize : '—'),
+_InfoRow(c: c, icon: Icons.language_rounded, label: 'Industry', value: user.industry.isNotEmpty ? user.industry : '—'),    ],
+  ),
+),
               const SizedBox(height: 16),
 
               // ── Menu Items ──
@@ -467,10 +491,8 @@ class _ProfileRecruteurScreenState extends State<ProfileRecruteurScreen> {
                 iconColor: AppColors.primary,
                 title: 'Candidates',
                 badge: _statsLoading ? null : '${_stats['totalApplicants']}',
-                onTap: () => Navigator.pushNamed(
-                  context,
-                  '/recruteur/applicants',
-                ), // ✅ شاشة جميع المتقدمين
+                onTap: () =>
+                    Navigator.pushNamed(context, '/recruteur/candidates'),
               ),
               const SizedBox(height: 8),
               ProfileMenuItem(
