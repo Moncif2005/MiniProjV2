@@ -159,6 +159,47 @@ Future<bool> updateApplicationStatus({
   }
 }
 
+// ─────────────────────────────────────────────────────────────
+// ✅ DELETE: حذف وظيفة نهائياً من Firestore
+// ─────────────────────────────────────────────────────────────
+Future<bool> deleteOffer(String offerId) async {
+  try {
+    // 1. حذف جميع طلبات التقديم المرتبطة بهذه الوظيفة أولاً
+    final applicationsSnapshot = await _applicationsRef
+        .where('offerId', isEqualTo: offerId)
+        .get();
+    
+    for (var doc in applicationsSnapshot.docs) {
+      await doc.reference.delete();
+    }
+    
+    // 2. حذف الوظيفة نفسها
+    await _offersRef.doc(offerId).delete();
+    
+    debugPrint('✅ Offer permanently deleted: $offerId');
+    return true;
+  } catch (e) {
+    debugPrint('❌ Error deleting offer: $e');
+    return false;
+  }
+}
+// ─────────────────────────────────────────────────────────────
+// ✅ ACTIVATE: إعادة تفعيل وظيفة مغلقة
+// ─────────────────────────────────────────────────────────────
+Future<bool> activateOffer(String offerId) async {
+  try {
+    await _offersRef.doc(offerId).update({
+      'isActive': true,
+      'updatedAt': FieldValue.serverTimestamp(),
+      'reactivatedAt': FieldValue.serverTimestamp(),
+    });
+    debugPrint('✅ Offer reactivated: $offerId');
+    return true;
+  } catch (e) {
+    debugPrint('❌ Error activating offer: $e');
+    return false;
+  }
+}
   // ─────────────────────────────────────────────────────────────
   // ✅ DELETE: إلغاء عرض (Soft Delete)
   // ─────────────────────────────────────────────────────────────

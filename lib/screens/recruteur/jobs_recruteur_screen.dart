@@ -18,115 +18,168 @@ class _JobsRecruteurScreenState extends State<JobsRecruteurScreen> {
   final _offersService = OffersService();
 
   // ✅ التحسين 1: نقل الدالة خارج الـ build لضمان استقرار الـ Context
-  void _manageJob(Map<String, dynamic> job) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).scaffoldBackgroundColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // شريط سحب صغير في الأعلى للجمالية
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(10),
-              ),
+void _manageJob(Map<String, dynamic> job) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (context) => Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // شريط سحب صغير
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(10),
             ),
-            const SizedBox(height: 24),
-            Text(
-              'Manage: ${job['title']}',
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                fontFamily: 'Inter',
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            
-            // خيار تعديل الوظيفة
-            _buildMenuOption(
-              icon: Icons.edit_outlined,
-              label: 'Edit Job Details',
-              color: Colors.blue,
-              onTap: () {
-                Navigator.pop(context);
-                // أضف هنا Navigator.push لصفحة التعديل
-                Navigator.pushNamed(context, '/recruteur/edit-offer', arguments: job);
-              },
-            ),
-            
-            // خيار عرض المتقدمين
-            _buildMenuOption(
-              icon: Icons.people_outline_rounded,
-              label: 'View Applicants',
-              color: AppColors.purple,
-              onTap: () {
-                Navigator.pop(context);
-                // أضف هنا الانتقال لصفحة المتقدمين
-                                Navigator.pushNamed(context, '/recruteur/applicants', arguments: {'offerId': job['id'], 'offerTitle': job['title']});
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Manage: ${job['title']}',
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, fontFamily: 'Inter'),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          
+          // ✅ خيار 1: تعديل الوظيفة
+          _buildMenuOption(
+            icon: Icons.edit_outlined,
+            label: 'Edit Job Details',
+            color: Colors.blue,
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/recruteur/edit-offer', arguments: job);
+            },
+          ),
+          
+          // ✅ خيار 2: عرض المتقدمين
+                    _buildMenuOption(
+            icon: Icons.people_outline_rounded,
+            label: 'View Applicants (${job['applicationsCount'] ?? 0})',
+            color: AppColors.purple,
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(
+                context, 
+                '/recruteur/applicants', 
+                arguments: {'offerId': job['id'], 'offerTitle': job['title']},
+              );
+            },
+          ),
 
-              },
-            ),
-            
-            // خيار حذف الوظيفة
-            _buildMenuOption(
-              icon: Icons.delete_outline_rounded,
-              label: 'Delete Job Post',
-              color: Colors.red,
-              onTap: () async {
-                Navigator.pop(context);
-                // أضف هنا كود الحذف من Firestore
-                                await Future.delayed(const Duration(milliseconds: 200));
-                
-                // التحقق من أن الشاشة لا تزال موجودة قبل المتابعة
-                if (!mounted) return;
-                
-                final confirmed = await showDialog<bool>(
-                  context: context, // ✅ نستخدم سياق الشاشة هنا أيضاً
-                  builder: (dialogContext) => AlertDialog(
-                    title: const Text('Deactivate?'),
-                    content: const Text('Hide this job from seekers.'),
-                    actions: [
-                      TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancel')),
-                      FilledButton(
-                        style: FilledButton.styleFrom(backgroundColor: AppColors.red),
-                        onPressed: () => Navigator.pop(dialogContext, true),
-                        child: const Text('Deactivate', style: TextStyle(color: Colors.white)),
-                      ),
-                    ],
-                  ),
-                );
-                
-                if (confirmed == true && mounted) {
-                  await _offersService.deactivateOffer(job['id']);
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Job deactivated'), backgroundColor: AppColors.green));
-                  }
-                }
-              },
-            ),
-            
-            const SizedBox(height: 16),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
-            ),
-            const SizedBox(height: 10),
-          ],
-        ),
+// ✅ خيار ذكي: غلق/فتح الوظيفة حسب حالتها
+_buildMenuOption(
+  icon: (job['isActive'] == true) ? Icons.lock_outline_rounded : Icons.lock_open_rounded,
+  label: (job['isActive'] == true) ? 'Close Job' : 'Open Job',  // ✅ يتغير النص ديناميكياً
+  color: (job['isActive'] == true) ? Colors.orange : Colors.green, // ✅ يتغير اللون أيضاً
+  onTap: () async {
+    Navigator.pop(context);
+    await Future.delayed(const Duration(milliseconds: 200));
+    if (!mounted) return;
+    
+    final isActive = job['isActive'] == true;
+    
+    // نصوص ورسائل ديناميكية حسب الحالة
+    final title = isActive ? 'Close Job?' : 'Open Job?';
+    final content = isActive 
+        ? 'This will hide the job from seekers. You can reopen it later.'
+        : 'This will make the job visible to seekers again.';
+    final actionText = isActive ? 'Close' : 'Open';
+    final actionColor = isActive ? Colors.orange : Colors.green;
+    
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(title),
+        content: Text(content),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancel')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: actionColor),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(actionText, style: const TextStyle(color: Colors.white)),
+          ),
+        ],
       ),
     );
-  }
+    
+    if (confirmed == true && mounted) {
+      bool success = false;
+      
+      if (isActive) {
+        // ✅ غلق الوظيفة
+        success = await _offersService.deactivateOffer(job['id']);
+      } else {
+        // ✅ فتح الوظيفة
+        success = await _offersService.activateOffer(job['id']);
+      }
+      
+      if (mounted && success) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(isActive ? 'Job closed ✓' : 'Job opened ✓'),
+          backgroundColor: AppColors.green,
+        ));
+      }
+    }
+  },
+),
+          
+          // ✅ خيار 4: حذف الوظيفة نهائياً (جديد - يحذف من القاعدة)
+          _buildMenuOption(
+            icon: Icons.delete_outline_rounded,
+            label: 'Delete Permanently',  // ✅ زر جديد للحذف النهائي
+            color: Colors.red,
+            onTap: () async {
+              Navigator.pop(context);
+              await Future.delayed(const Duration(milliseconds: 200));
+              if (!mounted) return;
+              
+              final confirmed = await showDialog<bool>(
+                context: context,
+                builder: (dialogContext) => AlertDialog(
+                  title: const Text('Delete Permanently?'),
+                  content: const Text('This will permanently delete the job and all its applications. This action cannot be undone!'),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancel')),
+                    FilledButton(
+                      style: FilledButton.styleFrom(backgroundColor: Colors.red),
+                      onPressed: () => Navigator.pop(dialogContext, true),
+                      child: const Text('Delete', style: TextStyle(color: Colors.white)),
+                    ),
+                  ],
+                ),
+              );
+              
+              if (confirmed == true && mounted) {
+                // ✅ نستخدم deleteOffer للحذف النهائي من Firestore
+                await _offersService.deleteOffer(job['id']);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                    content: Text('Job deleted permanently ✓'), backgroundColor: AppColors.green));
+                }
+              }
+            },
+          ),
+          
+          const SizedBox(height: 16),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+          ),
+          const SizedBox(height: 10),
+        ],
+      ),
+    ),
+  );
+}
 
   // ودجت مساعد لخيارات القائمة
   Widget _buildMenuOption({
