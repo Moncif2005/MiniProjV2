@@ -68,15 +68,15 @@ class _PostJobScreenState extends State<PostJobScreen> {
         description: _descCtrl.text.trim(),
       );
 
-      if (offerId != null) {
-        // ✅ النجاح
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Job posted successfully! 🎉'),
-          backgroundColor: AppColors.green,
-          behavior: SnackBarBehavior.floating,
-        ));
-        
-        // العودة للشاشة الرئيسية لمسؤول التوظيف
+if (offerId != null) {
+  // ✅ النجاح مع توضيح حالة المراجعة
+// في رسالة SnackBar بعد النشر الناجح:
+ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+  content: const Text('Job submitted for review • Will appear after admin approval'),
+  backgroundColor: AppColors.primary,
+  behavior: SnackBarBehavior.floating,
+  duration: const Duration(seconds: 4),
+));        // العودة للشاشة الرئيسية لمسؤول التوظيف
         if (mounted) {
           Navigator.pushNamedAndRemoveUntil(
             context, '/recruteur/home', (r) => false,

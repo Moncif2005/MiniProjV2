@@ -80,56 +80,61 @@ _buildMenuOption(
   icon: (job['isActive'] == true) ? Icons.lock_outline_rounded : Icons.lock_open_rounded,
   label: (job['isActive'] == true) ? 'Close Job' : 'Open Job',  // ✅ يتغير النص ديناميكياً
   color: (job['isActive'] == true) ? Colors.orange : Colors.green, // ✅ يتغير اللون أيضاً
-  onTap: () async {
-    Navigator.pop(context);
-    await Future.delayed(const Duration(milliseconds: 200));
-    if (!mounted) return;
+onTap: () async {
+  Navigator.pop(context);
+  await Future.delayed(const Duration(milliseconds: 200));
+  if (!mounted) return;
+  
+  final isActive = job['isActive'] == true;
+  
+  // ✅ نصوص ديناميكية بسيطة
+  final title = isActive ? 'Close Job?' : 'Open Job?';
+  final content = isActive 
+      ? 'This will hide the job from seekers.'
+      : 'This will make the job visible to seekers (if approved by admin).';
+  final actionText = isActive ? 'Close' : 'Open';
+  final actionColor = isActive ? Colors.orange : Colors.green;
+  
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: Text(title),
+      content: Text(content),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancel')),
+        FilledButton(
+          style: FilledButton.styleFrom(backgroundColor: actionColor),
+          onPressed: () => Navigator.pop(dialogContext, true),
+          child: Text(actionText, style: const TextStyle(color: Colors.white)),
+        ),
+      ],
+    ),
+  );
+  
+  if (confirmed == true && mounted) {
+    bool success = false;
     
-    final isActive = job['isActive'] == true;
-    
-    // نصوص ورسائل ديناميكية حسب الحالة
-    final title = isActive ? 'Close Job?' : 'Open Job?';
-    final content = isActive 
-        ? 'This will hide the job from seekers. You can reopen it later.'
-        : 'This will make the job visible to seekers again.';
-    final actionText = isActive ? 'Close' : 'Open';
-    final actionColor = isActive ? Colors.orange : Colors.green;
-    
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(title),
-        content: Text(content),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancel')),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: actionColor),
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: Text(actionText, style: const TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-    
-    if (confirmed == true && mounted) {
-      bool success = false;
-      
-      if (isActive) {
-        // ✅ غلق الوظيفة
-        success = await _offersService.deactivateOffer(job['id']);
-      } else {
-        // ✅ فتح الوظيفة
-        success = await _offersService.activateOffer(job['id']);
-      }
-      
-      if (mounted && success) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(isActive ? 'Job closed ✓' : 'Job opened ✓'),
-          backgroundColor: AppColors.green,
-        ));
-      }
+    if (isActive) {
+      // ✅ غلق الوظيفة
+      success = await _offersService.deactivateOffer(job['id']);
+    } else {
+      // ✅ فتح الوظيفة: بدون شرط status! المسؤول يتحكم في isActive فقط
+      success = await _offersService.activateOffer(job['id']);
     }
-  },
+    
+    if (mounted && success) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(isActive ? 'Job closed ✓' : 'Job opened ✓'),
+        backgroundColor: AppColors.green,
+      ));
+    } else if (mounted && !success) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Failed to update job status'),
+        backgroundColor: AppColors.red,
+      ));
+    }
+  }
+},
 ),
           
           // ✅ خيار 4: حذف الوظيفة نهائياً (جديد - يحذف من القاعدة)
