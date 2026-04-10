@@ -15,6 +15,7 @@ import 'theme/theme_provider.dart';
 import 'providers/user_provider.dart';
 import 'screens/auth/signin_screen.dart';
 import 'screens/auth/create_account_screen.dart';
+import 'screens/auth/forgot_password_screen.dart';
 
 // ── Étudiant ──
 import 'screens/etudiant/home_etudiant_screen.dart';
@@ -73,6 +74,7 @@ class MyApp extends StatelessWidget {
       routes: {
         '/signup': (context) => const SignUpScreen(),
         '/create-account': (context) => const CreateAccountScreen(),
+        '/forgot-password': (context) => const ForgotPasswordScreen(),
         //انا بدلتها هاذي لما يكون المستخدم مسجل دخول يروح لهوم سكرين واذا ماكانش مسجل دخول يروح لصفحة تسجيل الدخول
         '/home': (context) => const AuthWrapper(),
 
@@ -160,7 +162,7 @@ class MyApp extends StatelessWidget {
   }
   return PublicProfileScreen(
     userId: args['userId'],
-    role: args?['role'] ?? 'user', // 'etudiant' | 'recruteur' | 'enseignant'
+    role: args['role'] ?? 'user', // 'etudiant' | 'recruteur' | 'enseignant'
   );
 },
       },

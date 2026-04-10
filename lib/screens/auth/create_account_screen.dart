@@ -346,24 +346,10 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
               const DividerWithText(label: 'or continue with'),
               const SizedBox(height: 24),
 
-              Row(
-                children: [
-                  Expanded(
-                    child: SocialButton(
-                      label: 'Google',
-                      icon: Icons.g_mobiledata,
-                      onTap: () {},
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: SocialButton(
-                      label: 'Github',
-                      icon: Icons.code,
-                      onTap: () {},
-                    ),
-                  ),
-                ],
+              SocialButton(
+                label: 'Google',
+                icon: Icons.g_mobiledata,
+                onTap: () {},
               ),
               const SizedBox(height: 32),
 

@@ -25,6 +25,16 @@ class _SettingsToggleItemState extends State<SettingsToggleItem> {
     _value = widget.initialValue;
   }
 
+  // Keep in sync when the parent rebuilds with a new initialValue
+  // (e.g. ThemeProvider notifies and isDark flips)
+  @override
+  void didUpdateWidget(SettingsToggleItem oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialValue != widget.initialValue) {
+      _value = widget.initialValue;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(

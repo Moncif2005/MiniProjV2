@@ -700,7 +700,6 @@ class Rx {
     await for (final val in s1) {
       v1 = val;
       has1 = true;
-      if (has1 && has2) yield combiner(v1!, v2!);
     }
     await for (final val in s2) {
       v2 = val;

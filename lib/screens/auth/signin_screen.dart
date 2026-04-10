@@ -137,7 +137,8 @@ Future<void> _handleSignIn() async {
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
-                  onPressed: () {},
+                  onPressed: () =>
+                      Navigator.pushNamed(context, '/forgot-password'),
                   child: Text('Forgot password?',
                       style: TextStyle(color: c.primary, fontFamily: 'Inter',
                           fontWeight: FontWeight.w700)),
@@ -169,14 +170,10 @@ Future<void> _handleSignIn() async {
               const DividerWithText(label: 'Or continue with'),
               const SizedBox(height: 16),
 
-              Row(
-                children: [
-                  Expanded(child: SocialButton(
-                      label: 'Google', icon: Icons.g_mobiledata, onTap: () {})),
-                  const SizedBox(width: 16),
-                  Expanded(child: SocialButton(
-                      label: 'Github', icon: Icons.code, onTap: () {})),
-                ],
+              SocialButton(
+                label: 'Google',
+                icon: Icons.g_mobiledata,
+                onTap: () {},
               ),
               const SizedBox(height: 24),
 

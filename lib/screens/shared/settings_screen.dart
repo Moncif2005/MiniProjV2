@@ -1,8 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:minipr/providers/user_provider.dart';
-import 'package:minipr/services/auth_service.dart';
+import 'package:minipr/theme/theme_provider.dart';
 import 'package:provider/provider.dart';
+import '../../theme/app_colors.dart';
 import '../../widgets/settings_toggle_item.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -10,8 +11,11 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
+    final isDark = context.isDark;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
+      backgroundColor: c.bg,
       body: SafeArea(
         child: Column(
           children: [
@@ -26,12 +30,9 @@ class SettingsScreen extends StatelessWidget {
                       width: 38,
                       height: 38,
                       decoration: ShapeDecoration(
-                        color: Colors.white,
+                        color: c.surface,
                         shape: RoundedRectangleBorder(
-                          side: const BorderSide(
-                            width: 1.24,
-                            color: Color(0xFFF5F5F5),
-                          ),
+                          side: BorderSide(width: 1.24, color: c.border),
                           borderRadius: BorderRadius.circular(14),
                         ),
                         shadows: const [
@@ -42,18 +43,18 @@ class SettingsScreen extends StatelessWidget {
                           ),
                         ],
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.arrow_back_ios_new_rounded,
                         size: 16,
-                        color: Color(0xFF171717),
+                        color: c.textPrimary,
                       ),
                     ),
                   ),
                   const SizedBox(width: 16),
-                  const Text(
+                  Text(
                     'Settings',
                     style: TextStyle(
-                      color: Color(0xFF171717),
+                      color: c.textPrimary,
                       fontSize: 20,
                       fontFamily: 'Inter',
                       fontWeight: FontWeight.w700,
@@ -65,10 +66,7 @@ class SettingsScreen extends StatelessWidget {
 
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 8,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -78,8 +76,8 @@ class SettingsScreen extends StatelessWidget {
                     _SettingsCard(
                       children: [
                         _SettingsNavItem(
-                          iconBg: const Color(0xFFFAF5FF),
-                          iconColor: const Color(0xFF9810FA),
+                          iconBg: AppColors.purpleLight.withOpacity(isDark ? 0.15 : 1),
+                          iconColor: AppColors.purple,
                           icon: Icons.manage_accounts_outlined,
                           title: 'Account Type',
                           subtitle: 'Étudiant',
@@ -96,30 +94,29 @@ class SettingsScreen extends StatelessWidget {
                       children: [
                         Padding(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 16,
-                          ),
+                              horizontal: 16, vertical: 16),
                           child: Row(
                             children: [
                               Container(
                                 width: 36,
                                 height: 36,
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFEFF6FF),
+                                  color: AppColors.primaryLight
+                                      .withOpacity(isDark ? 0.15 : 1),
                                   borderRadius: BorderRadius.circular(14),
                                 ),
                                 child: const Icon(
                                   Icons.dark_mode_outlined,
-                                  color: Color(0xFF155DFC),
+                                  color: AppColors.primary,
                                   size: 18,
                                 ),
                               ),
                               const SizedBox(width: 16),
-                              const Expanded(
+                              Expanded(
                                 child: Text(
                                   'Night Mode',
                                   style: TextStyle(
-                                    color: Color(0xFF404040),
+                                    color: c.textPrimary,
                                     fontSize: 16,
                                     fontFamily: 'Inter',
                                     fontWeight: FontWeight.w700,
@@ -128,19 +125,18 @@ class SettingsScreen extends StatelessWidget {
                               ),
                               SettingsToggleItem(
                                 title: '',
-                                initialValue: false,
+                                initialValue: isDark,
+                                onChanged: (_) {
+                                  context.read<ThemeProvider>().toggleTheme();
+                                },
                               ),
                             ],
                           ),
                         ),
-                        const Divider(
-                          color: Color(0xFFFAFAFA),
-                          thickness: 1.24,
-                          height: 0,
-                        ),
+                        Divider(color: c.border, thickness: 1.24, height: 0),
                         _SettingsNavItem(
-                          iconBg: const Color(0xFFFAFAFA),
-                          iconColor: const Color(0xFF737373),
+                          iconBg: c.iconBg,
+                          iconColor: c.textSecondary,
                           icon: Icons.notifications_outlined,
                           title: 'Notifications Center',
                           onTap: () {},
@@ -154,24 +150,10 @@ class SettingsScreen extends StatelessWidget {
                     const SizedBox(height: 12),
                     _SettingsCard(
                       children: [
-                        _ToggleRow(
-                          title: 'Push Notifications',
-                          initialValue: true,
-                        ),
-                        const Divider(
-                          color: Color(0xFFFAFAFA),
-                          thickness: 1.24,
-                          height: 0,
-                        ),
-                        _ToggleRow(
-                          title: 'Email Summaries',
-                          initialValue: false,
-                        ),
-                        const Divider(
-                          color: Color(0xFFFAFAFA),
-                          thickness: 1.24,
-                          height: 0,
-                        ),
+                        _ToggleRow(title: 'Push Notifications', initialValue: true),
+                        Divider(color: c.border, thickness: 1.24, height: 0),
+                        _ToggleRow(title: 'Email Summaries', initialValue: false),
+                        Divider(color: c.border, thickness: 1.24, height: 0),
                         _ToggleRow(title: 'Job Alerts', initialValue: true),
                       ],
                     ),
@@ -183,32 +165,24 @@ class SettingsScreen extends StatelessWidget {
                     _SettingsCard(
                       children: [
                         _SettingsNavItem(
-                          iconBg: const Color(0xFFFAFAFA),
-                          iconColor: const Color(0xFF737373),
+                          iconBg: c.iconBg,
+                          iconColor: c.textSecondary,
                           icon: Icons.privacy_tip_outlined,
                           title: 'Privacy Policy',
                           onTap: () {},
                         ),
-                        const Divider(
-                          color: Color(0xFFFAFAFA),
-                          thickness: 1.24,
-                          height: 0,
-                        ),
+                        Divider(color: c.border, thickness: 1.24, height: 0),
                         _SettingsNavItem(
-                          iconBg: const Color(0xFFFAFAFA),
-                          iconColor: const Color(0xFF737373),
+                          iconBg: c.iconBg,
+                          iconColor: c.textSecondary,
                           icon: Icons.help_outline_rounded,
                           title: 'Help Center',
                           onTap: () {},
                         ),
-                        const Divider(
-                          color: Color(0xFFFAFAFA),
-                          thickness: 1.24,
-                          height: 0,
-                        ),
+                        Divider(color: c.border, thickness: 1.24, height: 0),
                         _SettingsNavItem(
-                          iconBg: const Color(0xFFFAFAFA),
-                          iconColor: const Color(0xFF737373),
+                          iconBg: c.iconBg,
+                          iconColor: c.textSecondary,
                           icon: Icons.info_outline_rounded,
                           title: 'About Us',
                           onTap: () {},
@@ -218,27 +192,18 @@ class SettingsScreen extends StatelessWidget {
                     const SizedBox(height: 24),
 
                     // ── Log Out ──
-                    // ── Log Out ──
                     GestureDetector(
                       onTap: () async {
-                        debugPrint('🚪 Logout tapped');
                         try {
-                          // 1. تسجيل الخروج من Firebase
                           await FirebaseAuth.instance.signOut();
-                          debugPrint('✅ FirebaseAuth signOut completed');
-
-                          // 2. مسح البيانات المحلية (آمن في StatelessWidget)
                           context.read<UserProvider>().clearUser();
-                          debugPrint('✅ UserProvider cleared');
-
-                          // 3. توجيه صريح مضمون
                           Navigator.pushNamedAndRemoveUntil(
                             context,
-                            '/home', // ✅ يشير لـ AuthWrapper في main.dart
+                            '/home',
                             (route) => false,
                           );
                         } catch (e) {
-                          debugPrint('❌ Logout error: $e');
+                          debugPrint('Logout error: $e');
                         }
                       },
                       child: Container(
@@ -246,21 +211,17 @@ class SettingsScreen extends StatelessWidget {
                         height: 64,
                         padding: const EdgeInsets.symmetric(horizontal: 20),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFEF2F2),
+                          color: AppColors.redLight.withOpacity(isDark ? 0.12 : 1),
                           borderRadius: BorderRadius.circular(24),
                         ),
                         child: const Row(
                           children: [
-                            Icon(
-                              Icons.logout_rounded,
-                              color: Color(0xFFE7000B),
-                              size: 20,
-                            ),
+                            Icon(Icons.logout_rounded, color: AppColors.red, size: 20),
                             SizedBox(width: 16),
                             Text(
                               'Log Out',
                               style: TextStyle(
-                                color: Color(0xFFE7000B),
+                                color: AppColors.red,
                                 fontSize: 16,
                                 fontFamily: 'Inter',
                                 fontWeight: FontWeight.w700,
@@ -294,8 +255,8 @@ class _SectionLabel extends StatelessWidget {
       padding: const EdgeInsets.only(left: 8),
       child: Text(
         label,
-        style: const TextStyle(
-          color: Color(0xFFA1A1A1),
+        style: TextStyle(
+          color: context.colors.textMuted,
           fontSize: 10,
           fontFamily: 'Inter',
           fontWeight: FontWeight.w900,
@@ -312,25 +273,17 @@ class _SettingsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Container(
       decoration: ShapeDecoration(
-        color: Colors.white,
+        color: c.surface,
         shape: RoundedRectangleBorder(
-          side: const BorderSide(width: 1.24, color: Color(0xFFF5F5F5)),
+          side: BorderSide(width: 1.24, color: c.border),
           borderRadius: BorderRadius.circular(24),
         ),
         shadows: const [
-          BoxShadow(
-            color: Color(0x19000000),
-            blurRadius: 2,
-            offset: Offset(0, 1),
-            spreadRadius: -1,
-          ),
-          BoxShadow(
-            color: Color(0x19000000),
-            blurRadius: 3,
-            offset: Offset(0, 1),
-          ),
+          BoxShadow(color: Color(0x19000000), blurRadius: 2, offset: Offset(0, 1), spreadRadius: -1),
+          BoxShadow(color: Color(0x19000000), blurRadius: 3, offset: Offset(0, 1)),
         ],
       ),
       child: Column(children: children),
@@ -357,6 +310,7 @@ class _SettingsNavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return GestureDetector(
       onTap: onTap,
       child: Padding(
@@ -381,8 +335,8 @@ class _SettingsNavItem extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
-                        color: Color(0xFF404040),
+                      style: TextStyle(
+                        color: c.textPrimary,
                         fontSize: 16,
                         fontFamily: 'Inter',
                         fontWeight: FontWeight.w700,
@@ -391,8 +345,8 @@ class _SettingsNavItem extends StatelessWidget {
                     if (subtitle != null)
                       Text(
                         subtitle!,
-                        style: const TextStyle(
-                          color: Color(0xFF737373),
+                        style: TextStyle(
+                          color: c.textSecondary,
                           fontSize: 12,
                           fontFamily: 'Inter',
                         ),
@@ -401,11 +355,7 @@ class _SettingsNavItem extends StatelessWidget {
                 ),
               ],
             ),
-            const Icon(
-              Icons.arrow_forward_ios_rounded,
-              color: Color(0xFFA1A1A1),
-              size: 16,
-            ),
+            Icon(Icons.arrow_forward_ios_rounded, color: c.textMuted, size: 16),
           ],
         ),
       ),
@@ -433,6 +383,7 @@ class _ToggleRowState extends State<_ToggleRow> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       child: Row(
@@ -440,8 +391,8 @@ class _ToggleRowState extends State<_ToggleRow> {
         children: [
           Text(
             widget.title,
-            style: const TextStyle(
-              color: Color(0xFF404040),
+            style: TextStyle(
+              color: c.textPrimary,
               fontSize: 14,
               fontFamily: 'Inter',
               fontWeight: FontWeight.w700,
@@ -460,9 +411,7 @@ class _ToggleRowState extends State<_ToggleRow> {
                 bottom: 3,
               ),
               decoration: BoxDecoration(
-                color: _value
-                    ? const Color(0xFF155DFC)
-                    : const Color(0xFFE5E5E5),
+                color: _value ? AppColors.primary : c.border,
                 borderRadius: BorderRadius.circular(100),
               ),
               child: Container(
