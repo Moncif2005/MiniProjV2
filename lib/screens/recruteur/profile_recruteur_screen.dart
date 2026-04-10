@@ -99,6 +99,7 @@ String _getUserLocation(UserProvider user) {
   // يمكن إضافة حقول أخرى مستقبلاً مثل: user.location, user.address
   return '—'; // عرض شرطة إذا لم يوجد موقع
 }
+
   // ── Helper: Build initials avatar ──
   Widget _buildInitials(ThemeColors c, UserProvider user) {
     return Container(
