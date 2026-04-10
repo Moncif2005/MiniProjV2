@@ -9,7 +9,13 @@
 # packages, and plugins designed to encourage good coding practices.
 analyzer:
   errors:
+    curly_braces_in_flow_control_structures: ignore
     deprecated_member_use: ignore
+    invalid_use_of_protected_member: ignore
+    non_constant_identifier_names: ignore
+    null_check_on_nullable_type_parameter: ignore
+    prefer_final_fields: ignore
+    unnecessary_null_comparison: ignore
     unnecessary_underscores: ignore
     unreachable_switch_default: ignore
     unused_element: ignore

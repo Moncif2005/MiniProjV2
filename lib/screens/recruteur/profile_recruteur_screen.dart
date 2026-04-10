@@ -92,9 +92,9 @@ class _ProfileRecruteurScreenState extends State<ProfileRecruteurScreen> {
 // ✅ دالة ذكية لاستخراج الموقع من أفضل حقل متاح
 String _getUserLocation(UserProvider user) {
   // نجرب عدة حقول محتملة للموقع
-  if (user.phone?.isNotEmpty == true && user.phone!.contains(RegExp(r'[a-zA-Z]'))) {
+  if (user.phone.isNotEmpty == true && user.phone.contains(RegExp(r'[a-zA-Z]'))) {
     // إذا كان الهاتف يحتوي على نص، ربما هو موقع
-    return user.phone!;
+    return user.phone;
   }
   // يمكن إضافة حقول أخرى مستقبلاً مثل: user.location, user.address
   return '—'; // عرض شرطة إذا لم يوجد موقع
