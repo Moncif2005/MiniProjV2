@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:minipr/services/portfolio_cert_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../theme/app_colors.dart';
 
@@ -34,10 +35,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
   void initState() {
     super.initState();
     _loadPublicProfile();
-    // ✅ لا نستدعي الإحصائيات هنا، سننتظر حتى نعرف الدور الحقيقي من قاعدة البيانات
   }
 
-  // ✅ دالة ذكية لفتح الروابط أو الاتصال مباشرة
   Future<void> _launchURL(String value, String type) async {
     String url = value.trim();
     if (url.isEmpty) return;
@@ -71,16 +70,14 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
       final doc = await _firestore.collection('users').doc(widget.userId).get();
       if (doc.exists && mounted) {
         final data = doc.data();
-        // ✅ نأخذ الدور الحقيقي من البيانات مباشرة
         final role = data?['role']?.toString() ?? 'etudiant';
 
         setState(() {
           _userData = data;
-          _displayRole = role; // ✅ تحديث الدور أولاً
+          _displayRole = role;
           _loading = false;
         });
 
-        // ✅ الآن نحمّل الإحصائيات فقط إذا كان الدور مسؤولاً
         if (role == 'recruteur') {
           _loadRecruiterStats();
         }
@@ -165,7 +162,6 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     }
   }
 
-  // ✅ ✅ ✅ دالة التواصل الاجتماعي (موجودة داخل الكلاس) ✅ ✅ ✅
   Widget _buildContactSection(ThemeColors c) {
     final data = _userData ?? {};
     final phone = data['phone']?.toString() ?? '';
@@ -312,9 +308,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                           width: 100,
                           height: 100,
                           decoration: BoxDecoration(
-                            color: _getRoleColor(
-                              _displayRole,
-                            ).withOpacity(0.15),
+                            color: _getRoleColor(_displayRole).withOpacity(0.15),
                             borderRadius: BorderRadius.circular(20),
                             image: avatarUrl != null && avatarUrl.isNotEmpty
                                 ? DecorationImage(
@@ -355,9 +349,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: _getRoleColor(
-                              _displayRole,
-                            ).withOpacity(0.15),
+                            color: _getRoleColor(_displayRole).withOpacity(0.15),
                             borderRadius: BorderRadius.circular(100),
                           ),
                           child: Text(
@@ -382,10 +374,54 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                 else if (_displayRole == 'enseignant')
                   _buildTeacherProfile(c),
 
-                // ✅ ✅ ✅ تم حذف زر "View Company Jobs" تماماً ✅ ✅ ✅
-
                 // قسم التواصل الاجتماعي
                 SliverToBoxAdapter(child: _buildContactSection(c)),
+
+                // ✅ زر عرض البورتفوليو (يظهر فقط لمسؤول يفتح طالب/معلم)
+                if (_displayRole == 'etudiant' || _displayRole == 'enseignant')
+                  FutureBuilder<DocumentSnapshot>(
+                    future: FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(FirebaseAuth.instance.currentUser?.uid)
+                        .get(),
+                    builder: (ctx, snapshot) {
+                      final currentUserRole = snapshot.data?.get('role')?.toString();
+                      if (currentUserRole == 'recruteur') {
+                        return SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                            child: SizedBox(
+                              width: double.infinity,
+                              child: FilledButton.icon(
+// ✅ داخل FutureBuilder للزر:
+onPressed: () {
+  // ✅ نجلب رابط الـ CV من _userData (التي تم تحميلها مسبقاً)
+  final cvUrl = _userData?['cv_url']?.toString();
+  
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => _ReadOnlyPortfolioScreen(
+        candidateId: widget.userId,
+        candidateCvUrl: cvUrl, // ✅ نمرّر الـ CV
+      ),
+    ),
+  );
+},                                icon: const Icon(Icons.folder_open_rounded, size: 20),
+                                label: const Text('View Portfolio & CV', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: AppColors.primary,
+                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      }
+                      return const SliverToBoxAdapter(child: SizedBox.shrink());
+                    },
+                  ),
 
                 const SliverToBoxAdapter(child: SizedBox(height: 32)),
               ],
@@ -408,8 +444,6 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                 value: _getUserName(),
                 c: c,
               ),
-
-              // ✅ ✅ ✅ إصلاح: عرض location و industry مباشرة بدون حقول بديلة ✅ ✅ ✅
               _InfoTile(
                 icon: Icons.location_on_outlined,
                 label: 'Location',
@@ -426,7 +460,6 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                     : '—',
                 c: c,
               ),
-
               const SizedBox(height: 24),
               _SectionTitle(c, 'Activity'),
               _StatsRow(c, [
@@ -543,17 +576,17 @@ class _SectionTitle extends StatelessWidget {
   const _SectionTitle(this.c, this.title);
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: 12),
-    child: Text(
-      title,
-      style: TextStyle(
-        color: c.textPrimary,
-        fontSize: 18,
-        fontFamily: 'Inter',
-        fontWeight: FontWeight.w700,
-      ),
-    ),
-  );
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Text(
+          title,
+          style: TextStyle(
+            color: c.textPrimary,
+            fontSize: 18,
+            fontFamily: 'Inter',
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      );
 }
 
 class _InfoTile extends StatelessWidget {
@@ -568,45 +601,45 @@ class _InfoTile extends StatelessWidget {
   });
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 8),
-    child: Row(
-      children: [
-        Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: AppColors.purpleLight,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(icon, color: AppColors.purple, size: 16),
-        ),
-        const SizedBox(width: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
           children: [
-            Text(
-              label,
-              style: TextStyle(
-                color: c.textSecondary,
-                fontSize: 11,
-                fontFamily: 'Inter',
-                fontWeight: FontWeight.w500,
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: AppColors.purpleLight,
+                borderRadius: BorderRadius.circular(10),
               ),
+              child: Icon(icon, color: AppColors.purple, size: 16),
             ),
-            Text(
-              value,
-              style: TextStyle(
-                color: c.textPrimary,
-                fontSize: 14,
-                fontFamily: 'Inter',
-                fontWeight: FontWeight.w600,
-              ),
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: c.textSecondary,
+                    fontSize: 11,
+                    fontFamily: 'Inter',
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                Text(
+                  value,
+                  style: TextStyle(
+                    color: c.textPrimary,
+                    fontSize: 14,
+                    fontFamily: 'Inter',
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
-      ],
-    ),
-  );
+      );
 }
 
 class _StatsRow extends StatelessWidget {
@@ -615,47 +648,46 @@ class _StatsRow extends StatelessWidget {
   const _StatsRow(this.c, this.stats);
   @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(16),
-    decoration: ShapeDecoration(
-      color: c.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(width: 1.24, color: c.border),
-      ),
-    ),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: stats
-          .map(
-            (s) => Column(
-              children: [
-                Text(
-                  '${s['value']}',
-                  style: TextStyle(
-                    color: c.textPrimary,
-                    fontSize: 20,
-                    fontFamily: 'Inter',
-                    fontWeight: FontWeight.w700,
-                  ),
+        padding: const EdgeInsets.all(16),
+        decoration: ShapeDecoration(
+          color: c.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(width: 1.24, color: c.border),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: stats
+              .map(
+                (s) => Column(
+                  children: [
+                    Text(
+                      '${s['value']}',
+                      style: TextStyle(
+                        color: c.textPrimary,
+                        fontSize: 20,
+                        fontFamily: 'Inter',
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Text(
+                      s['label'],
+                      style: TextStyle(
+                        color: c.textMuted,
+                        fontSize: 11,
+                        fontFamily: 'Inter',
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
-                Text(
-                  s['label'],
-                  style: TextStyle(
-                    color: c.textMuted,
-                    fontSize: 11,
-                    fontFamily: 'Inter',
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          )
-          .toList(),
-    ),
-  );
+              )
+              .toList(),
+        ),
+      );
 }
 
-// ✅ Widget صف تواصل فردي
 class _ContactRow extends StatelessWidget {
   final IconData icon;
   final String label, value;
@@ -723,5 +755,255 @@ class _ContactRow extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// 📁 شاشة عرض البورتفوليو للقراءة فقط (مصححة تماماً)
+// ─────────────────────────────────────────────────────────────
+class _ReadOnlyPortfolioScreen extends StatefulWidget {
+  final String candidateId;
+  final String? candidateCvUrl;
+
+  const _ReadOnlyPortfolioScreen({
+    required this.candidateId,
+    this.candidateCvUrl,
+  });
+
+  @override
+  State<_ReadOnlyPortfolioScreen> createState() => _ReadOnlyPortfolioScreenState();
+}
+
+class _ReadOnlyPortfolioScreenState extends State<_ReadOnlyPortfolioScreen> {
+  final _portfolioService = PortfolioCertService();
+  String _activeFilter = 'all';
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    
+    return Scaffold(
+      backgroundColor: c.bg,
+      appBar: AppBar(
+        backgroundColor: c.surface,
+        elevation: 0,
+        title: const Text('Candidate Portfolio', style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700)),
+        centerTitle: true,
+        leading: IconButton(icon: const Icon(Icons.arrow_back_ios_new_rounded), onPressed: () => Navigator.pop(context)),
+      ),
+      body: Column(
+        children: [
+          // Filter Chips
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            child: Row(
+              children: [
+                _Chip(label: 'All', filter: 'all', active: _activeFilter, onSelect: (v) => setState(() => _activeFilter = v), c: c),
+                const SizedBox(width: 12),
+                _Chip(label: 'Projects', filter: 'project', active: _activeFilter, onSelect: (v) => setState(() => _activeFilter = v), c: c),
+                const SizedBox(width: 12),
+                _Chip(label: 'Certificates', filter: 'external_cert', active: _activeFilter, onSelect: (v) => setState(() => _activeFilter = v), c: c),
+              ],
+            ),
+          ),
+
+          // ✅ قسم الـ CV المميز (مصحح: Container عادي بدلاً من SliverToBoxAdapter)
+          if (widget.candidateCvUrl != null && widget.candidateCvUrl!.isNotEmpty)
+            Container(
+              margin: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+              padding: const EdgeInsets.all(16),
+              decoration: ShapeDecoration(
+                color: AppColors.primary.withOpacity(0.08),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: BorderSide(width: 1.5, color: AppColors.primary.withOpacity(0.3)),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.description_rounded, color: AppColors.primary, size: 24),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Curriculum Vitae',
+                          style: TextStyle(
+                            color: c.textPrimary,
+                            fontSize: 15,
+                            fontFamily: 'Inter',
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'View candidate\'s resume',
+                          style: TextStyle(
+                            color: c.textSecondary,
+                            fontSize: 12,
+                            fontFamily: 'Inter',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: () => _openFile(widget.candidateCvUrl!),
+                    icon: const Icon(Icons.remove_red_eye_outlined, size: 16),
+                    label: const Text('View CV'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      side: BorderSide(color: AppColors.primary),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+          // Stream of Portfolio Items
+          Expanded(
+            child: StreamBuilder<List<Map<String, dynamic>>>(
+              stream: _portfolioService.getPortfolioStream(widget.candidateId),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(child: CircularProgressIndicator(color: AppColors.primary));
+                }
+                if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.folder_off_rounded, size: 48, color: c.textMuted),
+                        const SizedBox(height: 12),
+                        Text('No portfolio items found', style: TextStyle(color: c.textMuted, fontFamily: 'Inter')),
+                      ],
+                    ),
+                  );
+                }
+
+                var items = snapshot.data!;
+                if (_activeFilter != 'all') {
+                  items = items.where((i) => i['type'] == _activeFilter).toList();
+                }
+
+                return ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                  itemCount: items.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 14),
+                  itemBuilder: (_, index) => _ReadOnlyCard(item: items[index], c: c),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openFile(String url) async {
+    try {
+      final inlineUrl = url.contains('cloudinary.com') && url.contains('/raw/') ? '$url?fl_inline' : url;
+      final uri = Uri.parse(inlineUrl);
+      if (await canLaunchUrl(uri)) await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (_) {}
+  }
+}
+
+// ── Chip صغير للفلترة ──
+class _Chip extends StatelessWidget {
+  final String label, filter, active;
+  final Function(String) onSelect;
+  final ThemeColors c;
+  const _Chip({required this.label, required this.filter, required this.active, required this.onSelect, required this.c});
+  @override
+  Widget build(BuildContext context) {
+    final isSelected = active == filter;
+    return ChoiceChip(
+      label: Text(label, style: TextStyle(color: isSelected ? Colors.white : c.textSecondary, fontWeight: FontWeight.bold, fontFamily: 'Inter')),
+      selected: isSelected,
+      onSelected: (_) => onSelect(filter),
+      selectedColor: AppColors.primary,
+      backgroundColor: c.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+    );
+  }
+}
+
+// ── بطاقة عنصر بورتفوليو (للقراءة فقط) ──
+class _ReadOnlyCard extends StatelessWidget {
+  final Map<String, dynamic> item;
+  final ThemeColors c;
+  const _ReadOnlyCard({required this.item, required this.c});
+
+  @override
+  Widget build(BuildContext context) {
+    final isProject = item['type'] == 'project';
+    final fileUrl = item['fileUrl'] as String?;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: ShapeDecoration(
+        color: c.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(width: 1.24, color: c.border)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: (isProject ? AppColors.primary : AppColors.green).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(isProject ? Icons.work_outline_rounded : Icons.verified_user_rounded, size: 12, color: isProject ? AppColors.primary : AppColors.green),
+                const SizedBox(width: 4),
+                Text(isProject ? 'Project' : 'Certificate', style: TextStyle(color: isProject ? AppColors.primary : AppColors.green, fontSize: 10, fontWeight: FontWeight.w700, fontFamily: 'Inter')),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(item['title'] ?? 'Untitled', style: TextStyle(color: c.textPrimary, fontSize: 15, fontFamily: 'Inter', fontWeight: FontWeight.w700)),
+          if (item['description']?.isNotEmpty ?? false) ...[
+            const SizedBox(height: 6),
+            Text(item['description'], style: TextStyle(color: c.textSecondary, fontSize: 13, fontFamily: 'Inter', height: 1.4), maxLines: 2, overflow: TextOverflow.ellipsis),
+          ],
+          if (fileUrl != null) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => _openFile(fileUrl),
+                icon: const Icon(Icons.remove_red_eye_outlined, size: 16),
+                label: const Text('View Document'),
+                style: OutlinedButton.styleFrom(foregroundColor: AppColors.primary, side: BorderSide(color: AppColors.primary.withOpacity(0.3)), padding: const EdgeInsets.symmetric(vertical: 10), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openFile(String url) async {
+    try {
+      final inlineUrl = url.contains('cloudinary.com') && url.contains('/raw/') ? '$url?fl_inline' : url;
+      final uri = Uri.parse(inlineUrl);
+      if (await canLaunchUrl(uri)) await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (_) {}
   }
 }
