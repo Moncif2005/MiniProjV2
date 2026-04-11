@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:minipr/widgets/profile_menu_item.dart';
 import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
 import '../../theme/app_colors.dart';
@@ -366,6 +367,15 @@ class _ProfileEnseignantScreenState extends State<ProfileEnseignantScreen> {
                 title: 'My Protfolio',
                 onTap: () => Navigator.pushNamed(context, '/portfolio'),
               ),
+                            const SizedBox(height: 8),
+              ProfileMenuItem(
+                icon: Icons.work_outline_rounded,
+                iconBg: AppColors.primaryLight,
+                iconColor: AppColors.primary,
+                title: 'Applied Jobs',
+                onTap: () => Navigator.pushNamed(context, '/applied-jobs'),
+              ),
+
               const SizedBox(height: 8),
               _ProfileMenuItem(
                 icon: Icons.settings_outlined,

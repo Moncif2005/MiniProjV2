@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 
 enum JobStatus {
-  pending, reviewing, interview, accepted, rejected
+  pending, reviewing, interview, accepted, rejected, withdrawn
 }
 
 class AppliedJobCard extends StatelessWidget {
@@ -18,7 +18,13 @@ class AppliedJobCard extends StatelessWidget {
   final int views;
   final JobStatus status;
   final String? statusMessage;
-  final VoidCallback? onViewOffer;
+    final String? applicationId;      // معرف التقديم لسحبه
+  final VoidCallback? onWithdraw;   // دالة سحب التقديم
+  final VoidCallback? onViewOffer;  // دالة عرض تفاصيل الوظيفة
+    final String? recruiterId;      // ✅ جديد: معرف المسؤول
+  final VoidCallback? onAvatarTap; // ✅ جديد: حدث النقر على الصورة
+
+
 
   const AppliedJobCard({
     super.key,
@@ -34,7 +40,13 @@ class AppliedJobCard extends StatelessWidget {
     required this.views,
     required this.status,
     this.statusMessage,
-    this.onViewOffer,
+        this.applicationId,
+    this.onWithdraw,
+    this.onViewOffer,    
+    this.recruiterId,
+    this.onAvatarTap,
+
+
   });
 
   String get _statusLabel {
@@ -44,6 +56,9 @@ class AppliedJobCard extends StatelessWidget {
       case JobStatus.interview: return 'Entretien';
       case JobStatus.accepted:  return 'Accepté';
       case JobStatus.rejected:  return 'Refusé';
+      case JobStatus.withdrawn:
+        // TODO: Handle this case.
+        throw UnimplementedError();
     }
   }
 
@@ -54,6 +69,9 @@ class AppliedJobCard extends StatelessWidget {
       case JobStatus.interview: return AppColors.purpleLight;
       case JobStatus.accepted:  return AppColors.greenLight;
       case JobStatus.rejected:  return AppColors.redLight;
+      case JobStatus.withdrawn:
+        // TODO: Handle this case.
+        throw UnimplementedError();
     }
   }
 
@@ -64,6 +82,9 @@ class AppliedJobCard extends StatelessWidget {
       case JobStatus.interview: return AppColors.purple;
       case JobStatus.accepted:  return AppColors.green;
       case JobStatus.rejected:  return AppColors.red;
+      case JobStatus.withdrawn:
+        // TODO: Handle this case.
+        throw UnimplementedError();
     }
   }
 
@@ -74,6 +95,9 @@ class AppliedJobCard extends StatelessWidget {
       case JobStatus.interview: return AppColors.purple;
       case JobStatus.accepted:  return AppColors.green;
       case JobStatus.rejected:  return AppColors.red;
+      case JobStatus.withdrawn:
+        // TODO: Handle this case.
+        throw UnimplementedError();
     }
   }
 
@@ -131,21 +155,24 @@ class AppliedJobCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: companyBg,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Center(
-                      child: Text(
-                        companyInitial,
-                        style: TextStyle(
-                          color: companyColor,
-                          fontSize: 18,
-                          fontFamily: 'Inter',
-                          fontWeight: FontWeight.w700,
+                  GestureDetector(
+                    onTap: onAvatarTap,
+                    child: Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: companyBg,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Center(
+                        child: Text(
+                          companyInitial,
+                          style: TextStyle(
+                            color: companyColor,
+                            fontSize: 18,
+                            fontFamily: 'Inter',
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
                     ),
