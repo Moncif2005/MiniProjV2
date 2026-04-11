@@ -7,6 +7,7 @@ import 'package:minipr/screens/recruteur/applicants_screen.dart';
 import 'package:minipr/screens/recruteur/edit_offer_screen.dart';
 import 'package:minipr/screens/recruteur/manage_offer_screen.dart';
 import 'package:minipr/screens/recruteur/recruiter_applicants_screen.dart';
+import 'package:minipr/screens/shared/my_portfolio_screen.dart';
 import 'package:minipr/screens/shared/public_profile_screen.dart';
 import 'package:minipr/services/auth_service.dart';
 import 'package:provider/provider.dart';
@@ -153,6 +154,7 @@ class MyApp extends StatelessWidget {
         '/applied-jobs': (context) => const AppliedJobsScreen(),
         '/settings': (context) => const SettingsScreen(),
         '/learning-history': (context) => const LearningHistoryScreen(),
+        '/portfolio': (ctx) => const MyPortfolioScreen(),
 
         // ✅ Public Profile Screen - شاشة البروفايل العام الموحدة
 '/public/profile': (context) {

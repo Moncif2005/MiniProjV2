@@ -38,11 +38,48 @@ class MediaService {
     }
   }
 
-  /// رفع السيرة الذاتية (CV)
-  static Future<String?> uploadCV(String uid, File file) async {
+  // /// رفع السيرة الذاتية (CV)
+  
+  // static Future<String?> uploadCV(String uid, File file) async {
+  //   return await CloudinaryService.upload(
+  //     file: file, 
+  //     folder: 'users/$uid/cv'
+  //   );
+  // }
+
+    // ── دوال جديدة للبورتفوليو والشهادات ──
+
+  /// ✅ رفع ملف البورتفوليو (صورة مشروع أو شهادة خارجية)
+  static Future<String?> uploadPortfolioItem(String itemId, File file) async {
+    // نستخدم 'image' للمشاريع والشهادات المصورة
     return await CloudinaryService.upload(
       file: file, 
-      folder: 'users/$uid/cv'
+      folder: 'minipr/portfolio', 
+      resourceType: 'image', 
+    );
+  }
+
+  /// رفع السيرة الذاتية (CV) بذكاء
+  static Future<String?> uploadCV(String uid, File file) async {
+    // ✅ التحقق: هل هو PDF أم صورة؟
+    final isPdf = file.path.toLowerCase().endsWith('.pdf');
+    
+    // ✅ إذا كان صورة، نرفعه كصورة (ليظهر مباشرة)
+    // ✅ إذا كان PDF، نرفعه كملف Raw (لأنه المستند الصحيح)
+    final type = isPdf ? 'raw' : 'image';
+    
+    return await CloudinaryService.upload(
+      file: file, 
+      folder: 'minipr/cv_pdfs', 
+      resourceType: type, // ✅ هنا السر!
+    );
+  }
+  /// ✅ رفع شهادة داخلية (صورة الشهادة المولدة)
+  static Future<String?> uploadInternalCertificate(String certId, File file) async {
+    return await CloudinaryService.upload(
+      file: file, 
+      folder: 'minipr/certificates', 
+      resourceType: 'image',
     );
   }
 }

@@ -413,14 +413,13 @@ class _ProfileEtudiantScreenState extends State<ProfileEtudiantScreen> {
               const SizedBox(height: 16),
 
               // ── Menu Items ──
-              ProfileMenuItem(
-                icon: Icons.workspace_premium_rounded,
-                iconBg: AppColors.primaryLight,
-                iconColor: AppColors.primary,
-                title: 'My Certificates',
-                onTap: () => Navigator.pushNamed(context, '/certificates'),
-              ),
-              const SizedBox(height: 8),
+ProfileMenuItem(
+  icon: Icons.workspace_premium_rounded,
+  iconBg: AppColors.primaryLight,
+  iconColor: AppColors.primary,
+  title: 'My Portfolio',  // ✅ اسم جديد أشمل
+  onTap: () => Navigator.pushNamed(context, '/portfolio'), // ✅ المسار الجديد
+),              const SizedBox(height: 8),
               ProfileMenuItem(
                 icon: Icons.history_rounded,
                 iconBg: c.iconBg,
