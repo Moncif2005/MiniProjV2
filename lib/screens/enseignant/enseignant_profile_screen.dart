@@ -363,8 +363,8 @@ class _ProfileEnseignantScreenState extends State<ProfileEnseignantScreen> {
                 icon: Icons.workspace_premium_rounded,
                 iconBg: AppColors.primaryLight,
                 iconColor: AppColors.primary,
-                title: 'My Certificates',
-                onTap: () => Navigator.pushNamed(context, '/certificates'),
+                title: 'My Protfolio',
+                onTap: () => Navigator.pushNamed(context, '/portfolio'),
               ),
               const SizedBox(height: 8),
               _ProfileMenuItem(
