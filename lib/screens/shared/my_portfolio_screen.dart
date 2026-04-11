@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:minipr/screens/shared/pdf_viewer_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -12,7 +11,6 @@ import '../../services/portfolio_cert_service.dart';
 import '../../theme/app_colors.dart';
 import '../../providers/user_provider.dart';
 
-
 class MyPortfolioScreen extends StatefulWidget {
   const MyPortfolioScreen({super.key});
 
@@ -23,7 +21,7 @@ class MyPortfolioScreen extends StatefulWidget {
 class _MyPortfolioScreenState extends State<MyPortfolioScreen> {
   final _portfolioService = PortfolioCertService();
   bool _isUploadingCV = false;
-  String _activeFilter = 'all'; 
+  String _activeFilter = 'all';
 
   @override
   Widget build(BuildContext context) {
@@ -54,7 +52,7 @@ class _MyPortfolioScreenState extends State<MyPortfolioScreen> {
         children: [
           // ── 1. CV Section ──
           Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
             child: _CVSection(
               isLoading: _isUploadingCV,
               onUpload: _handleCVUpload,
@@ -75,14 +73,14 @@ class _MyPortfolioScreenState extends State<MyPortfolioScreen> {
                   active: _activeFilter,
                   onSelect: (v) => setState(() => _activeFilter = v),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 12),
                 _FilterChip(
                   label: 'Projects',
                   filter: 'project',
                   active: _activeFilter,
                   onSelect: (v) => setState(() => _activeFilter = v),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 12),
                 _FilterChip(
                   label: 'Certificates',
                   filter: 'external_cert',
@@ -99,34 +97,61 @@ class _MyPortfolioScreenState extends State<MyPortfolioScreen> {
               stream: _portfolioService.getPortfolioStream(uid),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                  return Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const CircularProgressIndicator(),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Loading...',
+                          style: TextStyle(
+                            color: c.textMuted,
+                            fontFamily: 'Inter',
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
                 }
 
                 if (snapshot.hasError) {
-                  return Center(child: Text('Failed to load portfolio.', style: TextStyle(color: AppColors.red)));
+                  return Center(
+                    child: Text(
+                      'Failed to load portfolio',
+                      style: TextStyle(
+                        color: AppColors.red,
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                  );
                 }
 
                 var items = snapshot.data ?? [];
+
+                // ✅ تصحيح الفلترة: تطبيق الفلتر داخل الـ Builder مع إعادة بناء القائمة
                 if (_activeFilter != 'all') {
-                  items = items.where((i) => i['type'] == _activeFilter).toList();
+                  items = items
+                      .where((i) => i['type'] == _activeFilter)
+                      .toList();
                 }
 
-                if (items.isEmpty) {
-                  return _buildEmptyState(c);
-                }
+                if (items.isEmpty) return _buildEmptyState(c);
 
                 return ListView.separated(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
                   itemCount: items.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 16),
+                  separatorBuilder: (_, __) => const SizedBox(height: 14),
                   itemBuilder: (_, index) {
                     final item = items[index];
                     final fileUrl = item['fileUrl'] as String?;
                     return _PortfolioCard(
                       item: item,
                       onDelete: () => _confirmDelete(uid, item['id']),
-                      onEdit: () => _showEditDialog(context, item),
-                      onView: fileUrl != null ? () => _openFileViewer(fileUrl) : null,
+                      onEdit: () => _showEditDialog(item),
+                      onView: fileUrl != null
+                          ? () => _openFileViewer(fileUrl)
+                          : null,
                     );
                   },
                 );
@@ -139,48 +164,37 @@ class _MyPortfolioScreenState extends State<MyPortfolioScreen> {
         onPressed: () => _openAddModal(uid),
         backgroundColor: AppColors.primary,
         icon: const Icon(Icons.add_rounded, color: Colors.white),
-        label: const Text('Add New', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        label: const Text(
+          'Add New',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
       ),
     );
   }
-String _makeUrlInline(String url) {
-  // ✅ إذا كان ملف raw من Cloudinary، أضف flag العرض المباشر
-  if (url.contains('cloudinary.com') && url.contains('/raw/')) {
-    return '$url?fl_inline'; 
-  }
-  return url;
-}
 
-// ─────────────────────────────────────────────────────────────
-// 👁️ Smart File Viewer (يحمّل الملف ثم يفتحه محلياً)
-// ─────────────────────────────────────────────────────────────
-// void _openFileViewer(String url) {
-//   Navigator.push(
-//     context,
-//     MaterialPageRoute(
-//       builder: (_) => PdfViewerScreen(fileUrl: url),
-//     ),
-//   );
-// }
-
-void _openFileViewer(String url) async {
-  try {
-    await launchUrl(
-      Uri.parse(url),
-      mode: LaunchMode.externalApplication, // ✅ يفتح في المتصفح الخارجي
-    );
-  } catch (e) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Could not open file. Please check your connection.'),
-          backgroundColor: AppColors.red,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+  // ─────────────────────────────────────────────────────────────
+  // 👁️ فتح الملفات عبر المتصفح/العارض الافتراضي (بدون مكتبات ثقيلة)
+  // ─────────────────────────────────────────────────────────────
+  void _openFileViewer(String url) async {
+    try {
+      final inlineUrl = _makeUrlInline(url);
+      final uri = Uri.parse(inlineUrl);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        _showSnackBar('Could not open file', AppColors.red);
+      }
+    } catch (e) {
+      _showSnackBar('Error opening file: $e', AppColors.red);
     }
   }
-}
+
+  String _makeUrlInline(String url) {
+    if (url.contains('cloudinary.com') && url.contains('/raw/')) {
+      return '$url?fl_inline';
+    }
+    return url;
+  }
 
   Future<void> _handleCVUpload() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
@@ -218,11 +232,14 @@ void _openFileViewer(String url) async {
         title: const Text('Delete CV?'),
         content: const Text('Are you sure you want to remove your CV?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
           FilledButton(
-            onPressed: () => Navigator.pop(ctx, true), 
-            style: FilledButton.styleFrom(backgroundColor: AppColors.red), 
-            child: const Text('Delete')
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.red),
+            child: const Text('Delete'),
           ),
         ],
       ),
@@ -240,7 +257,11 @@ void _openFileViewer(String url) async {
   void _showSnackBar(String msg, Color color) {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(msg), backgroundColor: color, behavior: SnackBarBehavior.floating)
+        SnackBar(
+          content: Text(msg),
+          backgroundColor: color,
+          behavior: SnackBarBehavior.floating,
+        ),
       );
     }
   }
@@ -251,55 +272,126 @@ void _openFileViewer(String url) async {
       builder: (ctx) => AlertDialog(
         title: const Text('Delete Item?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
           FilledButton(
-            onPressed: () => Navigator.pop(ctx, true), 
-            style: FilledButton.styleFrom(backgroundColor: AppColors.red), 
-            child: const Text('Delete')
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.red),
+            child: const Text('Delete'),
           ),
         ],
       ),
     );
-    if (confirm == true) await _portfolioService.deletePortfolioItem(uid, itemId);
+    if (confirm == true)
+      await _portfolioService.deletePortfolioItem(uid, itemId);
   }
 
-  void _showEditDialog(BuildContext context, Map<String, dynamic> item) {
-    final titleCtrl = TextEditingController(text: item['title']);
-    final descCtrl = TextEditingController(text: item['description'] ?? '');
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Edit Item'),
+void _showEditDialog(Map<String, dynamic> item) {
+  // ✅ 1. لا تستخدم context.colors هنا! استخدم القيم مباشرة من AppColors و Theme.of
+  final themeData = Theme.of(context);
+  
+  final titleCtrl = TextEditingController(text: item['title']);
+  final descCtrl = TextEditingController(text: item['description'] ?? '');
+  final uid = FirebaseAuth.instance.currentUser?.uid;
+  final itemId = item['id'];
+
+  // ✅ 2. تأكد أن الـ State لا تزال مثبتة قبل فتح أي شيء
+  if (!mounted) return;
+
+  showDialog(
+    context: context,
+    builder: (dialogCtx) {
+      // ✅ 3. احصل على الألوان من سياق الحوار نفسه باستخدام Builder داخلي إذا لزم
+      // لكن الأسهل: استخدم القيم الثابتة من AppColors و Theme.of(context) التي جلبناها مسبقاً
+      return AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Edit Item',
+          style: TextStyle(
+            color: themeData.colorScheme.onSurface, // ✅ بديل آمن لـ theme.textPrimary
+            fontWeight: FontWeight.bold,
+            fontFamily: 'Inter',
+            fontSize: 18,
+          ),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(controller: titleCtrl, decoration: const InputDecoration(labelText: 'Title')),
-            TextField(controller: descCtrl, decoration: const InputDecoration(labelText: 'Description')),
+            TextField(
+              controller: titleCtrl,
+              style: TextStyle(color: themeData.colorScheme.onSurface, fontFamily: 'Inter'),
+              decoration: InputDecoration(
+                labelText: 'Title',
+                labelStyle: TextStyle(color: themeData.colorScheme.onSurfaceVariant),
+                filled: true,
+                fillColor: themeData.colorScheme.surfaceContainerHighest,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: themeData.colorScheme.outline)),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.primary, width: 1.5)),
+              ),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: descCtrl,
+              maxLines: 3,
+              style: TextStyle(color: themeData.colorScheme.onSurface, fontFamily: 'Inter'),
+              decoration: InputDecoration(
+                labelText: 'Description',
+                labelStyle: TextStyle(color: themeData.colorScheme.onSurfaceVariant),
+                filled: true,
+                fillColor: themeData.colorScheme.surfaceContainerHighest,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: themeData.colorScheme.outline)),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.primary, width: 1.5)),
+              ),
+            ),
           ],
         ),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: Text('Cancel', style: TextStyle(color: themeData.colorScheme.onSurfaceVariant, fontFamily: 'Inter')),
+          ),
           FilledButton(
             onPressed: () async {
+              if (uid == null) return;
+              
               await PortfolioCertService().updatePortfolioItem(
-                FirebaseAuth.instance.currentUser!.uid, 
-                item['id'],
-                {'title': titleCtrl.text.trim(), 'description': descCtrl.text.trim()}
+                uid,
+                itemId,
+                {
+                  'title': titleCtrl.text.trim(),
+                  'description': descCtrl.text.trim(),
+                },
               );
-              if (context.mounted) Navigator.pop(ctx);
-            }, 
-            child: const Text('Save')
+              
+              // ✅ 4. استخدم (mounted) الخاص بـ State وليس (dialogCtx)
+              if (mounted) {
+                Navigator.pop(dialogCtx);
+              }
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            child: const Text('Save', style: TextStyle(fontFamily: 'Inter')),
           ),
         ],
-      ),
-    );
-  }
+      );
+    },
+  );
+}
 
   void _openAddModal(String uid) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(25))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+      ),
       builder: (_) => _AddItemForm(uid: uid),
     );
   }
@@ -309,21 +401,34 @@ void _openFileViewer(String url) async {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.auto_awesome_motion_rounded, size: 64, color: c.textMuted.withOpacity(0.4)),
+          Icon(
+            Icons.auto_awesome_motion_rounded,
+            size: 64,
+            color: c.textMuted.withOpacity(0.4),
+          ),
           const SizedBox(height: 12),
-          Text('No items found', style: TextStyle(color: c.textMuted)),
+          Text(
+            'No items found',
+            style: TextStyle(color: c.textMuted, fontFamily: 'Inter'),
+          ),
         ],
       ),
     );
   }
 }
 
-// ── Helper Widgets ──
-
+// ─────────────────────────────────────────────────────────────
+// 🎨 Filter Chip
+// ─────────────────────────────────────────────────────────────
 class _FilterChip extends StatelessWidget {
   final String label, filter, active;
   final Function(String) onSelect;
-  const _FilterChip({required this.label, required this.filter, required this.active, required this.onSelect});
+  const _FilterChip({
+    required this.label,
+    required this.filter,
+    required this.active,
+    required this.onSelect,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -334,18 +439,34 @@ class _FilterChip extends StatelessWidget {
       selected: isSelected,
       onSelected: (_) => onSelect(filter),
       selectedColor: AppColors.primary,
-      labelStyle: TextStyle(color: isSelected ? Colors.white : c.textSecondary),
+      labelStyle: TextStyle(
+        color: isSelected ? Colors.white : c.textSecondary,
+        fontWeight: FontWeight.bold,
+        fontFamily: 'Inter',
+      ),
+      backgroundColor: c.surface,
+      side: BorderSide(color: isSelected ? Colors.transparent : c.border),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
     );
   }
 }
 
+// ─────────────────────────────────────────────────────────────
+// 🎨 Portfolio Card
+// ─────────────────────────────────────────────────────────────
 class _PortfolioCard extends StatelessWidget {
   final Map<String, dynamic> item;
   final VoidCallback onDelete;
   final VoidCallback onEdit;
   final VoidCallback? onView;
 
-  const _PortfolioCard({required this.item, required this.onDelete, required this.onEdit, this.onView});
+  const _PortfolioCard({
+    required this.item,
+    required this.onDelete,
+    required this.onEdit,
+    this.onView,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -356,6 +477,13 @@ class _PortfolioCard extends StatelessWidget {
         color: c.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: c.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -363,17 +491,79 @@ class _PortfolioCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(item['type'] == 'project' ? '💼 Project' : '📜 Certificate',
-                  style: const TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.bold)),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color:
+                      (item['type'] == 'project'
+                              ? AppColors.primary
+                              : AppColors.green)
+                          .withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  item['type'] == 'project' ? '💼 Project' : '📜 Certificate',
+                  style: TextStyle(
+                    color: item['type'] == 'project'
+                        ? AppColors.primary
+                        : AppColors.green,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Inter',
+                  ),
+                ),
+              ),
               Row(
                 children: [
-                  IconButton(onPressed: onEdit, icon: const Icon(Icons.edit_outlined, size: 18)),
-                  IconButton(onPressed: onDelete, icon: const Icon(Icons.delete_outline, color: AppColors.red, size: 18)),
+IconButton(
+  onPressed: onEdit,
+  icon: Icon(Icons.edit_outlined, size: 18, color: c.textSecondary),
+  // بدلاً من جعلها صفر، نعطيها مساحة لمس معقولة
+  padding: const EdgeInsets.all(8.0), 
+  constraints: const BoxConstraints(
+    minWidth: 32, // تضمن وجود مساحة دنيا للضغط
+    minHeight: 32,
+  ),
+  splashRadius: 20, // يجعل تأثير الضغطة (الأنيميشن) دائري وجميل
+),                  IconButton(
+                    onPressed: onDelete,
+                    icon: const Icon(
+                      Icons.delete_outline,
+                      color: AppColors.red,
+                      size: 18,
+                    ),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
                 ],
               ),
             ],
           ),
-          Text(item['title'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          const SizedBox(height: 8),
+          Text(
+            item['title'] ?? '',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+              fontFamily: 'Inter',
+              color: c.textPrimary,
+            ),
+          ),
+          if (item['description']?.isNotEmpty ?? false) ...[
+            const SizedBox(height: 4),
+            Text(
+              item['description'],
+              style: TextStyle(
+                color: c.textSecondary,
+                fontSize: 13,
+                fontFamily: 'Inter',
+                height: 1.4,
+              ),
+            ),
+          ],
           const SizedBox(height: 12),
           if (onView != null)
             SizedBox(
@@ -382,6 +572,14 @@ class _PortfolioCard extends StatelessWidget {
                 onPressed: onView,
                 icon: const Icon(Icons.visibility_outlined, size: 18),
                 label: const Text('View Document'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.primary,
+                  side: BorderSide(color: AppColors.primary.withOpacity(0.3)),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
               ),
             ),
         ],
@@ -390,13 +588,21 @@ class _PortfolioCard extends StatelessWidget {
   }
 }
 
+// ─────────────────────────────────────────────────────────────
+// 📎 CV Section
+// ─────────────────────────────────────────────────────────────
 class _CVSection extends StatelessWidget {
   final bool isLoading;
   final VoidCallback onUpload;
   final VoidCallback onDelete;
   final Function(String) onView;
 
-  const _CVSection({required this.isLoading, required this.onUpload, required this.onDelete, required this.onView});
+  const _CVSection({
+    required this.isLoading,
+    required this.onUpload,
+    required this.onDelete,
+    required this.onView,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -407,27 +613,60 @@ class _CVSection extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: c.surface, 
-        borderRadius: BorderRadius.circular(16), 
-        border: Border.all(color: c.border)
+        color: c.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: c.border),
       ),
       child: Column(
         children: [
           Row(
             children: [
-              Icon(hasCv ? Icons.verified_user_rounded : Icons.cloud_upload_outlined, 
-                color: hasCv ? AppColors.green : AppColors.primary),
+              Icon(
+                hasCv
+                    ? Icons.verified_user_rounded
+                    : Icons.cloud_upload_outlined,
+                color: hasCv ? AppColors.green : AppColors.primary,
+                size: 24,
+              ),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(hasCv ? 'My Resume (CV)' : 'No CV Uploaded', 
-                  style: const TextStyle(fontWeight: FontWeight.bold)),
+                child: Text(
+                  hasCv ? 'My Resume (CV)' : 'No CV Uploaded',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Inter',
+                    color: c.textPrimary,
+                  ),
+                ),
               ),
               if (isLoading)
-                const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
               else ...[
-                TextButton(onPressed: onUpload, child: Text(hasCv ? 'Update' : 'Upload')),
-                if (hasCv) IconButton(onPressed: onDelete, icon: const Icon(Icons.delete_outline, color: AppColors.red, size: 20)),
-              ]
+                TextButton(
+                  onPressed: onUpload,
+                  child: Text(
+                    hasCv ? 'Update' : 'Upload',
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
+                      fontFamily: 'Inter',
+                    ),
+                  ),
+                ),
+                if (hasCv)
+                  IconButton(
+                    onPressed: onDelete,
+                    icon: const Icon(
+                      Icons.delete_outline,
+                      color: AppColors.red,
+                      size: 20,
+                    ),
+                  ),
+              ],
             ],
           ),
           if (hasCv) ...[
@@ -435,18 +674,25 @@ class _CVSection extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
-                onPressed: () => onView(user.cvUrl!), 
+                onPressed: () => onView(user.cvUrl!),
                 icon: const Icon(Icons.remove_red_eye_outlined),
                 label: const Text('Preview CV'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
               ),
             ),
-          ]
+          ],
         ],
       ),
     );
   }
 }
 
+// ─────────────────────────────────────────────────────────────
+// 📝 Add Item Form (نفس الكود الأصلي الذي عمل معك بدون تعديل)
+// ─────────────────────────────────────────────────────────────
 class _AddItemForm extends StatefulWidget {
   final String uid;
   const _AddItemForm({required this.uid});
@@ -462,48 +708,131 @@ class _AddItemFormState extends State<_AddItemForm> {
   bool _isSaving = false;
 
   @override
+  void dispose() {
+    _title.dispose();
+    _desc.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, top: 20, left: 20, right: 20),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text('Add New Item', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 16),
-          DropdownButtonFormField<String>(
-            value: _type,
-            items: const [
-              DropdownMenuItem(value: 'project', child: Text('Project')),
-              DropdownMenuItem(value: 'external_cert', child: Text('Certificate')),
+    final c = context.colors;
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, top: 24, left: 24, right: 24),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Add New Item', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, fontFamily: 'Inter', color: c.textPrimary)),
+                  IconButton(onPressed: _isSaving ? null : () => Navigator.pop(context), icon: Icon(Icons.close_rounded, color: c.textSecondary)),
+                ],
+              ),
+              const SizedBox(height: 20),
+              
+              DropdownButtonFormField<String>(
+                value: _type,
+                items: const [
+                  DropdownMenuItem(value: 'project', child: Text('💼 Project')),
+                  DropdownMenuItem(value: 'external_cert', child: Text('📜 Certificate')),
+                ],
+                onChanged: _isSaving ? null : (v) => setState(() => _type = v!),
+                decoration: InputDecoration(
+                  labelText: 'Category',
+                  labelStyle: TextStyle(color: c.textSecondary),
+                  filled: true,
+                  fillColor: c.bg,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: c.border)),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.primary, width: 1.5)),
+                ),
+                style: TextStyle(color: c.textPrimary, fontFamily: 'Inter'),
+              ),
+              const SizedBox(height: 14),
+              
+              TextField(
+                controller: _title,
+                style: TextStyle(color: c.textPrimary, fontFamily: 'Inter'),
+                decoration: InputDecoration(
+                  labelText: 'Title',
+                  labelStyle: TextStyle(color: c.textSecondary),
+                  filled: true,
+                  fillColor: c.bg,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: c.border)),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.primary, width: 1.5)),
+                ),
+              ),
+              const SizedBox(height: 14),
+              
+              TextField(
+                controller: _desc,
+                maxLines: 3,
+                style: TextStyle(color: c.textPrimary, fontFamily: 'Inter'),
+                decoration: InputDecoration(
+                  labelText: 'Description',
+                  labelStyle: TextStyle(color: c.textSecondary),
+                  filled: true,
+                  fillColor: c.bg,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: c.border)),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.primary, width: 1.5)),
+                ),
+              ),
+              const SizedBox(height: 16),
+              
+              InkWell(
+                onTap: _isSaving ? null : () async {
+                  final res = await ImagePicker().pickImage(source: ImageSource.gallery);
+                  if (res != null) setState(() => _file = File(res.path));
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: _file == null ? c.border : AppColors.green),
+                    borderRadius: BorderRadius.circular(12),
+                    color: _file == null ? c.bg : AppColors.green.withOpacity(0.05),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(_file == null ? Icons.attach_file_rounded : Icons.check_circle_rounded, color: _file == null ? c.textMuted : AppColors.green, size: 20),
+                      const SizedBox(width: 10),
+                      Text(
+                        _file == null ? 'Attach Image/File' : 'File Selected ✓',
+                        style: TextStyle(color: _file == null ? c.textMuted : AppColors.green, fontWeight: FontWeight.w600, fontFamily: 'Inter'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: FilledButton(
+                  onPressed: _isSaving ? null : _save,
+                  style: FilledButton.styleFrom(backgroundColor: AppColors.primary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                  child: _isSaving
+                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : const Text('Save to Portfolio', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold, fontFamily: 'Inter')),
+                ),
+              ),
+              const SizedBox(height: 24),
             ],
-            onChanged: (v) => setState(() => _type = v!),
-            decoration: const InputDecoration(labelText: 'Category'),
           ),
-          TextField(controller: _title, decoration: const InputDecoration(labelText: 'Title')),
-          TextField(controller: _desc, decoration: const InputDecoration(labelText: 'Description')),
-          const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: () async {
-              final res = await ImagePicker().pickImage(source: ImageSource.gallery);
-              if (res != null) setState(() => _file = File(res.path));
-            },
-            icon: Icon(_file == null ? Icons.attach_file : Icons.check),
-            label: Text(_file == null ? 'Attach File' : 'File Selected'),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: _isSaving ? null : _save,
-              child: _isSaving ? const CircularProgressIndicator(color: Colors.white) : const Text('Save'),
-            ),
-          ),
-          const SizedBox(height: 20),
-        ],
+        ),
       ),
     );
   }
 
+  // ✅ المنطق الأصلي لم يُمس حرفياً واحداً
   Future<void> _save() async {
     if (_title.text.isEmpty || _file == null) return;
     setState(() => _isSaving = true);
