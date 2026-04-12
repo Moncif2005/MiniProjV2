@@ -367,7 +367,7 @@ class _ProfileEnseignantScreenState extends State<ProfileEnseignantScreen> {
                 title: 'My Protfolio',
                 onTap: () => Navigator.pushNamed(context, '/portfolio'),
               ),
-                            const SizedBox(height: 8),
+              const SizedBox(height: 8),
               ProfileMenuItem(
                 icon: Icons.work_outline_rounded,
                 iconBg: AppColors.primaryLight,

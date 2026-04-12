@@ -420,17 +420,29 @@ class _AppliedJobsScreenState extends State<AppliedJobsScreen> {
                               final views = 0;
 
                               // إذا وُجد العرض، نستخدم بياناته
+                              // ✅ إذا وُجد العرض، نستخدم بياناته
                               if (offerSnap.hasData && offerSnap.data!.exists) {
-                                final offer = offerSnap.data!.data() as Map<String, dynamic>;
-                                final recruiterId = offer['recruiterId'] as String?; // ✅ استخراج المعرف
-                                
+                                final offer =
+                                    offerSnap.data!.data()
+                                        as Map<String, dynamic>;
+                                final recruiterId =
+                                    offer['recruiterId'] as String?;
+                                final isActive =
+                                    offer['isActive'] ??
+                                    true; // ✅ استخراج حالة النشاط
+
                                 return _buildJobCard(
                                   c: c,
                                   title: offer['title'] ?? title,
                                   company: offer['company'] ?? company,
-                                  companyInitial: offer['companyInitial'] ?? companyInitial,
-                                  companyBg: Color(offer['companyBgColor'] ?? 4293848063),
-                                  companyColor: Color(offer['companyColor'] ?? 4283322870),
+                                  companyInitial:
+                                      offer['companyInitial'] ?? companyInitial,
+                                  companyBg: Color(
+                                    offer['companyBgColor'] ?? 4293848063,
+                                  ),
+                                  companyColor: Color(
+                                    offer['companyColor'] ?? 4283322870,
+                                  ),
                                   location: offer['location'] ?? location,
                                   jobType: offer['jobType'] ?? jobType,
                                   salary: offer['salary'] ?? salary,
@@ -440,12 +452,17 @@ class _AppliedJobsScreenState extends State<AppliedJobsScreen> {
                                   statusMessage: app['statusMessage'],
                                   appId: appId,
                                   offerId: app['offerId'],
-                                  recruiterId: recruiterId,  // ✅ تمرير المعرف للدالة
-                                  onWithdraw: () => _withdrawApplication(context, appId),
+                                  recruiterId: recruiterId,
+                                  isJobActive: isActive, // ✅ تمرير الحالة
+                                  onWithdraw: () =>
+                                      _withdrawApplication(context, appId),
                                 );
                               }
-                              
-                              // الحالة الثانية: إذا حُذف العرض
+                              // ✅ الحالة الثانية: إذا حُذف العرض
+                              final isActive =
+                                  app['isActive'] ??
+                                  true; // ✅ محاولة جلبه من بيانات التقديم
+
                               return _buildJobCard(
                                 c: c,
                                 title: title,
@@ -462,9 +479,12 @@ class _AppliedJobsScreenState extends State<AppliedJobsScreen> {
                                 statusMessage: app['statusMessage'],
                                 appId: appId,
                                 offerId: null,
-                                recruiterId: app['recruiterId'] as String?, // ✅ محاولة جلبه من بيانات التطبيق
-                                onWithdraw: () => _withdrawApplication(context, appId),
-                              );                            },
+                                recruiterId: app['recruiterId'] as String?,
+                                isJobActive: isActive, // ✅ تمرير الحالة
+                                onWithdraw: () =>
+                                    _withdrawApplication(context, appId),
+                              );
+                            },
                           );
                         },
                       );
@@ -476,8 +496,7 @@ class _AppliedJobsScreenState extends State<AppliedJobsScreen> {
     );
   }
 
-  // ✅ دالة مساعدة لبناء البطاقة (تجنب تكرار الكود)
-  // ✅ دالة مساعدة لبناء البطاقة (محدثة مع دعم النقر على الأفاتار)
+  // ✅ دالة مساعدة لبناء البطاقة (محدثة مع isJobActive)
   Widget _buildJobCard({
     required ThemeColors c,
     required String title,
@@ -494,7 +513,8 @@ class _AppliedJobsScreenState extends State<AppliedJobsScreen> {
     required String? statusMessage,
     required String appId,
     required String? offerId,
-    required String? recruiterId,  // ✅ جديد
+    required String? recruiterId,
+    required bool isJobActive, // ✅ جديد
     required VoidCallback onWithdraw,
   }) {
     return AppliedJobCard(
@@ -510,20 +530,29 @@ class _AppliedJobsScreenState extends State<AppliedJobsScreen> {
       views: views,
       status: status,
       statusMessage: statusMessage,
-      onViewOffer: offerId != null 
-          ? () => Navigator.pushNamed(context, '/offers', arguments: {'offerId': offerId})
+      isJobActive: isJobActive, // ✅ تمرير الحالة للبطاقة
+      onViewOffer: offerId != null
+          ? () => Navigator.pushNamed(
+              context,
+              '/offers',
+              arguments: {'offerId': offerId},
+            )
           : null,
       applicationId: appId,
       onWithdraw: onWithdraw,
-      recruiterId: recruiterId,  // ✅ تمرير معرف المسؤول
-      onAvatarTap: recruiterId != null ? () {  // ✅ ربط النقر بالبروفايل العام
-        Navigator.pushNamed(context, '/public/profile', arguments: {
-          'userId': recruiterId,
-          'role': 'recruteur',
-        });
-      } : null,
+      recruiterId: recruiterId,
+      onAvatarTap: recruiterId != null
+          ? () {
+              Navigator.pushNamed(
+                context,
+                '/public/profile',
+                arguments: {'userId': recruiterId, 'role': 'recruteur'},
+              );
+            }
+          : null,
     );
   }
+
   // ✅ دالة سحب التقديم
   Future<void> _withdrawApplication(BuildContext context, String appId) async {
     final confirmed = await showDialog<bool>(
