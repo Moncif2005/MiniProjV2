@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:minipr/screens/shared/my_portfolio_screen.dart';
 import 'package:minipr/widgets/profile_menu_item.dart';
 import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
@@ -19,15 +20,16 @@ class ProfileEnseignantScreen extends StatefulWidget {
 
 class _ProfileEnseignantScreenState extends State<ProfileEnseignantScreen> {
   int _currentNavIndex = 3;
+
   // ── Helper: Build initials avatar ──
   Widget _buildInitials(ThemeColors c, UserProvider user) {
     return Container(
-      color: _getAvatarBgColor(), // لون الخلفية حسب الدور
+      color: _getAvatarBgColor(),
       child: Center(
         child: Text(
           user.initials,
           style: TextStyle(
-            color: _getAvatarTextColor(), // لون النص حسب الدور
+            color: _getAvatarTextColor(),
             fontSize: 28,
             fontFamily: 'Inter',
             fontWeight: FontWeight.w700,
@@ -39,17 +41,12 @@ class _ProfileEnseignantScreenState extends State<ProfileEnseignantScreen> {
 
   // ── Helper: Get avatar background color by role ──
   Color _getAvatarBgColor() {
-    // غيّر الألوان حسب الدور في كل ملف
-    return AppColors.greenLight; // للطلاب
-    // return AppColors.greenLight;  // للمعلمين
-    // return AppColors.purpleLight; // لمسؤولي التوظيف
+    return AppColors.greenLight; // للمعلمين
   }
 
   // ── Helper: Get avatar text color by role ──
   Color _getAvatarTextColor() {
-    return AppColors.green; // للطلاب
-    // return AppColors.green;  // للمعلمين
-    // return AppColors.purple; // لمسؤولي التوظيف
+    return AppColors.green; // للمعلمين
   }
 
   @override
@@ -59,33 +56,13 @@ class _ProfileEnseignantScreenState extends State<ProfileEnseignantScreen> {
 
     return Scaffold(
       backgroundColor: c.bg,
-      // bottomNavigationBar: BottomNavBar(
-      //   currentIndex: _currentNavIndex,
-      //   onTap: (index) {
-      //     setState(() => _currentNavIndex = index);
-      //     switch (index) {
-      //       case 0:
-      //         Navigator.pushNamed(
-      //           context,
-      //           '/enseignant/home',
-      //         ); // ✅ بدون AndRemoveUntil
-      //         break;
-      //       case 1:
-      //         Navigator.pushNamed(context, '/enseignant/courses');
-      //         break;
-      //       case 2:
-      //         Navigator.pushNamed(context, '/offers');
-      //         break;
-      //     }
-      //   },
-      // ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Header ──
+              // ── Header (مصحح: أيقونة التعديل قابلة للضغط) ──
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -98,20 +75,27 @@ class _ProfileEnseignantScreenState extends State<ProfileEnseignantScreen> {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  Container(
-                    width: 38,
-                    height: 38,
-                    decoration: ShapeDecoration(
-                      color: c.surface,
-                      shape: RoundedRectangleBorder(
-                        side: BorderSide(width: 1.24, color: c.border),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
+                  // ✅ أيقونة التعديل مع GestureDetector
+                  GestureDetector(
+                    onTap: () => Navigator.pushNamed(
+                      context,
+                      '/edit-profile',
                     ),
-                    child: Icon(
-                      Icons.edit_outlined,
-                      color: c.textSecondary,
-                      size: 18,
+                    child: Container(
+                      width: 38,
+                      height: 38,
+                      decoration: ShapeDecoration(
+                        color: c.surface,
+                        shape: RoundedRectangleBorder(
+                          side: BorderSide(width: 1.24, color: c.border),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.edit_outlined,
+                        color: c.textSecondary,
+                        size: 18,
+                      ),
                     ),
                   ),
                 ],
@@ -169,7 +153,7 @@ class _ProfileEnseignantScreenState extends State<ProfileEnseignantScreen> {
                                   height: 96,
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
-                                    color: Colors.green,
+                                    color: AppColors.green,
                                     border: Border.all(
                                       color: Colors.white,
                                       width: 3.73,
@@ -198,8 +182,7 @@ class _ProfileEnseignantScreenState extends State<ProfileEnseignantScreen> {
                                                                           .expectedTotalBytes ??
                                                                       1)
                                                             : null,
-                                                        color: AppColors
-                                                            .green, // غيّر للون المناسب لكل دور
+                                                        color: AppColors.green,
                                                       ),
                                                     );
                                                   },
@@ -246,6 +229,7 @@ class _ProfileEnseignantScreenState extends State<ProfileEnseignantScreen> {
                             offset: const Offset(0, -40),
                             child: Column(
                               children: [
+                                // ✅ اسم المستخدم
                                 Text(
                                   user.name.isNotEmpty
                                       ? user.name
@@ -258,16 +242,31 @@ class _ProfileEnseignantScreenState extends State<ProfileEnseignantScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: 4),
-                                Text(
-                                  'UI/UX Designer & Frontend Dev',
-                                  style: TextStyle(
-                                    color: c.textSecondary,
-                                    fontSize: 14,
-                                    fontFamily: 'Inter',
-                                    fontWeight: FontWeight.w500,
+
+                                // ✅ ✅ ✅ الـ Bio (مصحح: يقرأ من user.bio) ✅ ✅ ✅
+                                if (user.bio?.isNotEmpty ?? false) ...[
+                                  Text(
+                                    user.bio!,
+                                    style: TextStyle(
+                                      color: c.textSecondary,
+                                      fontSize: 14,
+                                      fontFamily: 'Inter',
+                                      fontWeight: FontWeight.w500,
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(height: 8),
+                                  const SizedBox(height: 8),
+                                ] else ...[
+                                  Text(
+                                    'Add your specialization',
+                                    style: TextStyle(
+                                      color: c.textMuted,
+                                      fontSize: 14,
+                                      fontFamily: 'Inter',
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                ],
 
                                 // ── Enseignant badge ──
                                 Container(
@@ -359,23 +358,25 @@ class _ProfileEnseignantScreenState extends State<ProfileEnseignantScreen> {
               ),
               const SizedBox(height: 16),
 
-              // ── Menu Items ──
+              // ── Menu Items (مصحح: _ProfileMenuItem مع شرطة سفلية) ──
               _ProfileMenuItem(
-                icon: Icons.workspace_premium_rounded,
-                iconBg: AppColors.primaryLight,
-                iconColor: AppColors.primary,
-                title: 'My Protfolio',
-                onTap: () => Navigator.pushNamed(context, '/portfolio'),
+                icon: Icons.folder_open_rounded,
+                iconBg: AppColors.greenLight,
+                iconColor: AppColors.green,
+                title: 'My Portfolio',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const MyPortfolioScreen()),
+                ),
               ),
               const SizedBox(height: 8),
-              ProfileMenuItem(
+              _ProfileMenuItem(
                 icon: Icons.work_outline_rounded,
-                iconBg: AppColors.primaryLight,
-                iconColor: AppColors.primary,
+                iconBg: AppColors.greenLight,
+                iconColor: AppColors.green,
                 title: 'Applied Jobs',
                 onTap: () => Navigator.pushNamed(context, '/applied-jobs'),
               ),
-
               const SizedBox(height: 8),
               _ProfileMenuItem(
                 icon: Icons.settings_outlined,
@@ -394,19 +395,13 @@ class _ProfileEnseignantScreenState extends State<ProfileEnseignantScreen> {
                 onTap: () async {
                   debugPrint('🚪 Logout tapped');
                   try {
-                    // 1. تسجيل الخروج
                     await FirebaseAuth.instance.signOut();
                     debugPrint('✅ Signed out from Firebase');
-
-                    // 2. مسح البيانات
                     if (mounted) context.read<UserProvider>().clearUser();
-
-                    // 3. العودة لنقطة الصفر (AuthWrapper)
-                    // هذا يضمن بقاء الحارس حياً ويعيد فحص الحالة
                     if (mounted) {
                       Navigator.pushNamedAndRemoveUntil(
                         context,
-                        '/home', // ✅ نعود للحارس وليس لصفحة تسجيل الدخول مباشرة
+                        '/home',
                         (route) => false,
                       );
                     }
@@ -423,6 +418,8 @@ class _ProfileEnseignantScreenState extends State<ProfileEnseignantScreen> {
     );
   }
 }
+
+// ── Helper Widgets ──
 
 class _StatItem extends StatelessWidget {
   final String value;
@@ -664,6 +661,7 @@ class _CourseItem extends StatelessWidget {
   }
 }
 
+// ✅ تم تصحيح الاسم من ProfileMenuItem إلى _ProfileMenuItem
 class _ProfileMenuItem extends StatelessWidget {
   final IconData icon;
   final Color iconBg;
