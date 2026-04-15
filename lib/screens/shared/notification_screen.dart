@@ -1,336 +1,186 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/user_provider.dart';
+import '../../services/notifications_service.dart';
+import '../../models/notification_model.dart';
 import '../../theme/app_colors.dart';
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
 
   @override
-  State<NotificationScreen> createState() =>
-      _NotificationScreenState();
+  State<NotificationScreen> createState() => _NotificationScreenState();
 }
 
-class _NotificationScreenState
-    extends State<NotificationScreen> {
-  final List<Map<String, dynamic>> _notifications = [
-    {
-      'title': 'New lesson available',
-      'body': 'Flutter Development - Lesson 5 is now live',
-      'time': '2 min ago',
-      'type': 'course',
-      'isUnread': true,
-    },
-    {
-      'title': 'Job match found',
-      'body':
-          'Senior UX Designer at Studio Nova matches your profile',
-      'time': '1h ago',
-      'type': 'job',
-      'isUnread': true,
-    },
-    {
-      'title': 'Achievement unlocked',
-      'body': 'You completed 7 days streak! Keep it up 🔥',
-      'time': '3h ago',
-      'type': 'achievement',
-      'isUnread': false,
-    },
-    {
-      'title': 'Course update',
-      'body': 'Arabic for Professionals has new content',
-      'time': 'Yesterday',
-      'type': 'course',
-      'isUnread': false,
-    },
-    {
-      'title': 'New job posted',
-      'body': 'React Native Developer at TechPulse — Remote',
-      'time': '2d ago',
-      'type': 'job',
-      'isUnread': false,
-    },
-  ];
+class _NotificationScreenState extends State<NotificationScreen> {
+  final _svc = NotificationsService();
 
-  bool get _allRead =>
-      _notifications.every((n) => !(n['isUnread'] as bool));
-
-  void _markAllRead() {
-    setState(() {
-      for (final n in _notifications) {
-        n['isUnread'] = false;
-      }
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('All notifications marked as read'),
-        backgroundColor: AppColors.primary,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
-  IconData _iconForType(String type) {
-    switch (type) {
-      case 'job':         return Icons.work_outline_rounded;
-      case 'achievement': return Icons.emoji_events_rounded;
-      default:            return Icons.menu_book_rounded;
+  IconData _iconFor(NotifType type) {
+    switch (type.category) {
+      case 'job':
+        return Icons.work_outline_rounded;
+      case 'achievement':
+        return Icons.emoji_events_rounded;
+      case 'course':
+        return Icons.menu_book_rounded;
+      default:
+        return Icons.notifications_rounded;
     }
   }
 
-  Color _colorForType(String type) {
+  Color _colorFor(NotifType type) {
     switch (type) {
-      case 'job':         return AppColors.purple;
-      case 'achievement': return AppColors.orange;
-      default:            return AppColors.primary;
+      case NotifType.applicationAccepted:
+        return const Color(0xFF16A34A);
+
+      case NotifType.applicationRejected:
+        return const Color(0xFFDC2626);
+
+      case NotifType.applicationInterview:
+        return const Color(0xFF7C3AED);
+
+      case NotifType.applicationReviewing:
+        return const Color(0xFFD97706);
+
+      case NotifType.newApplicant:
+        return AppColors.purple;
+
+      // ── course ──
+      case NotifType.courseEnrolled:
+      case NotifType.lessonCompleted:
+      case NotifType.courseCompleted:
+      case NotifType.newStudentEnrolled:
+      case NotifType.lessonAdded:
+      case NotifType.courseRated:
+        return AppColors.primary;
+
+      // ── achievement ──
+      case NotifType.streakAchievement:
+      case NotifType.certificateEarned:
+        return AppColors.orange;
+
+      // ── job student ──
+      case NotifType.applicationSent:
+        return const Color(0xFF0891B2);
+
+      case NotifType.offerPublished:
+        return AppColors.primary;
+
+      case NotifType.offerExpiring:
+        return const Color(0xFFDC2626);
+
+      case NotifType.system:
+        return AppColors.primary;
     }
   }
 
-  Color _bgForType(String type) {
-    switch (type) {
-      case 'job':         return AppColors.purpleLight;
-      case 'achievement': return const Color(0xFFFFEDD4);
-      default:            return AppColors.primaryLight;
+  void _handleTap(NotificationModel n) {
+    final payload = n.payload;
+    if (payload == null) return;
+
+    switch (n.type) {
+      case NotifType.applicationAccepted:
+      case NotifType.applicationRejected:
+      case NotifType.applicationInterview:
+      case NotifType.applicationReviewing:
+        Navigator.pushNamed(
+          context,
+          '/applicationDetails',
+          arguments: payload['applicationId'],
+        );
+        break;
+
+      case NotifType.newApplicant:
+        Navigator.pushNamed(
+          context,
+          '/recruteur/applicants',
+          arguments: {
+            'offerId': payload['offerId'],
+          },
+        );
+        break;
+
+      default:
+        // لا تفعل شيء → مهم جداً
+        break;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final c = context.colors;
+    final uid = context.watch<UserProvider>().uid;
+
+    if (uid == null) {
+      return const Scaffold(
+        body: Center(child: Text('Non connecté')),
+      );
+    }
 
     return Scaffold(
-      backgroundColor: c.bg,
-      body: Column(
-        children: [
+      body: StreamBuilder<List<NotificationModel>>(
+        stream: _svc.streamNotifications(uid),
+        builder: (context, snap) {
+          if (snap.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-          // ── App Bar ──
-          Container(
-            padding: const EdgeInsets.fromLTRB(
-                24, 48, 24, 16),
-            decoration: BoxDecoration(
-              color: c.surface,
-              border: Border(
-                bottom: BorderSide(
-                    color: c.border, width: 1.24),
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment:
-                  MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
+          final notifications = snap.data ?? [];
+          final unread = notifications.where((n) => n.isUnread).length;
+
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 48, 24, 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: c.bg,
-                          borderRadius:
-                              BorderRadius.circular(14),
-                        ),
-                        child: Icon(
-                          Icons.arrow_back_ios_new_rounded,
-                          size: 16,
-                          color: c.textPrimary,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Notifications',
-                          style: TextStyle(
-                            color: c.textPrimary,
-                            fontSize: 18,
-                            fontFamily: 'Inter',
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        Text(
-                          '${_notifications.where((n) => n['isUnread'] as bool).length} unread',
-                          style: TextStyle(
-                            color: c.textSecondary,
-                            fontSize: 12,
-                            fontFamily: 'Inter',
-                          ),
-                        ),
-                      ],
+                    Text("Notifications ($unread)"),
+                    TextButton(
+                      onPressed: () => _svc.markAllRead(uid),
+                      child: const Text("Tout lu"),
                     ),
                   ],
                 ),
-                GestureDetector(
-                  onTap: _allRead ? null : _markAllRead,
-                  child: Text(
-                    'Mark all read',
-                    style: TextStyle(
-                      color: _allRead
-                          ? c.textMuted
-                          : AppColors.primary,
-                      fontSize: 13,
-                      fontFamily: 'Inter',
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+              ),
 
-          // ── List ──
-          Expanded(
-            child: _notifications.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment:
-                          MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.notifications_off_outlined,
-                          color: c.textMuted,
-                          size: 48,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No notifications',
-                          style: TextStyle(
-                            color: c.textMuted,
-                            fontSize: 16,
-                            fontFamily: 'Inter',
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                : ListView.separated(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 24, vertical: 16),
-                    itemCount: _notifications.length,
-                    separatorBuilder: (_, __) =>
-                        const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      final n = _notifications[index];
-                      final isUnread =
-                          n['isUnread'] as bool;
-                      final type = n['type'] as String;
+              Expanded(
+                child: notifications.isEmpty
+                    ? const Center(child: Text("Aucune notification"))
+                    : ListView.builder(
+                        itemCount: notifications.length,
+                        itemBuilder: (_, i) {
+                          final n = notifications[i];
 
-                      return GestureDetector(
-                        onTap: () {
-                          setState(() =>
-                              n['isUnread'] = false);
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: ShapeDecoration(
-                            color: isUnread
-                                ? (context.isDark
-                                    ? const Color(0xFF1A2A4A)
-                                    : const Color(0xFFEFF6FF))
-                                : c.surface,
-                            shape: RoundedRectangleBorder(
-                              side: BorderSide(
-                                  width: 1.24,
-                                  color: isUnread
-                                      ? AppColors.primaryLight
-                                      : c.border),
-                              borderRadius:
-                                  BorderRadius.circular(20),
-                            ),
-                          ),
-                          child: Row(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                width: 44,
-                                height: 44,
-                                decoration: BoxDecoration(
-                                  color: _bgForType(type),
-                                  borderRadius:
-                                      BorderRadius.circular(
-                                          14),
-                                ),
+                          return Dismissible(
+                            key: Key(n.id),
+                            onDismissed: (_) =>
+                                _svc.deleteNotification(uid, n.id),
+                            child: ListTile(
+                              onTap: () {
+                                if (n.isUnread) {
+                                  _svc.markRead(uid, n.id);
+                                }
+                                _handleTap(n);
+                              },
+                              leading: CircleAvatar(
+                                backgroundColor:
+                                    _colorFor(n.type).withOpacity(0.15),
                                 child: Icon(
-                                  _iconForType(type),
-                                  color:
-                                      _colorForType(type),
-                                  size: 20,
+                                  _iconFor(n.type),
+                                  color: _colorFor(n.type),
                                 ),
                               ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment
-                                          .start,
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment
-                                              .spaceBetween,
-                                      children: [
-                                        Flexible(
-                                          child: Text(
-                                            n['title']
-                                                as String,
-                                            style: TextStyle(
-                                              color: c
-                                                  .textPrimary,
-                                              fontSize: 14,
-                                              fontFamily:
-                                                  'Inter',
-                                              fontWeight:
-                                                  FontWeight
-                                                      .w700,
-                                            ),
-                                          ),
-                                        ),
-                                        if (isUnread)
-                                          Container(
-                                            width: 8,
-                                            height: 8,
-                                            decoration:
-                                                const BoxDecoration(
-                                              color: AppColors
-                                                  .primary,
-                                              shape: BoxShape
-                                                  .circle,
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      n['body'] as String,
-                                      style: TextStyle(
-                                        color:
-                                            c.textSecondary,
-                                        fontSize: 13,
-                                        fontFamily: 'Inter',
-                                      ),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      n['time'] as String,
-                                      style: TextStyle(
-                                        color: c.textMuted,
-                                        fontSize: 11,
-                                        fontFamily: 'Inter',
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-          ),
-        ],
+                              title: Text(n.title),
+                              subtitle: Text(n.body),
+                              trailing: Text(n.timeAgo),
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

@@ -26,8 +26,9 @@ class UserProvider extends ChangeNotifier {
   String _github = '';
   String _linkedin = '';
   String _facebook = '';
+  String? _cvUrl;
   UserRole _role = UserRole.etudiant;
-    String _location = '';
+  String _location = '';
   String _companySize = '';
   String _industry = '';
 
@@ -47,7 +48,7 @@ class UserProvider extends ChangeNotifier {
   int _certificatesCount = 0;
   int _streakDays = 0;
   int _totalLearningMinutes = 0;
-  
+
   // Role-specific stats
   int _coursesCreated = 0;
   int _totalStudents = 0;
@@ -69,17 +70,18 @@ class UserProvider extends ChangeNotifier {
   String get linkedin => _linkedin;
   String get facebook => _facebook;
   UserRole get role => _role;
-    String get location => _location;
+  String get location => _location;
   String get companySize => _companySize;
   String get industry => _industry;
-  
+  String? get cvUrl => _cvUrl;
+
   // Settings & Privacy getters
   String get theme => _theme;
   bool get notificationsEnabled => _notificationsEnabled;
   bool get jobNotifications => _jobNotifications;
   bool get profileVisible => _profileVisible;
   bool get showEmail => _showEmail;
-  
+
   // Stats getters
   int get courses => _courses;
   int get points => _points;
@@ -95,14 +97,18 @@ class UserProvider extends ChangeNotifier {
   int get jobsPosted => _jobsPosted;
   int get totalApplicants => _totalApplicants;
 
-  List<EnrolledCourse> get enrolledCourses => List.unmodifiable(_enrolledCourses);
+  List<EnrolledCourse> get enrolledCourses =>
+      List.unmodifiable(_enrolledCourses);
   bool get hasEnrolledCourses => _enrolledCourses.isNotEmpty;
 
   String get roleLabel {
     switch (_role) {
-      case UserRole.etudiant: return 'Étudiant';
-      case UserRole.enseignant: return 'Enseignant';
-      case UserRole.recruteur: return 'Recruteur';
+      case UserRole.etudiant:
+        return 'Étudiant';
+      case UserRole.enseignant:
+        return 'Enseignant';
+      case UserRole.recruteur:
+        return 'Recruteur';
     }
   }
 
@@ -130,22 +136,29 @@ class UserProvider extends ChangeNotifier {
     _github = data['github'] ?? '';
     _linkedin = data['linkedin'] ?? '';
     _facebook = data['facebook'] ?? '';
-        _location = data['location'] ?? '';
+    _location = data['location'] ?? '';
     _companySize = data['companySize'] ?? '';
     _industry = data['industry'] ?? '';
-    
+    _cvUrl = data['cv_url'];
+
     final roleStr = data['role']?.toString().toLowerCase();
     switch (roleStr) {
-      case 'enseignant': _role = UserRole.enseignant; break;
-      case 'recruteur': _role = UserRole.recruteur; break;
-      default: _role = UserRole.etudiant;
+      case 'enseignant':
+        _role = UserRole.enseignant;
+        break;
+      case 'recruteur':
+        _role = UserRole.recruteur;
+        break;
+      default:
+        _role = UserRole.etudiant;
     }
 
     // Settings & Privacy
     final settings = data['settings'] as Map<String, dynamic>?;
     if (settings != null) {
       _theme = settings['theme'] ?? _theme;
-      _notificationsEnabled = settings['notifications'] ?? _notificationsEnabled;
+      _notificationsEnabled =
+          settings['notifications'] ?? _notificationsEnabled;
       _jobNotifications = settings['jobNotifications'] ?? _jobNotifications;
     }
     final privacy = data['privacy'] as Map<String, dynamic>?;
@@ -158,10 +171,12 @@ class UserProvider extends ChangeNotifier {
     final stats = data['stats'] as Map<String, dynamic>?;
     if (stats != null) {
       _enrolledCoursesCount = stats['enrolledCourses'] ?? _enrolledCoursesCount;
-      _completedCoursesCount = stats['completedCourses'] ?? _completedCoursesCount;
+      _completedCoursesCount =
+          stats['completedCourses'] ?? _completedCoursesCount;
       _certificatesCount = stats['certificates'] ?? _certificatesCount;
       _streakDays = stats['streakDays'] ?? _streakDays;
-      _totalLearningMinutes = stats['totalLearningMinutes'] ?? _totalLearningMinutes;
+      _totalLearningMinutes =
+          stats['totalLearningMinutes'] ?? _totalLearningMinutes;
       _coursesCreated = stats['coursesCreated'] ?? _coursesCreated;
       _totalStudents = stats['totalStudents'] ?? _totalStudents;
       _averageRating = (stats['averageRating'] ?? _averageRating).toDouble();
@@ -172,6 +187,11 @@ class UserProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+void updateCvUrlOnly(String? newCvUrl) {
+  _cvUrl = newCvUrl;
+  notifyListeners();
+}
+  
   // ── Called by AuthWrapper (backward compatible) ──
   void setUser({
     required String name,
@@ -200,8 +220,14 @@ class UserProvider extends ChangeNotifier {
     if (uid != null) _uid = uid;
     if (avatarPath != null) _avatarPath = avatarPath;
     // Reset stats on new account
-    _courses = 0; _points = 0; _projects = 0;
-    _phone = ''; _bio = ''; _github = ''; _linkedin = ''; _facebook = '';
+    _courses = 0;
+    _points = 0;
+    _projects = 0;
+    _phone = '';
+    _bio = '';
+    _github = '';
+    _linkedin = '';
+    _facebook = '';
     _enrolledCourses.clear();
     notifyListeners();
   }
@@ -217,10 +243,10 @@ class UserProvider extends ChangeNotifier {
     required String facebook,
     String? avatarPath,
     bool clearAvatar = false,
-        String? location,
+    String? cvUrl,
+    String? location,
     String? companySize,
     String? industry,
-
   }) {
     _name = name;
     _email = email;
@@ -229,21 +255,23 @@ class UserProvider extends ChangeNotifier {
     _github = github;
     _linkedin = linkedin;
     _facebook = facebook;
-        if (location != null) _location = location;
+    if (location != null) _location = location;
     if (companySize != null) _companySize = companySize;
     if (industry != null) _industry = industry;
-
+if (cvUrl != null) _cvUrl = cvUrl;
     if (clearAvatar) {
       _avatarPath = null;
     } else if (avatarPath != null) {
       _avatarPath = avatarPath;
     }
     notifyListeners();
-
   }
 
   // ── Course progress (local only) ──
-  void incrementCourses() { _courses++; notifyListeners(); }
+  void incrementCourses() {
+    _courses++;
+    notifyListeners();
+  }
 
   void enrollCourse(EnrolledCourse course) {
     if (!_enrolledCourses.any((c) => c.id == course.id)) {
@@ -262,21 +290,37 @@ class UserProvider extends ChangeNotifier {
 
   // ── Called on Log Out ──
   void clearUser() {
-    _name = ''; _email = ''; _phone = ''; _bio = '';
-    _github = ''; _linkedin = ''; _facebook = '';
-    _avatarPath = null; _uid = null;
+    _name = '';
+    _email = '';
+    _phone = '';
+    _bio = '';
+    _github = '';
+    _linkedin = '';
+    _facebook = '';
+    _avatarPath = null;
+    _uid = null;
     _role = UserRole.etudiant;
-    _courses = 0; _points = 0; _projects = 0;
-    _enrolledCoursesCount = 0; _completedCoursesCount = 0;
-    _certificatesCount = 0; _streakDays = 0; _totalLearningMinutes = 0;
-    _coursesCreated = 0; _totalStudents = 0; _averageRating = 0.0;
-    _jobsPosted = 0; _totalApplicants = 0;
+    _courses = 0;
+    _points = 0;
+    _projects = 0;
+    _enrolledCoursesCount = 0;
+    _completedCoursesCount = 0;
+    _certificatesCount = 0;
+    _streakDays = 0;
+    _totalLearningMinutes = 0;
+    _coursesCreated = 0;
+    _totalStudents = 0;
+    _averageRating = 0.0;
+    _jobsPosted = 0;
+    _totalApplicants = 0;
     _enrolledCourses.clear();
-    
+
     // ✅ مسح الحقول الجديدة عند الخروج
     _location = '';
     _companySize = '';
     _industry = '';
-    
+    _cvUrl = null; 
+
     notifyListeners();
-  }}
+  }
+}

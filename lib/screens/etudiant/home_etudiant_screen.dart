@@ -3,12 +3,13 @@ import 'package:provider/provider.dart';
 import '../../theme/app_colors.dart';
 import '../../providers/user_provider.dart';
 import '../../widgets/bottom_nav_bar.dart';
-import 'learn_etudiant_screen.dart';
-import '../shared/offers_screen.dart';
-import 'profile_etudiant_screen.dart';
 import '../../widgets/continue_learning_card.dart';
 import '../../widgets/course_card.dart';
 import '../../widgets/job_card.dart';
+import '../../services/learning_history_service.dart';
+import 'learn_etudiant_screen.dart';
+import '../shared/offers_screen.dart';
+import 'profile_etudiant_screen.dart';
 
 class HomeEtudiantScreen extends StatefulWidget {
   const HomeEtudiantScreen({super.key});
@@ -18,21 +19,12 @@ class HomeEtudiantScreen extends StatefulWidget {
 }
 
 class _HomeEtudiantScreenState extends State<HomeEtudiantScreen> {
-  // ✅ المؤشر الذي يتحكم في التبويب المعروض
   int _currentIndex = 0;
 
-  // ✅ قائمة الصفحات التي سيتم التبديل بينها (محفوظة في الذاكرة)
   final List<Widget> _pages = [
-    // Tab 0: المحتوى الرئيسي
     _HomeTabContent(),
-
-    // Tab 1: صفحة التعلم
     const LearnEtudiantScreen(),
-
-    // Tab 2: صفحة الوظائف (مشتركة)
     const OffersScreen(),
-
-    // Tab 3: صفحة البروفايل
     const ProfileEtudiantScreen(),
   ];
 
@@ -40,26 +32,21 @@ class _HomeEtudiantScreenState extends State<HomeEtudiantScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-
-      // ✅ الـ BottomNavBar هنا: يتحكم فقط في تغيير _currentIndex
-bottomNavigationBar: BottomNavBar(
-  currentIndex: _currentIndex,
-  onTap: (index) => setState(() => _currentIndex = index),
-  items: const [
-    NavBarItem(icon: Icons.home_rounded, label: 'Home'),
-    NavBarItem(icon: Icons.school_rounded, label: 'Learn'),
-    NavBarItem(icon: Icons.work_rounded, label: 'Work'),
-    NavBarItem(icon: Icons.person_rounded, label: 'Profile'),
-  ],
-),
-      // ✅ IndexedStack: يعرض الصفحة النشطة فقط، ويحفظ حالة الصفحات الأخرى
+      bottomNavigationBar: BottomNavBar(
+        currentIndex: _currentIndex,
+        onTap: (index) => setState(() => _currentIndex = index),
+        items: const [
+          NavBarItem(icon: Icons.home_rounded,   label: 'Home'),
+          NavBarItem(icon: Icons.school_rounded,  label: 'Learn'),
+          NavBarItem(icon: Icons.work_rounded,    label: 'Work'),
+          NavBarItem(icon: Icons.person_rounded,  label: 'Profile'),
+        ],
+      ),
       body: IndexedStack(index: _currentIndex, children: _pages),
     );
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// ✅ الكلاس الجديد: محتوى التبويب الرئيسي (الصفحة الأولى)
 // ─────────────────────────────────────────────────────────────────────────────
 class _HomeTabContent extends StatefulWidget {
   @override
@@ -69,6 +56,36 @@ class _HomeTabContent extends StatefulWidget {
 class _HomeTabContentState extends State<_HomeTabContent> {
   final _searchController = TextEditingController();
 
+  EnrollmentModel? _lastEnrollment;
+  bool _enrollmentLoaded = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_enrollmentLoaded) {
+      _enrollmentLoaded = true;
+      _loadLastEnrollment();
+    }
+  }
+
+  Future<void> _loadLastEnrollment() async {
+    final uid = context.read<UserProvider>().uid;
+    if (uid == null || uid.isEmpty) return;
+
+    final enrollments = await LearningHistoryService().fetchEnrollments(uid);
+
+    // Only courses the user actually started (progress > 0) and not yet completed
+    final inProgress = enrollments
+        .where((e) => !e.isCompleted && e.progressPercent > 0)
+        .toList();
+
+    if (mounted) {
+      setState(() {
+        _lastEnrollment = inProgress.isNotEmpty ? inProgress.first : null;
+      });
+    }
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -77,7 +94,7 @@ class _HomeTabContentState extends State<_HomeTabContent> {
 
   @override
   Widget build(BuildContext context) {
-    final c = context.colors;
+    final c    = context.colors;
     final user = context.watch<UserProvider>();
     final displayName = user.name.isNotEmpty ? user.firstName : 'there';
 
@@ -87,68 +104,46 @@ class _HomeTabContentState extends State<_HomeTabContent> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Header ─
+
+            // ── Header ──
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Hello, $displayName!',
-                      style: TextStyle(
-                        color: c.textPrimary,
-                        fontSize: 24,
-                        fontFamily: 'Inter',
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    Text(
-                      'Ready to level up today?',
-                      style: TextStyle(
-                        color: c.textSecondary,
-                        fontSize: 16,
-                        fontFamily: 'Inter',
-                      ),
-                    ),
+                    Text('Hello, $displayName!',
+                        style: TextStyle(color: c.textPrimary, fontSize: 24,
+                            fontFamily: 'Inter', fontWeight: FontWeight.w700)),
+                    Text('Ready to level up today?',
+                        style: TextStyle(color: c.textSecondary, fontSize: 16,
+                            fontFamily: 'Inter')),
                   ],
                 ),
 
-                // ── Bell ──
+                // Bell
                 GestureDetector(
                   onTap: () => Navigator.pushNamed(context, '/notifications'),
                   child: Stack(
                     children: [
                       Container(
-                        width: 38,
-                        height: 38,
+                        width: 38, height: 38,
                         decoration: ShapeDecoration(
                           color: c.surface,
                           shape: RoundedRectangleBorder(
                             side: BorderSide(width: 1.24, color: c.border),
                             borderRadius: BorderRadius.circular(14),
                           ),
-                          shadows: const [
-                            BoxShadow(
-                              color: Color(0x19000000),
-                              blurRadius: 2,
-                              offset: Offset(0, 1),
-                              spreadRadius: -1,
-                            ),
-                          ],
+                          shadows: const [BoxShadow(color: Color(0x19000000),
+                              blurRadius: 2, offset: Offset(0, 1), spreadRadius: -1)],
                         ),
-                        child: Icon(
-                          Icons.notifications_outlined,
-                          color: c.textSecondary,
-                          size: 20,
-                        ),
+                        child: Icon(Icons.notifications_outlined,
+                            color: c.textSecondary, size: 20),
                       ),
                       Positioned(
-                        top: 6,
-                        right: 6,
+                        top: 6, right: 6,
                         child: Container(
-                          width: 8,
-                          height: 8,
+                          width: 8, height: 8,
                           decoration: BoxDecoration(
                             color: AppColors.red,
                             shape: BoxShape.circle,
@@ -171,29 +166,16 @@ class _HomeTabContentState extends State<_HomeTabContent> {
                   side: BorderSide(width: 1.24, color: c.border),
                   borderRadius: BorderRadius.circular(16),
                 ),
-                shadows: const [
-                  BoxShadow(
-                    color: Color(0x19000000),
-                    blurRadius: 2,
-                    offset: Offset(0, 1),
-                    spreadRadius: -1,
-                  ),
-                ],
+                shadows: const [BoxShadow(color: Color(0x19000000),
+                    blurRadius: 2, offset: Offset(0, 1), spreadRadius: -1)],
               ),
               child: TextField(
                 controller: _searchController,
                 style: TextStyle(color: c.textPrimary),
                 decoration: InputDecoration(
                   hintText: 'Search courses, jobs, skills...',
-                  hintStyle: TextStyle(
-                    color: c.textMuted,
-                    fontSize: 16,
-                    fontFamily: 'Inter',
-                  ),
-                  prefixIcon: Icon(
-                    Icons.search_rounded,
-                    color: c.textSecondary,
-                  ),
+                  hintStyle: TextStyle(color: c.textMuted, fontSize: 16, fontFamily: 'Inter'),
+                  prefixIcon: Icon(Icons.search_rounded, color: c.textSecondary),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(vertical: 14),
                 ),
@@ -201,43 +183,31 @@ class _HomeTabContentState extends State<_HomeTabContent> {
             ),
             const SizedBox(height: 24),
 
-            // ── Continue Learning ──
-            const ContinueLearningCard(
-              title: 'Continue Learning',
-              subtitle: 'Flutter Development - Lesson 4',
-              progress: 0.60,
-            ),
-            const SizedBox(height: 32),
+            // ── Continue Learning — only shown when real progress exists ──
+            if (_lastEnrollment != null) ...[
+              ContinueLearningCard(
+                title: 'Continue Learning',
+                subtitle: '${_lastEnrollment!.courseTitle} · ${_lastEnrollment!.lessonsLabel}',
+                progress: _lastEnrollment!.progressPercent,
+              ),
+              const SizedBox(height: 32),
+            ],
 
-            // ── Recommended ──
+            // ── Recommended for You ──
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Recommended for You',
-                  style: TextStyle(
-                    color: c.textPrimary,
-                    fontSize: 20,
-                    fontFamily: 'Inter',
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+                Text('Recommended for You',
+                    style: TextStyle(color: c.textPrimary, fontSize: 20,
+                        fontFamily: 'Inter', fontWeight: FontWeight.w700)),
                 TextButton(
                   onPressed: () {
-                    // ✅ الانتقال لتبويب "تعلم" بدلاً من صفحة جديدة
-                    final parentState = context
-                        .findAncestorStateOfType<_HomeEtudiantScreenState>();
-                    parentState?._changeTab(1);
+                    context.findAncestorStateOfType<_HomeEtudiantScreenState>()
+                        ?._changeTab(1);
                   },
-                  child: Text(
-                    'See all',
-                    style: TextStyle(
-                      color: c.primary,
-                      fontSize: 14,
-                      fontFamily: 'Inter',
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
+                  child: Text('See all',
+                      style: TextStyle(color: c.primary, fontSize: 14,
+                          fontFamily: 'Inter', fontWeight: FontWeight.w500)),
                 ),
               ],
             ),
@@ -247,29 +217,17 @@ class _HomeTabContentState extends State<_HomeTabContent> {
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  CourseCard(
-                    title: 'Arabic for Professionals',
-                    instructor: 'Ahmed Hassan',
-                    rating: '4.9',
-                    category: 'Languages',
-                    imageUrl: 'https://placehold.co/238x128',
-                  ),
+                  CourseCard(title: 'Arabic for Professionals',
+                      instructor: 'Ahmed Hassan', rating: '4.9',
+                      category: 'Languages', imageUrl: 'https://placehold.co/238x128'),
                   const SizedBox(width: 16),
-                  CourseCard(
-                    title: 'UX/UI Advanced Motion',
-                    instructor: 'Sarah Jenkins',
-                    rating: '4.9',
-                    category: 'Design',
-                    imageUrl: 'https://placehold.co/238x128',
-                  ),
+                  CourseCard(title: 'UX/UI Advanced Motion',
+                      instructor: 'Sarah Jenkins', rating: '4.9',
+                      category: 'Design', imageUrl: 'https://placehold.co/238x128'),
                   const SizedBox(width: 16),
-                  CourseCard(
-                    title: 'Flutter Development',
-                    instructor: 'John Smith',
-                    rating: '4.8',
-                    category: 'Mobile',
-                    imageUrl: 'https://placehold.co/238x128',
-                  ),
+                  CourseCard(title: 'Flutter Development',
+                      instructor: 'John Smith', rating: '4.8',
+                      category: 'Mobile', imageUrl: 'https://placehold.co/238x128'),
                 ],
               ),
             ),
@@ -279,31 +237,17 @@ class _HomeTabContentState extends State<_HomeTabContent> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'New Opportunities',
-                  style: TextStyle(
-                    color: c.textPrimary,
-                    fontSize: 20,
-                    fontFamily: 'Inter',
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+                Text('New Opportunities',
+                    style: TextStyle(color: c.textPrimary, fontSize: 20,
+                        fontFamily: 'Inter', fontWeight: FontWeight.w700)),
                 TextButton(
                   onPressed: () {
-                    // ✅ الانتقال لتبويب "وظائف" بدلاً من صفحة جديدة
-                    final parentState = context
-                        .findAncestorStateOfType<_HomeEtudiantScreenState>();
-                    parentState?._changeTab(2);
+                    context.findAncestorStateOfType<_HomeEtudiantScreenState>()
+                        ?._changeTab(2);
                   },
-                  child: Text(
-                    'See all',
-                    style: TextStyle(
-                      color: c.primary,
-                      fontSize: 14,
-                      fontFamily: 'Inter',
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
+                  child: Text('See all',
+                      style: TextStyle(color: c.primary, fontSize: 14,
+                          fontFamily: 'Inter', fontWeight: FontWeight.w500)),
                 ),
               ],
             ),
@@ -334,11 +278,6 @@ class _HomeTabContentState extends State<_HomeTabContent> {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// ✅ دالة مساعدة لتغيير التبويب من داخل المحتوى
-// ─────────────────────────────────────────────────────────────────────────────
 extension on _HomeEtudiantScreenState {
-  void _changeTab(int index) {
-    setState(() => _currentIndex = index);
-  }
+  void _changeTab(int index) => setState(() => _currentIndex = index);
 }

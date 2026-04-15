@@ -11,38 +11,20 @@ class CloudinaryService {
   static Future<String?> upload({
     required File file,
     required String folder,
+    String? resourceType, // ✅ جديد: 'image' (افتراضي) أو 'raw' للـ PDF
   }) async {
     try {
-      // ✅ تحقق من البيانات
-      if (cloudName == 'YOUR_CLOUD_NAME' ||
-          uploadPreset == 'YOUR_UNSIGNED_PRESET') {
-        debugPrint('❌ ERROR: Cloudinary credentials not set!');
-        debugPrint(
-          '📝 Please update cloudName and uploadPreset in cloudinary_service.dart',
-        );
-        return null;
-      }
-
-      debugPrint('☁️ Cloudinary Upload Started');
-      debugPrint('📁 File: ${file.path}');
-      debugPrint('📂 Folder: $folder');
-      debugPrint('🔑 Cloud Name: $cloudName');
-      debugPrint('⚙️ Preset: $uploadPreset');
-
-      // ✅ استخدم endpoint خاص بالصور (أكثر موثوقية)
+      // ✅ 1. تحديد نوع المورد ورابط الـ API المناسب
+      final type = resourceType ?? 'image';
       final url = Uri.parse(
-        'https://api.cloudinary.com/v1_1/$cloudName/image/upload',
+        'https://api.cloudinary.com/v1_1/$cloudName/$type/upload', // ✅ ديناميكي: image/upload أو raw/upload
       );
 
       final request = http.MultipartRequest('POST', url);
-
-      // ✅ أضف الحقول المطلوبة
       request.fields['upload_preset'] = uploadPreset;
       request.fields['folder'] = folder;
-      // request.fields['use_filename'] = 'true';
-      // request.fields['unique_filename'] = 'false'; // ✅ لتجنب الأسماء العشوائية
 
-      // ✅ أضف الملف
+      // ✅ 2. إعداد الملف للإرسال
       final fileStream = http.ByteStream(file.openRead());
       final fileLength = await file.length();
       final fileName = file.path.split('/').last;
@@ -53,31 +35,22 @@ class CloudinaryService {
         fileLength,
         filename: fileName,
       );
-
       request.files.add(multipartFile);
 
-      debugPrint('📤 Sending request to Cloudinary...');
-
-      // ✅ أرسل الطلب
+      // ✅ 3. الإرسال والمعالجة
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
 
-      debugPrint('📥 Response Status: ${response.statusCode}');
-      debugPrint('📄 Response Body: ${response.body}');
-
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
-        final secureUrl = jsonData['secure_url'];
-        debugPrint('✅ Upload Success! URL: $secureUrl');
-        return secureUrl;
+        return jsonData['secure_url']; // ✅ رابط آمن يعمل للجميع
       } else {
-        debugPrint('❌ Upload Failed with status: ${response.statusCode}');
-        debugPrint('❌ Erro°r: ${response.body}');
+        debugPrint('❌ Upload Failed: ${response.statusCode} - ${response.body}');
         return null;
       }
     } catch (e, stackTrace) {
-      debugPrint('❌ Exception during upload: $e');
-      debugPrint('📚 Stack trace: $stackTrace');
+      debugPrint('❌ Cloudinary Exception: $e');
+      debugPrint('📚 Stack: $stackTrace');
       return null;
     }
   }

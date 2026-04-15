@@ -7,6 +7,7 @@ import 'package:minipr/screens/recruteur/applicants_screen.dart';
 import 'package:minipr/screens/recruteur/edit_offer_screen.dart';
 import 'package:minipr/screens/recruteur/manage_offer_screen.dart';
 import 'package:minipr/screens/recruteur/recruiter_applicants_screen.dart';
+import 'package:minipr/screens/shared/my_portfolio_screen.dart';
 import 'package:minipr/screens/shared/public_profile_screen.dart';
 import 'package:minipr/services/auth_service.dart';
 import 'package:provider/provider.dart';
@@ -16,6 +17,7 @@ import 'providers/user_provider.dart';
 import 'screens/auth/signin_screen.dart';
 import 'screens/auth/create_account_screen.dart';
 import 'screens/auth/forgot_password_screen.dart';
+import 'screens/auth/new_password_screen.dart';
 
 // ── Étudiant ──
 import 'screens/etudiant/home_etudiant_screen.dart';
@@ -75,6 +77,7 @@ class MyApp extends StatelessWidget {
         '/signup': (context) => const SignUpScreen(),
         '/create-account': (context) => const CreateAccountScreen(),
         '/forgot-password': (context) => const ForgotPasswordScreen(),
+        '/new-password': (context) => const NewPasswordScreen(),
         //انا بدلتها هاذي لما يكون المستخدم مسجل دخول يروح لهوم سكرين واذا ماكانش مسجل دخول يروح لصفحة تسجيل الدخول
         '/home': (context) => const AuthWrapper(),
 
@@ -153,6 +156,7 @@ class MyApp extends StatelessWidget {
         '/applied-jobs': (context) => const AppliedJobsScreen(),
         '/settings': (context) => const SettingsScreen(),
         '/learning-history': (context) => const LearningHistoryScreen(),
+        '/portfolio': (ctx) => const MyPortfolioScreen(),
 
         // ✅ Public Profile Screen - شاشة البروفايل العام الموحدة
 '/public/profile': (context) {

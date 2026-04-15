@@ -39,6 +39,8 @@ class OffersService {
         'isActive': true,
         'postedAt': FieldValue.serverTimestamp(),
         'applicationsCount': 0,
+        'status': 'pending',  // الحالة الافتراضية: قيد المراجعة
+'submittedAt': FieldValue.serverTimestamp(),
       });
       debugPrint('✅ Offer created with ID: ${docRef.id}');
       return docRef.id;
@@ -52,7 +54,9 @@ class OffersService {
   // ✅ READ: جلب العروض النشطة (للصفحة الرئيسية/الطلاب)
   // ─────────────────────────────────────────────────────────────
   Stream<List<Map<String, dynamic>>> getActiveOffers({String? jobType, String? searchQuery}) {
-    var query = _offersRef.where('isActive', isEqualTo: true);
+    var query = _offersRef
+      .where('status', isEqualTo: 'approved')  // ✅ معتمد فقط
+      .where('isActive', isEqualTo: true);
 
     if (jobType != null && jobType.isNotEmpty) {
       query = query.where('jobType', isEqualTo: jobType);
