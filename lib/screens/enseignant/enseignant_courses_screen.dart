@@ -47,26 +47,26 @@ class _EnseignantCoursesScreenState
 
     return Scaffold(
       backgroundColor: c.bg,
-      bottomNavigationBar: BottomNavBar(
-        currentIndex: _currentNavIndex,
-        onTap: (index) {
-          setState(() => _currentNavIndex = index);
-          switch (index) {
-            case 0:
-              Navigator.pushNamedAndRemoveUntil(
-                  context, '/enseignant/home', (r) => false);
-              break;
-            case 2:
-              Navigator.pushNamedAndRemoveUntil(
-                  context, '/offers', (r) => false);
-              break;
-            case 3:
-              Navigator.pushNamedAndRemoveUntil(
-                  context, '/enseignant/profile', (r) => false);
-              break;
-          }
-        },
-      ),
+      // bottomNavigationBar: BottomNavBar(
+      //   currentIndex: _currentNavIndex,
+      //   onTap: (index) {
+      //     setState(() => _currentNavIndex = index);
+      //     switch (index) {
+      //       case 0:
+      //         Navigator.pushNamedAndRemoveUntil(
+      //             context, '/enseignant/home', (r) => false);
+      //         break;
+      //       case 2:
+      //         Navigator.pushNamedAndRemoveUntil(
+      //             context, '/offers', (r) => false);
+      //         break;
+      //       case 3:
+      //         Navigator.pushNamedAndRemoveUntil(
+      //             context, '/enseignant/profile', (r) => false);
+      //         break;
+      //     }
+      //   },
+      // ),
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -167,11 +167,13 @@ class _EnseignantCoursesScreenState
                               : c.border,
                         ),
                         boxShadow: active
-                            ? const [
+                            ? [
                                 BoxShadow(
-                                  color: Color(0xFFDBEAFE),
+                                  color: c.isDark
+                                      ? AppColors.primary.withValues(alpha: 0.30)
+                                      : const Color(0xFFDBEAFE),
                                   blurRadius: 15,
-                                  offset: Offset(0, 10),
+                                  offset: const Offset(0, 10),
                                   spreadRadius: -3,
                                 ),
                               ]
@@ -420,7 +422,7 @@ class _TeacherCourseListCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Divider(
-                    color: const Color(0xFFFAFAFA),
+                    color: c.border,
                     thickness: 1.24),
                 const SizedBox(height: 8),
                 Row(

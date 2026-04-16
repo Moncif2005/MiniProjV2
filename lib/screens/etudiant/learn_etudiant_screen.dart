@@ -92,26 +92,26 @@ class _LearnEtudiantScreenState extends State<LearnEtudiantScreen> {
 
     return Scaffold(
       backgroundColor: c.bg,
-      bottomNavigationBar: BottomNavBar(
-        currentIndex: _currentNavIndex,
-        onTap: (index) {
-          setState(() => _currentNavIndex = index);
-          switch (index) {
-            case 0:
-              Navigator.pushNamedAndRemoveUntil(
-                  context, '/etudiant/home', (route) => false);
-              break;
-            case 2:
-              Navigator.pushNamedAndRemoveUntil(
-                  context, '/offers', (route) => false);
-              break;
-            case 3:
-              Navigator.pushNamedAndRemoveUntil(
-                  context, '/etudiant/profile', (route) => false);
-              break;
-          }
-        },
-      ),
+      // bottomNavigationBar: BottomNavBar(
+      //   currentIndex: _currentNavIndex,
+      //   onTap: (index) {
+      //     setState(() => _currentNavIndex = index);
+      //     switch (index) {
+      //       case 0:
+      //         Navigator.pushNamedAndRemoveUntil(
+      //             context, '/etudiant/home', (route) => false);
+      //         break;
+      //       case 2:
+      //         Navigator.pushNamedAndRemoveUntil(
+      //             context, '/offers', (route) => false);
+      //         break;
+      //       case 3:
+      //         Navigator.pushNamedAndRemoveUntil(
+      //             context, '/etudiant/profile', (route) => false);
+      //         break;
+      //     }
+      //   },
+      // ),
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

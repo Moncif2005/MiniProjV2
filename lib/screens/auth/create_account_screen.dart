@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../theme/app_colors.dart';
 import '../../providers/user_provider.dart';
 import '../../services/auth_service.dart';
@@ -139,6 +142,91 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.red),
         );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  // ✅ Google Sign-In for new users on the register screen
+  Future<void> _handleGoogleSignIn() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final GoogleSignInAccount? googleUser = await GoogleSignIn(
+        scopes: ['email', 'profile'],
+      ).signIn();
+
+      if (googleUser == null) {
+        if (mounted) setState(() => _isLoading = false);
+        return;
+      }
+
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      final UserCredential userCredential =
+          await FirebaseAuth.instance.signInWithCredential(credential);
+
+      final User? user = userCredential.user;
+      if (user == null) throw Exception('No user returned');
+
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      // ✅ Fix 1: check role explicitly, not just doc.exists
+      final existingRole = userDoc.data()?['role']?.toString().trim();
+      final hasRole = userDoc.exists && existingRole != null && existingRole.isNotEmpty;
+
+      if (!hasRole) {
+        // New user OR glitch recovery (doc exists but no role)
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .set({
+          'email': user.email ?? '',
+          'name': user.displayName ?? '',
+          'firstName': (user.displayName ?? '').split(' ').first,
+          'photoUrl': user.photoURL ?? '',
+          'role': null,
+          'createdAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true)); // merge keeps any existing fields
+
+        if (mounted) {
+          Navigator.pushReplacementNamed(
+            context,
+            '/choose-role',
+            arguments: user.uid,
+          );
+        }
+      } else {
+        // Already registered with a role → go home
+        if (mounted) {
+          Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
+        }
+      }
+    } on FirebaseAuthException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(e.message ?? 'Google Sign‑In failed.'),
+          backgroundColor: AppColors.red,
+          behavior: SnackBarBehavior.floating,
+        ));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Google Sign‑In failed. Please try again.'),
+          backgroundColor: AppColors.red,
+          behavior: SnackBarBehavior.floating,
+        ));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -346,24 +434,10 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
               const DividerWithText(label: 'or continue with'),
               const SizedBox(height: 24),
 
-              Row(
-                children: [
-                  Expanded(
-                    child: SocialButton(
-                      label: 'Google',
-                      icon: Icons.g_mobiledata,
-                      onTap: () {},
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: SocialButton(
-                      label: 'Github',
-                      icon: Icons.code,
-                      onTap: () {},
-                    ),
-                  ),
-                ],
+              SocialButton(
+                label: 'Google',
+                icon: Icons.g_mobiledata,
+                onTap: _isLoading ? () {} : _handleGoogleSignIn,
               ),
               const SizedBox(height: 32),
 

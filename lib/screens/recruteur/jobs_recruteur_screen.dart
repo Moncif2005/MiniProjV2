@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
 import '../../theme/app_colors.dart';
-import '../../widgets/bottom_nav_bar.dart';
+import '../../providers/user_provider.dart';
+import '../../services/offers_service.dart';
+import '../../widgets/job_card.dart';
 
 class JobsRecruteurScreen extends StatefulWidget {
   const JobsRecruteurScreen({super.key});
@@ -10,81 +14,241 @@ class JobsRecruteurScreen extends StatefulWidget {
 }
 
 class _JobsRecruteurScreenState extends State<JobsRecruteurScreen> {
-  int _currentNavIndex = 1;
-  int _selectedTab = 0; // 0=Active, 1=Closed
+  int _selectedTab = 0; // 0 للأعمال النشطة، 1 للأعمال المغلقة
+  final _offersService = OffersService();
 
-  // Empty by default — new accounts see no jobs
-  final List<Map<String, dynamic>> _jobs = [];
+  // ✅ التحسين 1: نقل الدالة خارج الـ build لضمان استقرار الـ Context
+void _manageJob(Map<String, dynamic> job) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (context) => Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // شريط سحب صغير
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Manage: ${job['title']}',
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, fontFamily: 'Inter'),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          
+          // ✅ خيار 1: تعديل الوظيفة
+          _buildMenuOption(
+            icon: Icons.edit_outlined,
+            label: 'Edit Job Details',
+            color: Colors.blue,
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/recruteur/edit-offer', arguments: job);
+            },
+          ),
+          
+          // ✅ خيار 2: عرض المتقدمين
+                    _buildMenuOption(
+            icon: Icons.people_outline_rounded,
+            label: 'View Applicants (${job['applicationsCount'] ?? 0})',
+            color: AppColors.purple,
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(
+                context, 
+                '/recruteur/applicants', 
+                arguments: {'offerId': job['id'], 'offerTitle': job['title']},
+              );
+            },
+          ),
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final args = ModalRoute.of(context)?.settings.arguments;
-    if (args != null && args is Map<String, dynamic>) {
-      final alreadyAdded = _jobs.any((j) => j['title'] == args['title']);
-      if (!alreadyAdded) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) setState(() => _jobs.add(args));
-        });
-      }
+// ✅ خيار ذكي: غلق/فتح الوظيفة حسب حالتها
+_buildMenuOption(
+  icon: (job['isActive'] == true) ? Icons.lock_outline_rounded : Icons.lock_open_rounded,
+  label: (job['isActive'] == true) ? 'Close Job' : 'Open Job',  // ✅ يتغير النص ديناميكياً
+  color: (job['isActive'] == true) ? Colors.orange : Colors.green, // ✅ يتغير اللون أيضاً
+onTap: () async {
+  Navigator.pop(context);
+  await Future.delayed(const Duration(milliseconds: 200));
+  if (!mounted) return;
+  
+  final isActive = job['isActive'] == true;
+  
+  // ✅ نصوص ديناميكية بسيطة
+  final title = isActive ? 'Close Job?' : 'Open Job?';
+  final content = isActive 
+      ? 'This will hide the job from seekers.'
+      : 'This will make the job visible to seekers (if approved by admin).';
+  final actionText = isActive ? 'Close' : 'Open';
+  final actionColor = isActive ? Colors.orange : Colors.green;
+  
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: Text(title),
+      content: Text(content),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancel')),
+        FilledButton(
+          style: FilledButton.styleFrom(backgroundColor: actionColor),
+          onPressed: () => Navigator.pop(dialogContext, true),
+          child: Text(actionText, style: const TextStyle(color: Colors.white)),
+        ),
+      ],
+    ),
+  );
+  
+  if (confirmed == true && mounted) {
+    bool success = false;
+    
+    if (isActive) {
+      // ✅ غلق الوظيفة
+      success = await _offersService.deactivateOffer(job['id']);
+    } else {
+      // ✅ فتح الوظيفة: بدون شرط status! المسؤول يتحكم في isActive فقط
+      success = await _offersService.activateOffer(job['id']);
+    }
+    
+    if (mounted && success) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(isActive ? 'Job closed ✓' : 'Job opened ✓'),
+        backgroundColor: AppColors.green,
+      ));
+    } else if (mounted && !success) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Failed to update job status'),
+        backgroundColor: AppColors.red,
+      ));
     }
   }
+},
+),
+          
+          // ✅ خيار 4: حذف الوظيفة نهائياً (جديد - يحذف من القاعدة)
+          _buildMenuOption(
+            icon: Icons.delete_outline_rounded,
+            label: 'Delete Permanently',  // ✅ زر جديد للحذف النهائي
+            color: Colors.red,
+            onTap: () async {
+              Navigator.pop(context);
+              await Future.delayed(const Duration(milliseconds: 200));
+              if (!mounted) return;
+              
+              final confirmed = await showDialog<bool>(
+                context: context,
+                builder: (dialogContext) => AlertDialog(
+                  title: const Text('Delete Permanently?'),
+                  content: const Text('This will permanently delete the job and all its applications. This action cannot be undone!'),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancel')),
+                    FilledButton(
+                      style: FilledButton.styleFrom(backgroundColor: Colors.red),
+                      onPressed: () => Navigator.pop(dialogContext, true),
+                      child: const Text('Delete', style: TextStyle(color: Colors.white)),
+                    ),
+                  ],
+                ),
+              );
+              
+              if (confirmed == true && mounted) {
+                // ✅ نستخدم deleteOffer للحذف النهائي من Firestore
+                await _offersService.deleteOffer(job['id']);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                    content: Text('Job deleted permanently ✓'), backgroundColor: AppColors.green));
+                }
+              }
+            },
+          ),
+          
+          const SizedBox(height: 16),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+          ),
+          const SizedBox(height: 10),
+        ],
+      ),
+    ),
+  );
+}
 
-  List<Map<String, dynamic>> get _filtered =>
-      _jobs.where((j) => _selectedTab == 0 ? j['status'] == 'Active' : j['status'] == 'Closed').toList();
+  // ودجت مساعد لخيارات القائمة
+  Widget _buildMenuOption({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      leading: Icon(icon, color: color),
+      title: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+      onTap: onTap,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    final activeCount = _jobs.where((j) => j['status'] == 'Active').length;
+    final recruiterId = FirebaseAuth.instance.currentUser?.uid;
 
     return Scaffold(
       backgroundColor: c.bg,
-      bottomNavigationBar: BottomNavBar(
-        currentIndex: _currentNavIndex,
-        onTap: (index) {
-          setState(() => _currentNavIndex = index);
-          switch (index) {
-            case 0:
-              Navigator.pushNamedAndRemoveUntil(context, '/recruteur/home', (route) => false);
-              break;
-            case 2:
-              Navigator.pushNamedAndRemoveUntil(context, '/offers', (route) => false);
-              break;
-            case 3:
-              Navigator.pushNamedAndRemoveUntil(context, '/recruteur/profile', (route) => false);
-              break;
-          }
-        },
-      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => Navigator.pushNamed(context, '/recruteur/post-job'),
         backgroundColor: AppColors.purple,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add_rounded),
-        label: const Text('Post Job', style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700)),
+        label: const Text('Post Job', 
+          style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700)),
       ),
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Header
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('My Jobs', style: TextStyle(color: c.textPrimary, fontSize: 24, fontFamily: 'Inter', fontWeight: FontWeight.w700)),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(color: AppColors.purpleLight, borderRadius: BorderRadius.circular(100)),
-                    child: Text('$activeCount active',
-                        style: const TextStyle(color: AppColors.purple, fontSize: 13, fontFamily: 'Inter', fontWeight: FontWeight.w700)),
+                  Text('My Jobs', 
+                    style: TextStyle(color: c.textPrimary, fontSize: 24, fontFamily: 'Inter', fontWeight: FontWeight.w700)),
+                  
+                  // عداد الوظائف النشطة
+                  StreamBuilder<List<Map<String, dynamic>>>(
+                    stream: recruiterId != null ? _offersService.getOffersByRecruiter(recruiterId) : Stream.value([]),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) return const SizedBox.shrink();
+                      final active = snapshot.data!.where((j) => j['isActive'] == true).length;
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(color: AppColors.purpleLight, borderRadius: BorderRadius.circular(100)),
+                        child: Text('$active active', 
+                          style: const TextStyle(color: AppColors.purple, fontSize: 13, fontWeight: FontWeight.w700)),
+                      );
+                    },
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 16),
 
+            // Filter Tabs
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Row(
@@ -97,31 +261,51 @@ class _JobsRecruteurScreenState extends State<JobsRecruteurScreen> {
             ),
             const SizedBox(height: 16),
 
+            // Jobs List
             Expanded(
-              child: _filtered.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.work_off_outlined, color: c.textMuted, size: 48),
-                          const SizedBox(height: 16),
-                          Text(
-                            _jobs.isEmpty ? 'No jobs posted yet' : 'No ${_selectedTab == 0 ? 'active' : 'closed'} jobs',
-                            style: TextStyle(color: c.textMuted, fontSize: 16, fontFamily: 'Inter'),
-                          ),
-                          if (_jobs.isEmpty) ...[
-                            const SizedBox(height: 8),
-                            Text('Tap "+ Post Job" to create one!',
-                                style: TextStyle(color: c.textMuted, fontSize: 14, fontFamily: 'Inter')),
-                          ],
-                        ],
-                      ),
-                    )
-                  : ListView.separated(
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                      itemCount: _filtered.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 16),
-                      itemBuilder: (context, index) => _JobDetailCard(c: c, job: _filtered[index]),
+              child: recruiterId == null
+                  ? const Center(child: Text('Please sign in'))
+                  : StreamBuilder<List<Map<String, dynamic>>>(
+                      stream: _offersService.getOffersByRecruiter(recruiterId),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Center(child: CircularProgressIndicator());
+                        }
+                        
+                        final allJobs = snapshot.data ?? [];
+                        // تصفية الوظائف بناءً على التبويب المختار
+                        final filtered = allJobs.where((j) => 
+                          _selectedTab == 0 ? (j['isActive'] == true) : (j['isActive'] == false)
+                        ).toList();
+
+                        if (filtered.isEmpty) {
+                          return _buildEmptyState(c);
+                        }
+
+                        return ListView.separated(
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                          itemCount: filtered.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: 16),
+                      itemBuilder: (context, index) {
+  final job = filtered[index];
+  final recruiterId = job['recruiterId'] as String?; // ✅ استخراج معرف الناشر
+  
+  return JobCard(
+    offer: job,
+    isRecruiter: true,
+    isOwner: true,
+    onManage: () => _manageJob(job),
+    // ✅ عند النقر على الشعار: اذهب لبروفايل الشركة (نفسها)
+    onAvatarTap: recruiterId != null ? () {
+      Navigator.pushNamed(context, '/public/profile', arguments: {
+        'userId': recruiterId,
+        'role': 'recruteur',
+      });
+    } : null,
+  );
+},
+                        );
+                      },
                     ),
             ),
           ],
@@ -129,8 +313,23 @@ class _JobsRecruteurScreenState extends State<JobsRecruteurScreen> {
       ),
     );
   }
+
+  Widget _buildEmptyState(ThemeColors c) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(_selectedTab == 0 ? Icons.work_outline_rounded : Icons.work_off_outlined, color: c.textMuted, size: 48),
+          const SizedBox(height: 16),
+          Text('No ${_selectedTab == 0 ? 'active' : 'closed'} jobs found', 
+            style: TextStyle(color: c.textMuted, fontSize: 16, fontFamily: 'Inter')),
+        ],
+      ),
+    );
+  }
 }
 
+// الـ Tab Widget (لم يتغير تصميمه ولكن تأكد من وجوده)
 class _Tab extends StatelessWidget {
   final String label;
   final bool isSelected;
@@ -150,143 +349,13 @@ class _Tab extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: isSelected ? AppColors.purple : c.border, width: 1.24),
         ),
-        child: Text(label,
-            style: TextStyle(
-              color: isSelected ? Colors.white : c.textSecondary,
-              fontSize: 14, fontFamily: 'Inter', fontWeight: FontWeight.w700,
-            )),
+        child: Text(label, 
+          style: TextStyle(
+            color: isSelected ? Colors.white : c.textSecondary, 
+            fontSize: 14, 
+            fontWeight: FontWeight.w700
+          )),
       ),
     );
-  }
-}
-
-class _JobDetailCard extends StatelessWidget {
-  final ThemeColors c;
-  final Map<String, dynamic> job;
-  const _JobDetailCard({required this.c, required this.job});
-
-  @override
-  Widget build(BuildContext context) {
-    final isActive = job['status'] == 'Active';
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: ShapeDecoration(
-        color: c.surface,
-        shape: RoundedRectangleBorder(
-          side: BorderSide(width: 1.24, color: c.border),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        shadows: const [BoxShadow(color: Color(0x0A000000), blurRadius: 4, offset: Offset(0, 2))],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(job['title'] as String,
-                        style: TextStyle(color: c.textPrimary, fontSize: 16, fontFamily: 'Inter', fontWeight: FontWeight.w700)),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(Icons.location_on_outlined, size: 12, color: c.textSecondary),
-                        const SizedBox(width: 4),
-                        Text(job['location'] as String,
-                            style: TextStyle(color: c.textSecondary, fontSize: 12, fontFamily: 'Inter')),
-                        const SizedBox(width: 12),
-                        Icon(Icons.access_time_rounded, size: 12, color: c.textMuted),
-                        const SizedBox(width: 4),
-                        Text(job['posted'] as String,
-                            style: TextStyle(color: c.textMuted, fontSize: 12, fontFamily: 'Inter')),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: isActive ? AppColors.greenLight : c.iconBg,
-                  borderRadius: BorderRadius.circular(100),
-                ),
-                child: Text(job['status'] as String,
-                    style: TextStyle(
-                      color: isActive ? AppColors.green : c.textSecondary,
-                      fontSize: 11, fontFamily: 'Inter', fontWeight: FontWeight.w700,
-                    )),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              _Tag(label: job['type'] as String, icon: Icons.work_outline_rounded, color: AppColors.primary),
-              const SizedBox(width: 8),
-              _Tag(label: job['salary'] as String, icon: Icons.attach_money_rounded, color: AppColors.green),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Divider(color: c.border, height: 1),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              _Metric(icon: Icons.people_outline_rounded, value: '${job['applicants'] ?? 0}', label: 'Applicants', color: c.textSecondary),
-              const SizedBox(width: 20),
-              _Metric(icon: Icons.visibility_outlined, value: '${job['views'] ?? 0}', label: 'Views', color: c.textSecondary),
-              const Spacer(),
-              if (isActive)
-                GestureDetector(
-                  onTap: () {},
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    decoration: BoxDecoration(color: AppColors.purpleLight, borderRadius: BorderRadius.circular(12)),
-                    child: const Text('View',
-                        style: TextStyle(color: AppColors.purple, fontSize: 13, fontFamily: 'Inter', fontWeight: FontWeight.w700)),
-                  ),
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Tag extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final Color color;
-  const _Tag({required this.label, required this.icon, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(icon, size: 11, color: color),
-        const SizedBox(width: 4),
-        Text(label, style: TextStyle(color: color, fontSize: 11, fontFamily: 'Inter', fontWeight: FontWeight.w600)),
-      ]),
-    );
-  }
-}
-
-class _Metric extends StatelessWidget {
-  final IconData icon;
-  final String value, label;
-  final Color color;
-  const _Metric({required this.icon, required this.value, required this.label, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(children: [
-      Icon(icon, size: 14, color: color),
-      const SizedBox(width: 4),
-      Text('$value $label', style: TextStyle(color: color, fontSize: 12, fontFamily: 'Inter')),
-    ]);
   }
 }

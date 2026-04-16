@@ -1,6 +1,10 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../../providers/user_provider.dart';
 import '../../services/auth_service.dart';
 import '../../theme/app_colors.dart';
@@ -17,7 +21,7 @@ class SignUpScreen extends StatefulWidget {
 }
 
 class _SignUpScreenState extends State<SignUpScreen> {
-  final _emailController    = TextEditingController();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
 
@@ -30,11 +34,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   bool _validateAll() {
     final emailRegex = RegExp(r'^[\w.-]+@([\w-]+\.)+[\w-]{2,4}$');
-    final password   = _passwordController.text;
+    final password = _passwordController.text;
     if (!emailRegex.hasMatch(_emailController.text)) return false;
-    if (password.length < 8)                          return false;
-    if (!RegExp(r'[A-Z]').hasMatch(password))         return false;
-    if (!RegExp(r'[0-9]').hasMatch(password))         return false;
+    if (password.length < 8) return false;
+    if (!RegExp(r'[A-Z]').hasMatch(password)) return false;
+    if (!RegExp(r'[0-9]').hasMatch(password)) return false;
     if (!RegExp(r'[!@#\$&*~%^()_\-+=<>?/]').hasMatch(password)) return false;
     return true;
   }
@@ -50,9 +54,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     }
 
     setState(() => _isLoading = true);
-
-    final authService  = Provider.of<AuthService>(context, listen: false);
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final authService = Provider.of<AuthService>(context, listen: false);
 
     try {
       final ok = await authService.signIn(
@@ -60,38 +62,117 @@ class _SignUpScreenState extends State<SignUpScreen> {
         _passwordController.text.trim(),
       );
 
-      if (ok) {
-        // Sync Firebase profile into provider
-        final fbProfile = authService.userProfile;
-        if (fbProfile != null) {
-          userProvider.setUser(
-            name:  fbProfile['name']  ?? '',
-            email: fbProfile['email'] ?? '',
+      if (ok && mounted) {
+        // Success! AuthWrapper will handle navigation.
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Welcome back! 🎉'),
+          backgroundColor: AppColors.green,
+          behavior: SnackBarBehavior.floating,
+        ));
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Sign in failed. Please check your credentials.'),
+          backgroundColor: AppColors.red,
+          behavior: SnackBarBehavior.floating,
+        ));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('An error occurred: $e'),
+          backgroundColor: AppColors.red,
+        ));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  // ✅ Google Sign‑In with Firestore storage for new users
+  Future<void> _handleGoogleSignIn() async {
+    setState(() => _isLoading = true);
+
+    try {
+      // 1. Trigger Google Sign-In picker
+      final GoogleSignInAccount? googleUser = await GoogleSignIn(
+        scopes: ['email', 'profile'],
+      ).signIn();
+
+      // User cancelled the picker
+      if (googleUser == null) {
+        if (mounted) setState(() => _isLoading = false);
+        return;
+      }
+
+      // 2. Get auth tokens
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      // 3. Sign in to Firebase
+      final UserCredential userCredential =
+          await FirebaseAuth.instance.signInWithCredential(credential);
+
+      final User? user = userCredential.user;
+      if (user == null) throw Exception('Firebase sign-in returned no user');
+
+      // 4. Check if Firestore document already exists WITH a valid role
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      final existingRole = userDoc.data()?['role']?.toString().trim();
+      final hasRole = userDoc.exists && existingRole != null && existingRole.isNotEmpty;
+
+      if (!hasRole) {
+        // New user OR existing user whose role was never saved (glitch recovery)
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .set({
+          'email': user.email ?? '',
+          'name': user.displayName ?? '',
+          'firstName': (user.displayName ?? '').split(' ').first,
+          'photoUrl': user.photoURL ?? '',
+          'role': null, // set in ChooseRoleScreen
+          'createdAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true)); // merge keeps existing fields safe
+
+        if (mounted) {
+          Navigator.pushReplacementNamed(
+            context,
+            '/choose-role',
+            arguments: user.uid,
           );
         }
-        if (mounted) {
-          // Route based on stored role
-          final routes = {
-            UserRole.enseignant: '/enseignant/home',
-            UserRole.recruteur:  '/recruteur/home',
-            UserRole.etudiant:   '/etudiant/home',
-          };
-          final route = routes[userProvider.role] ?? '/etudiant/home';
-          Navigator.pushNamedAndRemoveUntil(context, route, (r) => false);
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('Sign in failed. Please check your credentials.'),
-            backgroundColor: AppColors.red,
-            behavior: SnackBarBehavior.floating,
-          ));
-        }
+        return;
+      }
+
+      // 5. Existing user with valid role — AuthWrapper handles routing automatically
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Welcome back! 🎉'),
+          backgroundColor: AppColors.green,
+          behavior: SnackBarBehavior.floating,
+        ));
+      }
+    } on FirebaseAuthException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(e.message ?? 'Google Sign‑In failed.'),
+          backgroundColor: AppColors.red,
+          behavior: SnackBarBehavior.floating,
+        ));
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('An error occurred. Please try again.'),
+          content: Text('Google Sign‑In failed. Please try again.'),
           backgroundColor: AppColors.red,
           behavior: SnackBarBehavior.floating,
         ));
@@ -126,13 +207,28 @@ class _SignUpScreenState extends State<SignUpScreen> {
               ),
               const SizedBox(height: 16),
 
-              Center(child: Text('Welcome Back',
-                  style: TextStyle(color: c.textPrimary, fontSize: 24,
-                      fontFamily: 'Inter', fontWeight: FontWeight.w700))),
+              Center(
+                child: Text(
+                  'Welcome Back',
+                  style: TextStyle(
+                    color: c.textPrimary,
+                    fontSize: 24,
+                    fontFamily: 'Inter',
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
               const SizedBox(height: 8),
-              Center(child: Text('Formanova & Work Platform',
-                  style: TextStyle(color: c.textSecondary, fontSize: 16,
-                      fontFamily: 'Inter'))),
+              Center(
+                child: Text(
+                  'Formanova & Work Platform',
+                  style: TextStyle(
+                    color: c.textSecondary,
+                    fontSize: 16,
+                    fontFamily: 'Inter',
+                  ),
+                ),
+              ),
               const SizedBox(height: 32),
 
               AuthTextField(
@@ -154,10 +250,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
-                  onPressed: () {},
-                  child: Text('Forgot password?',
-                      style: TextStyle(color: c.primary, fontFamily: 'Inter',
-                          fontWeight: FontWeight.w700)),
+                  onPressed: () =>
+                      Navigator.pushNamed(context, '/forgot-password'),
+                  child: Text(
+                    'Forgot password?',
+                    style: TextStyle(
+                      color: c.primary,
+                      fontFamily: 'Inter',
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
@@ -170,15 +272,22 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: c.primary,
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16)),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     elevation: 4,
                     shadowColor: AppColors.primaryLight,
                   ),
                   child: _isLoading
                       ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text('Sign In',
-                          style: TextStyle(color: Colors.white, fontSize: 16,
-                              fontFamily: 'Inter', fontWeight: FontWeight.w700)),
+                      : const Text(
+                          'Sign In',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontFamily: 'Inter',
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(height: 24),
@@ -186,33 +295,39 @@ class _SignUpScreenState extends State<SignUpScreen> {
               const DividerWithText(label: 'Or continue with'),
               const SizedBox(height: 16),
 
-              Row(
-                children: [
-                  Expanded(child: SocialButton(
-                      label: 'Google', icon: Icons.g_mobiledata, onTap: () {})),
-                  const SizedBox(width: 16),
-                  Expanded(child: SocialButton(
-                      label: 'Github', icon: Icons.code, onTap: () {})),
-                ],
+              SocialButton(
+                label: 'Google',
+                icon: Icons.g_mobiledata,
+                onTap: _handleGoogleSignIn, // ✅ Connected to Google sign-in
               ),
               const SizedBox(height: 24),
 
               Center(
-                child: Text.rich(TextSpan(children: [
-                  TextSpan(
-                    text: 'New to Formanova? ',
-                    style: TextStyle(color: c.textSecondary, fontSize: 16,
-                        fontFamily: 'Inter'),
-                  ),
-                  TextSpan(
-                    text: 'Create Account',
-                    style: TextStyle(color: c.primary, fontSize: 16,
-                        fontFamily: 'Inter', fontWeight: FontWeight.w700),
-                    recognizer: TapGestureRecognizer()
-                      ..onTap = () =>
-                          Navigator.pushNamed(context, '/create-account'),
-                  ),
-                ]), textAlign: TextAlign.center),
+                child: Text.rich(
+                  TextSpan(children: [
+                    TextSpan(
+                      text: 'New to Formanova? ',
+                      style: TextStyle(
+                        color: c.textSecondary,
+                        fontSize: 16,
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                    TextSpan(
+                      text: 'Create Account',
+                      style: TextStyle(
+                        color: c.primary,
+                        fontSize: 16,
+                        fontFamily: 'Inter',
+                        fontWeight: FontWeight.w700,
+                      ),
+                      recognizer: TapGestureRecognizer()
+                        ..onTap = () =>
+                            Navigator.pushNamed(context, '/create-account'),
+                    ),
+                  ]),
+                  textAlign: TextAlign.center,
+                ),
               ),
               const SizedBox(height: 24),
             ],

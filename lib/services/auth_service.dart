@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'user_service.dart';
+import 'fcm_service.dart';
 
 class AuthService extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -75,7 +77,15 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  /// ✅ Fix 3: sign out of both Firebase AND Google so the account
+  /// picker always appears on the next Google sign-in attempt.
   Future<void> signOut() async {
+    await FcmService.instance.clearToken();
+    // Disconnect Google session (forces account picker on next login)
+    final googleSignIn = GoogleSignIn();
+    if (await googleSignIn.isSignedIn()) {
+      await googleSignIn.signOut();
+    }
     await _auth.signOut();
     notifyListeners();
   }

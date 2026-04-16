@@ -147,9 +147,9 @@ class CertificatesService {
         'title':         title,
         'issuer':        issuer,
         'date':          date,
-        if (certId      != null) 'certId':        certId,
-        if (description != null) 'description':   description,
-        if (credentialUrl != null) 'credentialUrl': credentialUrl,
+        'certId':        ?certId,
+        'description':   ?description,
+        'credentialUrl': ?credentialUrl,
         'createdAt':     FieldValue.serverTimestamp(),
         'isVerified':    false,
       });
