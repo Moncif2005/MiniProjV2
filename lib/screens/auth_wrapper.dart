@@ -7,6 +7,7 @@ import 'package:minipr/screens/enseignant/enseignant_home_screen.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/user_provider.dart';
+import '../services/fcm_service.dart';
 import 'auth/signin_screen.dart';
 import 'etudiant/home_etudiant_screen.dart';
 import 'recruteur/home_recruteur_screen.dart';
@@ -85,7 +86,12 @@ class _AuthenticatedRouterState extends State<_AuthenticatedRouter> {
     } catch (e) {
       _role = UserRole.etudiant;
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+        // ── Initialise FCM (token save + listeners) ──
+        // ignore: use_build_context_synchronously
+        FcmService.instance.init(context);
+      }
     }
   }
 

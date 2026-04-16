@@ -101,23 +101,24 @@ class NotificationCard extends StatelessWidget {
 
   Color get _iconBg => _iconColor.withOpacity(0.12);
 
-  Color get _borderColor => notification.isUnread
+  Color _borderColor(ThemeColors c) => notification.isUnread
       ? AppColors.primaryLight
-      : const Color(0xFFF5F5F5);
+      : c.border;
 
   // ── Build ─────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(16),
         decoration: ShapeDecoration(
-          color: Colors.white,
+          color: c.surface,
           shape: RoundedRectangleBorder(
-            side: BorderSide(width: 1.24, color: _borderColor),
+            side: BorderSide(width: 1.24, color: _borderColor(c)),
             borderRadius: BorderRadius.circular(24),
           ),
           shadows: const [
@@ -164,8 +165,8 @@ class NotificationCard extends StatelessWidget {
                           notification.title,
                           style: TextStyle(
                             color: notification.isUnread
-                                ? const Color(0xFF171717)
-                                : const Color(0xFF525252),
+                                ? c.textPrimary
+                                : c.textSecondary,
                             fontSize: 14,
                             fontFamily: 'Inter',
                             fontWeight: FontWeight.w700,
@@ -189,8 +190,8 @@ class NotificationCard extends StatelessWidget {
                   // Body
                   Text(
                     notification.body,
-                    style: const TextStyle(
-                      color: Color(0xFF737373),
+                    style: TextStyle(
+                      color: c.textSecondary,
                       fontSize: 12,
                       fontFamily: 'Inter',
                       height: 1.55,
@@ -201,16 +202,16 @@ class NotificationCard extends StatelessWidget {
                   // Time
                   Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.access_time_rounded,
-                        color: Color(0xFFA1A1A1),
+                        color: c.textMuted,
                         size: 11,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         notification.timeAgo,
-                        style: const TextStyle(
-                          color: Color(0xFFA1A1A1),
+                        style: TextStyle(
+                          color: c.textMuted,
                           fontSize: 10,
                           fontFamily: 'Inter',
                         ),

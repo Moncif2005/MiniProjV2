@@ -1,6 +1,10 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../../providers/user_provider.dart';
 import '../../services/auth_service.dart';
 import '../../theme/app_colors.dart';
@@ -17,7 +21,7 @@ class SignUpScreen extends StatefulWidget {
 }
 
 class _SignUpScreenState extends State<SignUpScreen> {
-  final _emailController    = TextEditingController();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
 
@@ -30,60 +34,128 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   bool _validateAll() {
     final emailRegex = RegExp(r'^[\w.-]+@([\w-]+\.)+[\w-]{2,4}$');
-    final password   = _passwordController.text;
+    final password = _passwordController.text;
     if (!emailRegex.hasMatch(_emailController.text)) return false;
-    if (password.length < 8)                          return false;
-    if (!RegExp(r'[A-Z]').hasMatch(password))         return false;
-    if (!RegExp(r'[0-9]').hasMatch(password))         return false;
+    if (password.length < 8) return false;
+    if (!RegExp(r'[A-Z]').hasMatch(password)) return false;
+    if (!RegExp(r'[0-9]').hasMatch(password)) return false;
     if (!RegExp(r'[!@#\$&*~%^()_\-+=<>?/]').hasMatch(password)) return false;
     return true;
   }
 
-Future<void> _handleSignIn() async {
-  if (!_validateAll()) {
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-      content: Text('Please fix the errors before continuing.'),
-      backgroundColor: AppColors.red,
-      behavior: SnackBarBehavior.floating,
-    ));
-    return;
-  }
-
-  setState(() => _isLoading = true);
-  final authService = Provider.of<AuthService>(context, listen: false);
-
-  try {
-    final ok = await authService.signIn(
-      _emailController.text.trim(),
-      _passwordController.text.trim(),
-    );
-
-    if (ok && mounted) {
-      // ✅ نجاح! لا تضع أي Navigator هنا.
-      // فقط اعرض رسالة، وسيقوم AuthWrapper بالباقي.
+  Future<void> _handleSignIn() async {
+    if (!_validateAll()) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Welcome back! 🎉'),
-        backgroundColor: AppColors.green,
-        behavior: SnackBarBehavior.floating,
-      ));
-    } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Sign in failed. Please check your credentials.'),
+        content: Text('Please fix the errors before continuing.'),
         backgroundColor: AppColors.red,
         behavior: SnackBarBehavior.floating,
       ));
+      return;
     }
-  } catch (e) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('An error occurred: $e'),
-        backgroundColor: AppColors.red,
-      ));
+
+    setState(() => _isLoading = true);
+    final authService = Provider.of<AuthService>(context, listen: false);
+
+    try {
+      final ok = await authService.signIn(
+        _emailController.text.trim(),
+        _passwordController.text.trim(),
+      );
+
+      if (ok && mounted) {
+        // Success! AuthWrapper will handle navigation.
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Welcome back! 🎉'),
+          backgroundColor: AppColors.green,
+          behavior: SnackBarBehavior.floating,
+        ));
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Sign in failed. Please check your credentials.'),
+          backgroundColor: AppColors.red,
+          behavior: SnackBarBehavior.floating,
+        ));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('An error occurred: $e'),
+          backgroundColor: AppColors.red,
+        ));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
-  } finally {
-    if (mounted) setState(() => _isLoading = false);
   }
-}
+
+  // ✅ Google Sign‑In with Firestore storage for new users
+  Future<void> _handleGoogleSignIn() async {
+    setState(() => _isLoading = true);
+
+    try {
+      // 1. Google Sign-In
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+      if (googleUser == null) return; // User cancelled
+
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      final UserCredential userCredential =
+          await FirebaseAuth.instance.signInWithCredential(credential);
+
+      final User? user = userCredential.user;
+      if (user == null) throw Exception('Sign-in failed: no user');
+
+      // 2. Check Firestore for existing user document
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      if (!userDoc.exists) {
+        // New user – create Firestore document with null role
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+          'email': user.email,
+          'name': user.displayName ?? '',
+          'photoUrl': user.photoURL ?? '',
+          'role': null, // will be set in role selection screen
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+
+        // Redirect to role selection screen (pass uid)
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/choose-role',
+              arguments: user.uid);
+        }
+        return;
+      }
+
+      // Existing user – just sign in, AuthWrapper will handle navigation
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Welcome back! 🎉'),
+          backgroundColor: AppColors.green,
+          behavior: SnackBarBehavior.floating,
+        ));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Google Sign‑In failed. Please try again.'),
+          backgroundColor: AppColors.red,
+          behavior: SnackBarBehavior.floating,
+        ));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
@@ -109,13 +181,28 @@ Future<void> _handleSignIn() async {
               ),
               const SizedBox(height: 16),
 
-              Center(child: Text('Welcome Back',
-                  style: TextStyle(color: c.textPrimary, fontSize: 24,
-                      fontFamily: 'Inter', fontWeight: FontWeight.w700))),
+              Center(
+                child: Text(
+                  'Welcome Back',
+                  style: TextStyle(
+                    color: c.textPrimary,
+                    fontSize: 24,
+                    fontFamily: 'Inter',
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
               const SizedBox(height: 8),
-              Center(child: Text('Formanova & Work Platform',
-                  style: TextStyle(color: c.textSecondary, fontSize: 16,
-                      fontFamily: 'Inter'))),
+              Center(
+                child: Text(
+                  'Formanova & Work Platform',
+                  style: TextStyle(
+                    color: c.textSecondary,
+                    fontSize: 16,
+                    fontFamily: 'Inter',
+                  ),
+                ),
+              ),
               const SizedBox(height: 32),
 
               AuthTextField(
@@ -139,9 +226,14 @@ Future<void> _handleSignIn() async {
                 child: TextButton(
                   onPressed: () =>
                       Navigator.pushNamed(context, '/forgot-password'),
-                  child: Text('Forgot password?',
-                      style: TextStyle(color: c.primary, fontFamily: 'Inter',
-                          fontWeight: FontWeight.w700)),
+                  child: Text(
+                    'Forgot password?',
+                    style: TextStyle(
+                      color: c.primary,
+                      fontFamily: 'Inter',
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
@@ -154,15 +246,22 @@ Future<void> _handleSignIn() async {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: c.primary,
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16)),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     elevation: 4,
                     shadowColor: AppColors.primaryLight,
                   ),
                   child: _isLoading
                       ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text('Sign In',
-                          style: TextStyle(color: Colors.white, fontSize: 16,
-                              fontFamily: 'Inter', fontWeight: FontWeight.w700)),
+                      : const Text(
+                          'Sign In',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontFamily: 'Inter',
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(height: 24),
@@ -173,26 +272,36 @@ Future<void> _handleSignIn() async {
               SocialButton(
                 label: 'Google',
                 icon: Icons.g_mobiledata,
-                onTap: () {},
+                onTap: _handleGoogleSignIn, // ✅ Connected to Google sign-in
               ),
               const SizedBox(height: 24),
 
               Center(
-                child: Text.rich(TextSpan(children: [
-                  TextSpan(
-                    text: 'New to Formanova? ',
-                    style: TextStyle(color: c.textSecondary, fontSize: 16,
-                        fontFamily: 'Inter'),
-                  ),
-                  TextSpan(
-                    text: 'Create Account',
-                    style: TextStyle(color: c.primary, fontSize: 16,
-                        fontFamily: 'Inter', fontWeight: FontWeight.w700),
-                    recognizer: TapGestureRecognizer()
-                      ..onTap = () =>
-                          Navigator.pushNamed(context, '/create-account'),
-                  ),
-                ]), textAlign: TextAlign.center),
+                child: Text.rich(
+                  TextSpan(children: [
+                    TextSpan(
+                      text: 'New to Formanova? ',
+                      style: TextStyle(
+                        color: c.textSecondary,
+                        fontSize: 16,
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                    TextSpan(
+                      text: 'Create Account',
+                      style: TextStyle(
+                        color: c.primary,
+                        fontSize: 16,
+                        fontFamily: 'Inter',
+                        fontWeight: FontWeight.w700,
+                      ),
+                      recognizer: TapGestureRecognizer()
+                        ..onTap = () =>
+                            Navigator.pushNamed(context, '/create-account'),
+                    ),
+                  ]),
+                  textAlign: TextAlign.center,
+                ),
               ),
               const SizedBox(height: 24),
             ],

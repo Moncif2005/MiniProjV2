@@ -23,6 +23,12 @@ class NotificationsService {
   // CORE PUSH
   // ─────────────────────────────
 
+  // ── Fetch the user's FCM token from Firestore ────────────────────────────
+  Future<String?> _getToken(String uid) async {
+    final doc = await _db.collection('users').doc(uid).get();
+    return doc.data()?['fcmToken'] as String?;
+  }
+
   Future<void> _push({
     required String uid,
     required String title,
@@ -30,6 +36,9 @@ class NotificationsService {
     required NotifType type,
     Map<String, dynamic>? payload,
   }) async {
+    // Resolve FCM token (may be null if user logged out or never granted permission)
+    final token = await _getToken(uid);
+
     await _col(uid).add({
       'title': title,
       'body': body,
@@ -37,6 +46,9 @@ class NotificationsService {
       'isUnread': true,
       'createdAt': FieldValue.serverTimestamp(),
       if (payload != null) 'payload': payload,
+      // ── FCM fields (read by Cloud Function to send push) ──
+      if (token != null) 'fcmToken': token,
+      'fcmSent': false,
     });
   }
 

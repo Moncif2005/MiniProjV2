@@ -1,4 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'services/fcm_service.dart';
 import 'package:flutter/material.dart';
 import 'package:minipr/firebase_options.dart';
 import 'package:minipr/screens/auth_wrapper.dart';
@@ -47,6 +49,17 @@ import 'screens/shared/learning_history_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // ── FCM: register background handler early ──
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+
+  // ── FCM: show notifications in foreground on iOS ──
+  await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
+    alert: true,
+    badge: true,
+    sound: true,
+  );
+
   runApp(
     MultiProvider(
       providers: [

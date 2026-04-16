@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'user_service.dart';
+import 'fcm_service.dart';
 
 class AuthService extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -76,6 +77,7 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<void> signOut() async {
+    await FcmService.instance.clearToken();
     await _auth.signOut();
     notifyListeners();
   }

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../providers/user_provider.dart';
 import '../../services/notifications_service.dart';
 import '../../models/notification_model.dart';
+import '../../widgets/notification_card.dart';
 import '../../theme/app_colors.dart';
 
 class NotificationScreen extends StatefulWidget {
@@ -116,7 +117,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
       );
     }
 
+    final c = context.colors;
     return Scaffold(
+      backgroundColor: c.bg,
       body: StreamBuilder<List<NotificationModel>>(
         stream: _svc.streamNotifications(uid),
         builder: (context, snap) {
@@ -134,45 +137,95 @@ class _NotificationScreenState extends State<NotificationScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text("Notifications ($unread)"),
-                    TextButton(
-                      onPressed: () => _svc.markAllRead(uid),
-                      child: const Text("Tout lu"),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Notifications',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface,
+                            fontSize: 24,
+                            fontFamily: 'Inter',
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        if (unread > 0)
+                          Text(
+                            '$unread unread',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                              fontSize: 14,
+                              fontFamily: 'Inter',
+                            ),
+                          ),
+                      ],
                     ),
+                    if (unread > 0)
+                      TextButton(
+                        onPressed: () => _svc.markAllRead(uid),
+                        child: const Text(
+                          'Mark all read',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
 
               Expanded(
                 child: notifications.isEmpty
-                    ? const Center(child: Text("Aucune notification"))
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.notifications_off_outlined,
+                                size: 56,
+                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3)),
+                            const SizedBox(height: 16),
+                            Text(
+                              'No notifications yet',
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                                fontSize: 16,
+                                fontFamily: 'Inter',
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
                     : ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
                         itemCount: notifications.length,
                         itemBuilder: (_, i) {
                           final n = notifications[i];
-
-                          return Dismissible(
-                            key: Key(n.id),
-                            onDismissed: (_) =>
-                                _svc.deleteNotification(uid, n.id),
-                            child: ListTile(
-                              onTap: () {
-                                if (n.isUnread) {
-                                  _svc.markRead(uid, n.id);
-                                }
-                                _handleTap(n);
-                              },
-                              leading: CircleAvatar(
-                                backgroundColor:
-                                    _colorFor(n.type).withOpacity(0.15),
-                                child: Icon(
-                                  _iconFor(n.type),
-                                  color: _colorFor(n.type),
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: Dismissible(
+                              key: Key(n.id),
+                              direction: DismissDirection.endToStart,
+                              background: Container(
+                                alignment: Alignment.centerRight,
+                                padding: const EdgeInsets.only(right: 20),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFEF2F2),
+                                  borderRadius: BorderRadius.circular(24),
+                                ),
+                                child: const Icon(
+                                  Icons.delete_outline_rounded,
+                                  color: Color(0xFFDC2626),
                                 ),
                               ),
-                              title: Text(n.title),
-                              subtitle: Text(n.body),
-                              trailing: Text(n.timeAgo),
+                              onDismissed: (_) => _svc.deleteNotification(uid, n.id),
+                              child: NotificationCard(
+                                notification: n,
+                                onTap: () {
+                                  if (n.isUnread) _svc.markRead(uid, n.id);
+                                  _handleTap(n);
+                                },
+                              ),
                             ),
                           );
                         },

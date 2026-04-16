@@ -382,8 +382,8 @@ class _ProfileEnseignantScreenState extends State<ProfileEnseignantScreen> {
               const SizedBox(height: 8),
               _ProfileMenuItem(
                 icon: Icons.settings_outlined,
-                iconBg: const Color(0xFFFAFAFA),
-                iconColor: const Color(0xFF737373),
+                iconBg: c.iconBg,
+                iconColor: c.textSecondary,
                 title: 'Parameters',
                 onTap: () => Navigator.pushNamed(context, '/settings'),
               ),
@@ -560,7 +560,7 @@ class _CourseItem extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(17),
       decoration: ShapeDecoration(
-        color: const Color(0xFFFAFAFA),
+        color: c.surface,
         shape: RoundedRectangleBorder(
           side: BorderSide(width: 1.24, color: c.border),
           borderRadius: BorderRadius.circular(16),
@@ -646,12 +646,12 @@ class _CourseItem extends StatelessWidget {
                 width: 32,
                 height: 32,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFEF2F2),
+                  color: AppColors.redLight,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(
                   Icons.delete_outline_rounded,
-                  color: Color(0xFFFB2C36),
+                  color: AppColors.red,
                   size: 16,
                 ),
               ),

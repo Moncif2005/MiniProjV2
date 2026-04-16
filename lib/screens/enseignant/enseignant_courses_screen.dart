@@ -420,7 +420,7 @@ class _TeacherCourseListCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Divider(
-                    color: const Color(0xFFFAFAFA),
+                    color: c.border,
                     thickness: 1.24),
                 const SizedBox(height: 8),
                 Row(
