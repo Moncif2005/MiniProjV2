@@ -80,31 +80,49 @@ class _NotificationScreenState extends State<NotificationScreen> {
     final payload = n.payload;
     if (payload == null) return;
 
-    switch (n.type) {
-      case NotifType.applicationAccepted:
-      case NotifType.applicationRejected:
-      case NotifType.applicationInterview:
-      case NotifType.applicationReviewing:
-        Navigator.pushNamed(
-          context,
-          '/applicationDetails',
-          arguments: payload['applicationId'],
-        );
-        break;
-
-      case NotifType.newApplicant:
-        Navigator.pushNamed(
-          context,
-          '/recruteur/applicants',
-          arguments: {
-            'offerId': payload['offerId'],
-          },
-        );
-        break;
-
-      default:
-        // لا تفعل شيء → مهم جداً
-        break;
+    // ✅ 1. إشعارات الوظائف (للطالب والمسؤول)
+    if (n.type.category == 'job') {
+      
+      // أ) إذا كان الإشعار لطالب (قبول/رفض/مقابلة)
+      if (n.type == NotifType.applicationAccepted ||
+          n.type == NotifType.applicationRejected ||
+          n.type == NotifType.applicationInterview ||
+          n.type == NotifType.applicationReviewing) {
+        
+        // نأخذه لشاشة "طلباتي" لي يرى التفاصيل
+        // ملاحظة: يمكنك لاحقاً تمرير offerId لفتح تفاصيل الوظيفة مباشرة
+        Navigator.pushNamed(context, '/applied-jobs');
+      } 
+      
+      // ب) إذا كان الإشعار لمسؤول (متقدم جديد)
+      else if (n.type == NotifType.newApplicant) {
+        final offerId = payload['offerId'];
+        final offerTitle = payload['offerTitle'] ?? 'Job';
+        
+        if (offerId != null) {
+          // نأخذه لشاشة المتقدمين لهذه الوظيفة تحديداً
+          Navigator.pushNamed(
+            context,
+            '/recruteur/applicants',
+            arguments: {
+              'offerId': offerId,
+              'offerTitle': offerTitle,
+            },
+          );
+        }
+      }
+    } 
+    
+    // ✅ 2. إشعارات الكورسات (للمعلم والطالب) - مستقبلاً
+    else if (n.type.category == 'course') {
+       // مثال: الذهاب للكورس المحدد
+       // Navigator.pushNamed(context, '/course-details', arguments: payload['courseId']);
+       Navigator.pushNamed(context, '/enseignant/home'); // مؤقتاً
+    }
+    
+    // ✅ 3. إشعارات عامة
+    else {
+      // لا تفعل شيئاً أو ابقَ في شاشة الإشعارات
     }
   }
 
@@ -233,7 +251,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                 notification: n,
                                 onTap: () {
                                   if (n.isUnread) NotificationsService().markRead(uid, n.id);
-                                  // _handleTap(n); // يمكنك إعادة تفعيلها إذا أردت
+                                  _handleTap(n); // يمكنك إعادة تفعيلها إذا أردت
                                 },
                               ),
                             ),
