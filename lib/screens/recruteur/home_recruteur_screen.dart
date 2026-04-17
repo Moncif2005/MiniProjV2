@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:minipr/screens/recruteur/jobs_recruteur_screen.dart';
 import 'package:minipr/screens/recruteur/profile_recruteur_screen.dart';
 import 'package:minipr/screens/recruteur/recruiter_applicants_screen.dart';
+import 'package:minipr/services/notifications_service.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../theme/app_colors.dart';
@@ -105,43 +106,67 @@ class _HomeTabContentState extends State<_HomeTabContent> {
                     ),
                   ],
                 ),
-                GestureDetector(
-                  onTap: () => Navigator.pushNamed(context, '/notifications'),
-                  child: Stack(
-                    children: [
-                      Container(
-                        width: 38,
-                        height: 38,
-                        decoration: ShapeDecoration(
-                          color: c.surface,
-                          shape: RoundedRectangleBorder(
-                            side: BorderSide(width: 1.24, color: c.border),
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                        child: Icon(
-                          Icons.notifications_outlined,
-                          color: c.textSecondary,
-                          size: 20,
-                        ),
-                      ),
-                      Positioned(
-                        top: 6,
-                        right: 6,
-                        child: Container(
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: AppColors.red,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: c.surface, width: 1.24),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+// ── Bell with Dynamic Unread Badge ──
+StreamBuilder<int>(
+  // ✅ 1. الاستماع لعدد الإشعارات غير المقروءة للمستخدم الحالي
+  stream: NotificationsService().streamUnreadCount(
+    FirebaseAuth.instance.currentUser?.uid ?? '',
+  ),
+  builder: (context, snap) {
+    // ✅ 2. تحديد عدد الإشعارات غير المقروءة (0 إذا لم يكن هناك بيانات)
+    final unreadCount = snap.data ?? 0;
+    final hasUnread = unreadCount > 0;
+
+    return GestureDetector(
+      onTap: () => Navigator.pushNamed(context, '/notifications'),
+      child: Stack(
+        clipBehavior: Clip.none, // مهم لكي تظهر النقطة خارج الحدود إذا لزم الأمر
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: ShapeDecoration(
+              color: c.surface,
+              shape: RoundedRectangleBorder(
+                side: BorderSide(width: 1.24, color: c.border),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              shadows: const [
+                BoxShadow(
+                  color: Color(0x19000000),
+                  blurRadius: 2,
+                  offset: Offset(0, 1),
+                  spreadRadius: -1,
+                )
               ],
+            ),
+            child: Icon(
+              Icons.notifications_outlined,
+              color: c.textSecondary,
+              size: 20,
+            ),
+          ),
+          
+          // ✅ 3. إظهار النقطة الحمراء فقط إذا كان hasUnread == true
+          if (hasUnread)
+            Positioned(
+              top: 6,
+              right: 6,
+              child: Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: AppColors.red,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: c.surface, width: 1.24),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  },
+),              ],
             ),
             const SizedBox(height: 16),
 
