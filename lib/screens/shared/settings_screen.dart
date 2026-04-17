@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart'; // ✅ لأجل kReleaseMode
 import 'package:minipr/providers/user_provider.dart';
 import 'package:minipr/theme/theme_provider.dart';
 import 'package:provider/provider.dart';
@@ -69,7 +70,10 @@ class SettingsScreen extends StatelessWidget {
 
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 8,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -79,7 +83,9 @@ class SettingsScreen extends StatelessWidget {
                     _SettingsCard(
                       children: [
                         _SettingsNavItem(
-                          iconBg: AppColors.purpleLight.withOpacity(isDark ? 0.15 : 1),
+                          iconBg: AppColors.purpleLight.withOpacity(
+                            isDark ? 0.15 : 1,
+                          ),
                           iconColor: AppColors.purple,
                           icon: Icons.manage_accounts_outlined,
                           title: 'Account Type',
@@ -103,15 +109,18 @@ class SettingsScreen extends StatelessWidget {
                       children: [
                         Padding(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 16),
+                            horizontal: 16,
+                            vertical: 16,
+                          ),
                           child: Row(
                             children: [
                               Container(
                                 width: 36,
                                 height: 36,
                                 decoration: BoxDecoration(
-                                  color: AppColors.primaryLight
-                                      .withOpacity(isDark ? 0.15 : 1),
+                                  color: AppColors.primaryLight.withOpacity(
+                                    isDark ? 0.15 : 1,
+                                  ),
                                   borderRadius: BorderRadius.circular(14),
                                 ),
                                 child: const Icon(
@@ -148,7 +157,8 @@ class SettingsScreen extends StatelessWidget {
                           iconColor: c.textSecondary,
                           icon: Icons.notifications_outlined,
                           title: 'Notifications Center',
-                          onTap: () {},
+                          onTap: () =>
+                              Navigator.pushNamed(context, '/notifications'),
                         ),
                       ],
                     ),
@@ -161,7 +171,10 @@ class SettingsScreen extends StatelessWidget {
                       children: [
                         _PushNotifToggle(),
                         Divider(color: c.border, thickness: 1.24, height: 0),
-                        _ToggleRow(title: 'Email Summaries', initialValue: false),
+                        _ToggleRow(
+                          title: 'Email Summaries',
+                          initialValue: false,
+                        ),
                         Divider(color: c.border, thickness: 1.24, height: 0),
                         _ToggleRow(title: 'Job Alerts', initialValue: true),
                       ],
@@ -220,12 +233,18 @@ class SettingsScreen extends StatelessWidget {
                         height: 64,
                         padding: const EdgeInsets.symmetric(horizontal: 20),
                         decoration: BoxDecoration(
-                          color: AppColors.redLight.withOpacity(isDark ? 0.12 : 1),
+                          color: AppColors.redLight.withOpacity(
+                            isDark ? 0.12 : 1,
+                          ),
                           borderRadius: BorderRadius.circular(24),
                         ),
                         child: const Row(
                           children: [
-                            Icon(Icons.logout_rounded, color: AppColors.red, size: 20),
+                            Icon(
+                              Icons.logout_rounded,
+                              color: AppColors.red,
+                              size: 20,
+                            ),
                             SizedBox(width: 16),
                             Text(
                               'Log Out',
@@ -253,7 +272,6 @@ class SettingsScreen extends StatelessWidget {
 }
 
 // ── Email Verification Item ──
-
 class _EmailVerificationItem extends StatefulWidget {
   final bool isDark;
   const _EmailVerificationItem({required this.isDark});
@@ -275,12 +293,9 @@ class _EmailVerificationItemState extends State<_EmailVerificationItem> {
 
     setState(() => _sending = true);
     try {
-      // Reload to get the latest emailVerified status first
       await user.reload();
       if (user.emailVerified) {
-        setState(() {
-          _sending = false;
-        });
+        setState(() => _sending = false);
         return;
       }
       await user.sendEmailVerification();
@@ -378,14 +393,12 @@ class _EmailVerificationItemState extends State<_EmailVerificationItem> {
     final Color iconBg = verified
         ? AppColors.greenLight.withOpacity(widget.isDark ? 0.15 : 1)
         : AppColors.primaryLight.withOpacity(widget.isDark ? 0.15 : 1);
-    final Color iconColor =
-        verified ? AppColors.green : AppColors.primary;
+    final Color iconColor = verified ? AppColors.green : AppColors.primary;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Row(
         children: [
-          // Icon
           Container(
             width: 36,
             height: 36,
@@ -394,16 +407,12 @@ class _EmailVerificationItemState extends State<_EmailVerificationItem> {
               borderRadius: BorderRadius.circular(14),
             ),
             child: Icon(
-              verified
-                  ? Icons.mark_email_read_outlined
-                  : Icons.email_outlined,
+              verified ? Icons.mark_email_read_outlined : Icons.email_outlined,
               color: iconColor,
               size: 18,
             ),
           ),
           const SizedBox(width: 16),
-
-          // Title + status badge
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -422,13 +431,17 @@ class _EmailVerificationItemState extends State<_EmailVerificationItem> {
                   children: [
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 2),
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: verified
-                            ? AppColors.greenLight
-                                .withOpacity(widget.isDark ? 0.2 : 1)
-                            : AppColors.redLight
-                                .withOpacity(widget.isDark ? 0.2 : 1),
+                            ? AppColors.greenLight.withOpacity(
+                                widget.isDark ? 0.2 : 1,
+                              )
+                            : AppColors.redLight.withOpacity(
+                                widget.isDark ? 0.2 : 1,
+                              ),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Row(
@@ -439,17 +452,13 @@ class _EmailVerificationItemState extends State<_EmailVerificationItem> {
                                 ? Icons.verified_rounded
                                 : Icons.error_outline_rounded,
                             size: 11,
-                            color: verified
-                                ? AppColors.green
-                                : AppColors.red,
+                            color: verified ? AppColors.green : AppColors.red,
                           ),
                           const SizedBox(width: 4),
                           Text(
                             verified ? 'Verified' : 'Not Verified',
                             style: TextStyle(
-                              color: verified
-                                  ? AppColors.green
-                                  : AppColors.red,
+                              color: verified ? AppColors.green : AppColors.red,
                               fontSize: 11,
                               fontFamily: 'Inter',
                               fontWeight: FontWeight.w700,
@@ -463,8 +472,6 @@ class _EmailVerificationItemState extends State<_EmailVerificationItem> {
               ],
             ),
           ),
-
-          // Action button
           if (!verified) ...[
             const SizedBox(width: 8),
             _sending
@@ -477,47 +484,52 @@ class _EmailVerificationItemState extends State<_EmailVerificationItem> {
                     ),
                   )
                 : _sent
-                    ? GestureDetector(
-                        onTap: _checkVerificationStatus,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: AppColors.primaryLight
-                                .withOpacity(widget.isDark ? 0.15 : 1),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text(
-                            'Check',
-                            style: TextStyle(
-                              color: AppColors.primary,
-                              fontSize: 12,
-                              fontFamily: 'Inter',
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
+                ? GestureDetector(
+                    onTap: _checkVerificationStatus,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryLight.withOpacity(
+                          widget.isDark ? 0.15 : 1,
                         ),
-                      )
-                    : GestureDetector(
-                        onTap: _sendVerification,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Text(
-                            'Verify',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontFamily: 'Inter',
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        'Check',
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontSize: 12,
+                          fontFamily: 'Inter',
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
+                    ),
+                  )
+                : GestureDetector(
+                    onTap: _sendVerification,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Text(
+                        'Verify',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontFamily: 'Inter',
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
           ],
         ],
       ),
@@ -537,15 +549,14 @@ class _PhoneVerificationItem extends StatefulWidget {
 class _PhoneVerificationItemState extends State<_PhoneVerificationItem> {
   bool _checking = false;
 
-  /// True if a phone provider is linked to the current Firebase user.
   bool get _isLinked {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return false;
-    return user.providerData
-        .any((p) => p.providerId == PhoneAuthProvider.PROVIDER_ID);
+    return user.providerData.any(
+      (p) => p.providerId == PhoneAuthProvider.PROVIDER_ID,
+    );
   }
 
-  /// Phone number stored on the linked provider (may be null before verification).
   String? get _linkedPhone {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return null;
@@ -560,20 +571,17 @@ class _PhoneVerificationItemState extends State<_PhoneVerificationItem> {
 
   Future<void> _openVerificationScreen() async {
     setState(() => _checking = true);
-    // Reload to get fresh provider data
     await FirebaseAuth.instance.currentUser?.reload();
     if (!mounted) return;
     setState(() => _checking = false);
 
     final result = await Navigator.push<bool>(
       context,
-      MaterialPageRoute(
-        builder: (_) => const PhoneVerificationScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => const PhoneVerificationScreen()),
     );
 
     if (result == true && mounted) {
-      setState(() {}); // Refresh status badge
+      setState(() {});
     }
   }
 
@@ -592,7 +600,6 @@ class _PhoneVerificationItemState extends State<_PhoneVerificationItem> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Row(
         children: [
-          // Icon
           Container(
             width: 36,
             height: 36,
@@ -607,8 +614,6 @@ class _PhoneVerificationItemState extends State<_PhoneVerificationItem> {
             ),
           ),
           const SizedBox(width: 16),
-
-          // Title + status badge
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -627,13 +632,17 @@ class _PhoneVerificationItemState extends State<_PhoneVerificationItem> {
                   children: [
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 2),
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: linked
-                            ? AppColors.greenLight
-                                .withOpacity(widget.isDark ? 0.2 : 1)
-                            : AppColors.redLight
-                                .withOpacity(widget.isDark ? 0.2 : 1),
+                            ? AppColors.greenLight.withOpacity(
+                                widget.isDark ? 0.2 : 1,
+                              )
+                            : AppColors.redLight.withOpacity(
+                                widget.isDark ? 0.2 : 1,
+                              ),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Row(
@@ -652,8 +661,7 @@ class _PhoneVerificationItemState extends State<_PhoneVerificationItem> {
                                 ? (phone != null ? phone : 'Verified')
                                 : 'Not Added',
                             style: TextStyle(
-                              color:
-                                  linked ? AppColors.green : AppColors.red,
+                              color: linked ? AppColors.green : AppColors.red,
                               fontSize: 11,
                               fontFamily: 'Inter',
                               fontWeight: FontWeight.w700,
@@ -678,8 +686,6 @@ class _PhoneVerificationItemState extends State<_PhoneVerificationItem> {
               ],
             ),
           ),
-
-          // Action button
           const SizedBox(width: 8),
           _checking
               ? const SizedBox(
@@ -694,19 +700,21 @@ class _PhoneVerificationItemState extends State<_PhoneVerificationItem> {
                   onTap: _openVerificationScreen,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 6),
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: linked
-                          ? AppColors.primaryLight
-                              .withOpacity(widget.isDark ? 0.15 : 1)
+                          ? AppColors.primaryLight.withOpacity(
+                              widget.isDark ? 0.15 : 1,
+                            )
                           : AppColors.purple,
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
                       linked ? 'Change' : 'Add',
                       style: TextStyle(
-                        color:
-                            linked ? AppColors.primary : Colors.white,
+                        color: linked ? AppColors.primary : Colors.white,
                         fontSize: 12,
                         fontFamily: 'Inter',
                         fontWeight: FontWeight.w700,
@@ -721,7 +729,6 @@ class _PhoneVerificationItemState extends State<_PhoneVerificationItem> {
 }
 
 // ── Internal Helper Widgets ──
-
 class _SectionLabel extends StatelessWidget {
   final String label;
   const _SectionLabel({required this.label});
@@ -759,8 +766,17 @@ class _SettingsCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(24),
         ),
         shadows: const [
-          BoxShadow(color: Color(0x19000000), blurRadius: 2, offset: Offset(0, 1), spreadRadius: -1),
-          BoxShadow(color: Color(0x19000000), blurRadius: 3, offset: Offset(0, 1)),
+          BoxShadow(
+            color: Color(0x19000000),
+            blurRadius: 2,
+            offset: Offset(0, 1),
+            spreadRadius: -1,
+          ),
+          BoxShadow(
+            color: Color(0x19000000),
+            blurRadius: 3,
+            offset: Offset(0, 1),
+          ),
         ],
       ),
       child: Column(children: children),
@@ -840,12 +856,16 @@ class _SettingsNavItem extends StatelessWidget {
   }
 }
 
-// ── Generic toggle row (email, job alerts, etc.) ─────────────────────────────
+// ── Generic toggle row ─────────────────────────────
 class _ToggleRow extends StatefulWidget {
   final String title;
   final bool initialValue;
   final ValueChanged<bool>? onChanged;
-  const _ToggleRow({required this.title, this.initialValue = false, this.onChanged});
+  const _ToggleRow({
+    required this.title,
+    this.initialValue = false,
+    this.onChanged,
+  });
 
   @override
   State<_ToggleRow> createState() => _ToggleRowState();
@@ -928,7 +948,10 @@ class _PushNotifToggleState extends State<_PushNotifToggle> {
 
   Future<void> _loadCurrentState() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) { setState(() => _loading = false); return; }
+    if (uid == null) {
+      setState(() => _loading = false);
+      return;
+    }
 
     final doc = await FirebaseFirestore.instance
         .collection('users')
@@ -936,17 +959,19 @@ class _PushNotifToggleState extends State<_PushNotifToggle> {
         .get();
     final notifEnabled = doc.data()?['notificationsEnabled'] as bool? ?? true;
 
-    if (mounted) setState(() { _enabled = notifEnabled; _loading = false; });
+    if (mounted)
+      setState(() {
+        _enabled = notifEnabled;
+        _loading = false;
+      });
   }
 
   Future<void> _toggle(bool value) async {
     setState(() => _enabled = value);
-
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
 
     if (value) {
-      // Re-enable: re-save the FCM token
       final token = await FirebaseMessaging.instance.getToken();
       if (token != null) {
         await FirebaseFirestore.instance.collection('users').doc(uid).update({
@@ -955,12 +980,54 @@ class _PushNotifToggleState extends State<_PushNotifToggle> {
         });
       }
     } else {
-      // Disable: delete token so Cloud Function skips this user
       await FirebaseFirestore.instance.collection('users').doc(uid).update({
         'fcmToken': FieldValue.delete(),
         'notificationsEnabled': false,
       });
       await FirebaseMessaging.instance.deleteToken();
+    }
+  }
+
+  // ✅ ✅ ✅ دالة اختبار كتابة الإشعارات ✅ ✅ ✅
+  Future<void> _testNotificationWrite() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .collection('notifications')
+          .add({
+            'title': '🧪 Test Notification',
+            'body':
+                'If you see this in your notifications screen, the rules are working!',
+            'type': 'system',
+            'isUnread': true,
+            'createdAt': FieldValue.serverTimestamp(),
+            'payload': {'test': true},
+          });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Write successful! Check your notifications.'),
+            backgroundColor: AppColors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ Test failed: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Error: $e'),
+            backgroundColor: AppColors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 
@@ -973,9 +1040,19 @@ class _PushNotifToggleState extends State<_PushNotifToggle> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Push Notifications',
-                style: TextStyle(fontSize: 14, fontFamily: 'Inter', fontWeight: FontWeight.w700)),
-            SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)),
+            Text(
+              'Push Notifications',
+              style: TextStyle(
+                fontSize: 14,
+                fontFamily: 'Inter',
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
           ],
         ),
       );
@@ -994,29 +1071,54 @@ class _PushNotifToggleState extends State<_PushNotifToggle> {
               fontWeight: FontWeight.w700,
             ),
           ),
-          GestureDetector(
-            onTap: () => _toggle(!_enabled),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: 40,
-              height: 24,
-              padding: EdgeInsets.only(
-                left: _enabled ? 18 : 3,
-                right: _enabled ? 3 : 18,
-                top: 3,
-                bottom: 3,
-              ),
-              decoration: BoxDecoration(
-                color: _enabled ? AppColors.primary : c.border,
-                borderRadius: BorderRadius.circular(100),
-              ),
-              child: Container(
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
+          Row(
+            children: [
+              // Toggle switch
+              GestureDetector(
+                onTap: () => _toggle(!_enabled),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: 40,
+                  height: 24,
+                  padding: EdgeInsets.only(
+                    left: _enabled ? 18 : 3,
+                    right: _enabled ? 3 : 18,
+                    top: 3,
+                    bottom: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _enabled ? AppColors.primary : c.border,
+                    borderRadius: BorderRadius.circular(100),
+                  ),
+                  child: Container(
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
                 ),
               ),
-            ),
+              // ✅ زر الاختبار (يظهر فقط في وضع التطوير)
+              if (!kReleaseMode)
+                GestureDetector(
+                  onTap: _testNotificationWrite,
+                  child: Container(
+                    margin: const EdgeInsets.only(left: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.orange,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text(
+                      '🧪 Test',
+                      style: TextStyle(color: Colors.white, fontSize: 10),
+                    ),
+                  ),
+                ),
+            ],
           ),
         ],
       ),

@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/user_provider.dart';
@@ -109,11 +110,15 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final uid = context.watch<UserProvider>().uid;
+    // ✅ 1. جلب الـ UID من UserProvider
+    final userProvider = context.watch<UserProvider>();
+    
+    // ✅ 2. إذا كان الـ UID فارغاً في Provider، نجلبه مباشرة من FirebaseAuth
+    final uid = userProvider.uid ?? FirebaseAuth.instance.currentUser?.uid;
 
     if (uid == null) {
       return const Scaffold(
-        body: Center(child: Text('Non connecté')),
+        body: Center(child: Text('يرجى تسجيل الدخول أولاً')),
       );
     }
 
@@ -121,10 +126,15 @@ class _NotificationScreenState extends State<NotificationScreen> {
     return Scaffold(
       backgroundColor: c.bg,
       body: StreamBuilder<List<NotificationModel>>(
-        stream: _svc.streamNotifications(uid),
+        // ✅ 3. استخدام الـ UID المضمون
+        stream: NotificationsService().streamNotifications(uid),
         builder: (context, snap) {
           if (snap.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snap.hasError) {
+            return Center(child: Text('حدث خطأ: ${snap.error}'));
           }
 
           final notifications = snap.data ?? [];
@@ -162,7 +172,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                     ),
                     if (unread > 0)
                       TextButton(
-                        onPressed: () => _svc.markAllRead(uid),
+                        onPressed: () => NotificationsService().markAllRead(uid),
                         child: const Text(
                           'Mark all read',
                           style: TextStyle(
@@ -218,12 +228,12 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                   color: Color(0xFFDC2626),
                                 ),
                               ),
-                              onDismissed: (_) => _svc.deleteNotification(uid, n.id),
+                              onDismissed: (_) => NotificationsService().deleteNotification(uid, n.id),
                               child: NotificationCard(
                                 notification: n,
                                 onTap: () {
-                                  if (n.isUnread) _svc.markRead(uid, n.id);
-                                  _handleTap(n);
+                                  if (n.isUnread) NotificationsService().markRead(uid, n.id);
+                                  // _handleTap(n); // يمكنك إعادة تفعيلها إذا أردت
                                 },
                               ),
                             ),

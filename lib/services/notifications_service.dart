@@ -28,38 +28,20 @@ class NotificationsService {
 
   // ── Mark single notification as read ──
   Future<void> markRead(String uid, String notifId) async {
-    await _db
-        .collection('users')
-        .doc(uid)
-        .collection('notifications')
-        .doc(notifId)
-        .update({'isUnread': false});
+    await _db.collection('users').doc(uid).collection('notifications').doc(notifId).update({'isUnread': false});
   }
 
   // ── Mark all as read ──
   Future<void> markAllRead(String uid) async {
     final batch = _db.batch();
-    final snap = await _db
-        .collection('users')
-        .doc(uid)
-        .collection('notifications')
-        .where('isUnread', isEqualTo: true)
-        .get();
-    
-    for (var doc in snap.docs) {
-      batch.update(doc.reference, {'isUnread': false});
-    }
+    final snap = await _db.collection('users').doc(uid).collection('notifications').where('isUnread', isEqualTo: true).get();
+    for (var doc in snap.docs) batch.update(doc.reference, {'isUnread': false});
     await batch.commit();
   }
 
   // ── Delete notification ──
   Future<void> deleteNotification(String uid, String notifId) async {
-    await _db
-        .collection('users')
-        .doc(uid)
-        .collection('notifications')
-        .doc(notifId)
-        .delete();
+    await _db.collection('users').doc(uid).collection('notifications').doc(notifId).delete();
   }
 
   // ✅ ✅ ✅ دوال إنشاء الإشعارات (المفقودة سابقاً) ✅ ✅ ✅
@@ -132,35 +114,6 @@ class NotificationsService {
         'company': company,
         'status': status,
       },
-    });
-  }
-
-  // ✅ دوال إضافية مفيدة
-  Future<void> notifyCourseEnrolled({
-    required String uid,
-    required String courseTitle,
-  }) async {
-    await _db.collection('users').doc(uid).collection('notifications').add({
-      'title': 'Enrolled in Course',
-      'body': 'You successfully enrolled in "$courseTitle"',
-      'type': NotifType.courseEnrolled.key,
-      'isUnread': true,
-      'createdAt': FieldValue.serverTimestamp(),
-      'payload': {'courseTitle': courseTitle},
-    });
-  }
-
-  Future<void> notifyCertificateEarned({
-    required String uid,
-    required String certificateTitle,
-  }) async {
-    await _db.collection('users').doc(uid).collection('notifications').add({
-      'title': 'Certificate Earned! 🏆',
-      'body': 'Congratulations! You earned "$certificateTitle"',
-      'type': NotifType.certificateEarned.key,
-      'isUnread': true,
-      'createdAt': FieldValue.serverTimestamp(),
-      'payload': {'certificateTitle': certificateTitle},
     });
   }
 }

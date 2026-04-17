@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:minipr/services/notifications_service.dart';
 
 class OffersService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -177,28 +178,48 @@ Stream<int> getHiredCountStream(String recruiterId) {
     }
   });
 }
-// ─────────────────────────────────────────────────────────────
-// ✅ UPDATE: تحديث حالة طلب التقديم
-// ─────────────────────────────────────────────────────────────
-Future<bool> updateApplicationStatus({
-  required String applicationId,
-  required String status, // reviewing, interview, accepted, rejected
-  String? message,
-}) async {
-  try {
-    await _applicationsRef.doc(applicationId).update({
-      'status': status,
-      'statusMessage': message,
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
-    debugPrint('✅ Application status updated: $applicationId → $status');
-    return true;
-  } catch (e) {
-    debugPrint('❌ Error updating application: $e');
-    return false;
-  }
-}
+  // ─────────────────────────────────────────────────────────────
+  // ✅ UPDATE: تحديث حالة طلب التقديم (مصحح مع الإشعارات)
+  // ─────────────────────────────────────────────────────────────
+  Future<bool> updateApplicationStatus({
+    required String applicationId,
+    required String status, // reviewing, interview, accepted, rejected
+    String? message,
+  }) async {
+    try {
+      // 1. تحديث الحالة في قاعدة البيانات
+      await _applicationsRef.doc(applicationId).update({
+        'status': status,
+        'statusMessage': message,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
 
+      // ✅ 2. جلب بيانات الطلب لإرسال الإشعار للطالب
+      final appDoc = await _applicationsRef.doc(applicationId).get();
+      if (appDoc.exists) {
+        final data = appDoc.data();
+        final applicantId = data?['applicantId'];
+        final offerTitle = data?['offerTitle'];
+        final company = data?['company'];
+
+        if (applicantId != null && offerTitle != null) {
+          await NotificationsService().notifyStatus(
+            uid: applicantId,
+            status: status,
+            offerTitle: offerTitle,
+            company: company ?? 'Unknown Company',
+            applicationId: applicationId,
+          );
+        }
+      }
+
+      debugPrint('✅ Application status updated & Notification sent');
+      return true;
+    } catch (e) {
+      debugPrint('❌ Error updating application status: $e');
+      return false;
+    }
+  }
 // ─────────────────────────────────────────────────────────────
 // ✅ DELETE: حذف وظيفة نهائياً من Firestore
 // ─────────────────────────────────────────────────────────────
@@ -256,8 +277,9 @@ Future<bool> activateOffer(String offerId) async {
     }
   }
 
+
   // ─────────────────────────────────────────────────────────────
-  // ✅ APPLY: تقديم طالب على وظيفة (ينشئ وثيقة في /applications)
+  // ✅ APPLY: تقديم طالب على وظيفة (مصحح مع الإشعارات)
   // ─────────────────────────────────────────────────────────────
   Future<bool> applyToJob({
     required String applicantId,
@@ -271,7 +293,7 @@ Future<bool> activateOffer(String offerId) async {
   }) async {
     try {
       // 1. إنشاء طلب التقديم
-      await _applicationsRef.add({
+      final appRef = await _applicationsRef.add({
         'applicantId': applicantId,
         'applicantName': applicantName,
         'offerId': offerId,
@@ -281,17 +303,33 @@ Future<bool> activateOffer(String offerId) async {
         'jobType': jobType,
         'salary': salary,
         'appliedAt': FieldValue.serverTimestamp(),
-        'status': 'pending', // pending, reviewing, interview, accepted, rejected
+        'status': 'pending',
         'statusMessage': null,
         'viewCount': 0,
       });
 
-      // 2. زيادة عداد التقديمات في العرض الأصلي (اختياري لكن مفيد)
+      // 2. زيادة عداد التقديمات في العرض الأصلي
       await _offersRef.doc(offerId).update({
         'applicationsCount': FieldValue.increment(1),
       });
 
-      debugPrint('✅ Application submitted successfully');
+      // ✅ 3. إرسال إشعار للمسؤول (Recruiter)
+      // نحتاج لجلب recruiterId من عرض الوظيفة أولاً
+      final offerDoc = await _offersRef.doc(offerId).get();
+      if (offerDoc.exists) {
+        final recruiterId = offerDoc.data()?['recruiterId'];
+        if (recruiterId != null) {
+          await NotificationsService().notifyNewApplicant(
+            recruteurUid: recruiterId,
+            applicantName: applicantName,
+            offerTitle: offerTitle,
+            applicationId: appRef.id,
+            offerId: offerId,
+          );
+        }
+      }
+
+      debugPrint('✅ Application submitted & Notification sent to recruiter');
       return true;
     } catch (e) {
       debugPrint('❌ Error applying to job: $e');

@@ -54,7 +54,10 @@ class AppliedJobsService {
       // get offer safely
       final offerDoc = await _db.collection('offers').doc(offerId).get();
       final recruiterId = offerDoc.data()?['recruiterId'];
-      if (recruiterId == null) return ref.id;
+if (recruiterId == null) {
+  debugPrint('❌ recruiterId not found in offer: $offerId');
+  return ref.id;
+}
 
       // get user safely
       final userDoc = await _db.collection('users').doc(uid).get();

@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 enum UserRole { etudiant, enseignant, recruteur }
@@ -127,8 +128,9 @@ class UserProvider extends ChangeNotifier {
   // ── 🚀 NEW: Update ALL fields from Firestore document ──
   void updateFromFirestore(Map<String, dynamic> data) {
     // Basic info
-    _uid = data['uid'] ?? _uid;
-    _name = data['displayName'] ?? _name;
+    // هذا يضمن أن الـ UID موجود دائماً حتى لو نسيته في Firestore
+    _uid = data['uid'] ?? FirebaseAuth.instance.currentUser?.uid; 
+        _name = data['displayName'] ?? _name;
     _email = data['email'] ?? _email;
     _avatarPath = data['photoURL'];
     _bio = data['bio'] ?? '';
