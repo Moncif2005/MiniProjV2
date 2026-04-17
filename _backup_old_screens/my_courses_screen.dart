@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../theme/app_colors.dart';
-import '../../widgets/bottom_nav_bar.dart';
+import '../lib/screens/theme/app_colors.dart';
+import '../lib/screens/widgets/bottom_nav_bar.dart';
 
 class MyCoursesScreen extends StatefulWidget {
   const MyCoursesScreen({super.key});

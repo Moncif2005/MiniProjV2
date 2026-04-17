@@ -53,8 +53,8 @@ class AppliedJobsService {
 
       // get offer safely
       final offerDoc = await _db.collection('offers').doc(offerId).get();
-      final recruteurUid = offerDoc.data()?['recruteurUid'];
-      if (recruteurUid == null) return ref.id;
+      final recruiterId = offerDoc.data()?['recruiterId'];
+      if (recruiterId == null) return ref.id;
 
       // get user safely
       final userDoc = await _db.collection('users').doc(uid).get();
@@ -62,7 +62,7 @@ class AppliedJobsService {
 
       // notify recruiter
       await notif.notifyNewApplicant(
-        recruteurUid: recruteurUid,
+  recruteurUid: recruiterId,  // ✅ نمرر القيمة الصحيحة
         applicantName: name,
         offerTitle: offerTitle,
         applicationId: ref.id,

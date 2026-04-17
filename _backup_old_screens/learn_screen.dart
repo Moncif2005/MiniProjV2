@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../theme/app_colors.dart';
-import '../../widgets/bottom_nav_bar.dart';
-import '../../providers/user_provider.dart';
+import '../lib/theme/app_colors.dart';
+import '../lib/widgets/bottom_nav_bar.dart';
+import '../lib/providers/user_provider.dart';
 
 class LearnScreen extends StatefulWidget {
   const LearnScreen({super.key});
