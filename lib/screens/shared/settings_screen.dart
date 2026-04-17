@@ -989,47 +989,47 @@ class _PushNotifToggleState extends State<_PushNotifToggle> {
   }
 
   // ✅ ✅ ✅ دالة اختبار كتابة الإشعارات ✅ ✅ ✅
-  Future<void> _testNotificationWrite() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return;
+  // Future<void> _testNotificationWrite() async {
+  //   final uid = FirebaseAuth.instance.currentUser?.uid;
+  //   if (uid == null) return;
 
-    try {
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .collection('notifications')
-          .add({
-            'title': '🧪 Test Notification',
-            'body':
-                'If you see this in your notifications screen, the rules are working!',
-            'type': 'system',
-            'isUnread': true,
-            'createdAt': FieldValue.serverTimestamp(),
-            'payload': {'test': true},
-          });
+  //   try {
+  //     await FirebaseFirestore.instance
+  //         .collection('users')
+  //         .doc(uid)
+  //         .collection('notifications')
+  //         .add({
+  //           'title': '🧪 Test Notification',
+  //           'body':
+  //               'If you see this in your notifications screen, the rules are working!',
+  //           'type': 'system',
+  //           'isUnread': true,
+  //           'createdAt': FieldValue.serverTimestamp(),
+  //           'payload': {'test': true},
+  //         });
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ Write successful! Check your notifications.'),
-            backgroundColor: AppColors.green,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    } catch (e) {
-      debugPrint('❌ Test failed: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Error: $e'),
-            backgroundColor: AppColors.red,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    }
-  }
+  //     if (mounted) {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         const SnackBar(
+  //           content: Text('✅ Write successful! Check your notifications.'),
+  //           backgroundColor: AppColors.green,
+  //           behavior: SnackBarBehavior.floating,
+  //         ),
+  //       );
+  //     }
+  //   } catch (e) {
+  //     debugPrint('❌ Test failed: $e');
+  //     if (mounted) {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(
+  //           content: Text('❌ Error: $e'),
+  //           backgroundColor: AppColors.red,
+  //           behavior: SnackBarBehavior.floating,
+  //         ),
+  //       );
+  //     }
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -1098,26 +1098,26 @@ class _PushNotifToggleState extends State<_PushNotifToggle> {
                   ),
                 ),
               ),
-              // ✅ زر الاختبار (يظهر فقط في وضع التطوير)
-              if (!kReleaseMode)
-                GestureDetector(
-                  onTap: _testNotificationWrite,
-                  child: Container(
-                    margin: const EdgeInsets.only(left: 8),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.orange,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Text(
-                      '🧪 Test',
-                      style: TextStyle(color: Colors.white, fontSize: 10),
-                    ),
-                  ),
-                ),
+              // // ✅ زر الاختبار (يظهر فقط في وضع التطوير)
+              // if (!kReleaseMode)
+              //   GestureDetector(
+              //     onTap: _testNotificationWrite,
+              //     child: Container(
+              //       margin: const EdgeInsets.only(left: 8),
+              //       padding: const EdgeInsets.symmetric(
+              //         horizontal: 8,
+              //         vertical: 4,
+              //       ),
+              //       decoration: BoxDecoration(
+              //         color: Colors.orange,
+              //         borderRadius: BorderRadius.circular(8),
+              //       ),
+              //       child: const Text(
+              //         '🧪 Test',
+              //         style: TextStyle(color: Colors.white, fontSize: 10),
+              //       ),
+              //     ),
+              //   ),
             ],
           ),
         ],

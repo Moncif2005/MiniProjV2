@@ -60,11 +60,14 @@ void main() async {
     badge: true,
     sound: true,
   );
+  // ✅ 1. إنشاء نسخة من ThemeProvider وتحميل الإعدادات
+  final themeProvider = ThemeProvider();
+  await themeProvider.loadThemePreference(); 
 
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider.value(value: themeProvider),
         ChangeNotifierProvider(create: (_) => UserProvider()),
         ChangeNotifierProvider(create: (_) => AuthService()),
       ],
