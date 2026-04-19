@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:minipr/screens/enseignant/my_courses_screen.dart';
 import 'services/fcm_service.dart';
 import 'package:flutter/material.dart';
 import 'package:minipr/firebase_options.dart';
@@ -109,6 +110,7 @@ class MyApp extends StatelessWidget {
         '/etudiant/profile': (context) => const ProfileEtudiantScreen(),
 
         // ── Enseignant routes ──
+        '/enseignant/my-courses': (context) => const MyCoursesScreen(),
         '/enseignant/home': (context) =>
             const EnseignantHomeScreen(), // ← نفس اسم الكلاس في الملف        '/enseignant/courses': (context) => const EnseignantCoursesScreen(),
         '/enseignant/profile': (context) => const ProfileEnseignantScreen(),

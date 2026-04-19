@@ -1,44 +1,29 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
-import '../../widgets/bottom_nav_bar.dart';
+import '../../services/courses_service.dart';
+import '../../models/course_model.dart';
 
 class EnseignantCoursesScreen extends StatefulWidget {
   const EnseignantCoursesScreen({super.key});
 
   @override
-  State<EnseignantCoursesScreen> createState() =>
-      _EnseignantCoursesScreenState();
+  State<EnseignantCoursesScreen> createState() => _EnseignantCoursesScreenState();
 }
 
-class _EnseignantCoursesScreenState
-    extends State<EnseignantCoursesScreen> {
-  int _currentNavIndex = 1;
-  int _selectedFilter = 0;
-  final _filters = ['All', 'Languages', 'Design', 'Coding', 'Business'];
-
-  // Starts empty — courses added via CreateCourseScreen
-  final List<Map<String, dynamic>> _courses = [];
-
+class _EnseignantCoursesScreenState extends State<EnseignantCoursesScreen> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final args = ModalRoute.of(context)?.settings.arguments;
-    if (args != null && args is Map<String, dynamic>) {
-      final alreadyAdded = _courses.any((c) => c['title'] == args['title']);
-      if (!alreadyAdded) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) setState(() => _courses.add(args));
-        });
-      }
-    }
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
   }
 
-  List<Map<String, dynamic>> get _filtered {
-    if (_selectedFilter == 0) return List.from(_courses);
-    final cats = ['', 'LANGUAGES', 'DESIGN', 'CODING', 'BUSINESS'];
-    return _courses
-        .where((c) => c['category'] == cats[_selectedFilter])
-        .toList();
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   @override
@@ -47,436 +32,340 @@ class _EnseignantCoursesScreenState
 
     return Scaffold(
       backgroundColor: c.bg,
-      // bottomNavigationBar: BottomNavBar(
-      //   currentIndex: _currentNavIndex,
-      //   onTap: (index) {
-      //     setState(() => _currentNavIndex = index);
-      //     switch (index) {
-      //       case 0:
-      //         Navigator.pushNamedAndRemoveUntil(
-      //             context, '/enseignant/home', (r) => false);
-      //         break;
-      //       case 2:
-      //         Navigator.pushNamedAndRemoveUntil(
-      //             context, '/offers', (r) => false);
-      //         break;
-      //       case 3:
-      //         Navigator.pushNamedAndRemoveUntil(
-      //             context, '/enseignant/profile', (r) => false);
-      //         break;
-      //     }
-      //   },
-      // ),
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Header ──
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                  24, 24, 24, 0),
-              child: Column(
-                crossAxisAlignment:
-                    CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Formation',
-                    style: TextStyle(
-                      color: c.textPrimary,
-                      fontSize: 24,
-                      fontFamily: 'Inter',
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  Text(
-                    'Upgrade your professional skills',
-                    style: TextStyle(
-                      color: c.textSecondary,
-                      fontSize: 16,
-                      fontFamily: 'Inter',
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // ── Search ──
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 24),
-              child: Container(
-                decoration: ShapeDecoration(
-                  color: c.surface,
-                  shape: RoundedRectangleBorder(
-                    side: BorderSide(
-                        width: 1.24, color: c.border),
-                    borderRadius:
-                        BorderRadius.circular(16),
-                  ),
-                ),
-                child: TextField(
-                  decoration: InputDecoration(
-                    hintText: 'Search courses...',
-                    hintStyle: TextStyle(
-                      color: c.textMuted,
-                      fontSize: 16,
-                      fontFamily: 'Inter',
-                    ),
-                    prefixIcon: Icon(Icons.search_rounded,
-                        color: c.textSecondary),
-                    border: InputBorder.none,
-                    contentPadding:
-                        const EdgeInsets.symmetric(
-                            vertical: 14),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // ── Filter Chips ──
-            SizedBox(
-              height: 40,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 24),
-                itemCount: _filters.length,
-                separatorBuilder: (_, __) =>
-                    const SizedBox(width: 8),
-                itemBuilder: (context, index) {
-                  final active = _selectedFilter == index;
-                  return GestureDetector(
-                    onTap: () => setState(
-                        () => _selectedFilter = index),
-                    child: AnimatedContainer(
-                      duration: const Duration(
-                          milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: active
-                            ? AppColors.primary
-                            : c.surface,
-                        borderRadius:
-                            BorderRadius.circular(100),
-                        border: Border.all(
-                          color: active
-                              ? AppColors.primary
-                              : c.border,
-                        ),
-                        boxShadow: active
-                            ? [
-                                BoxShadow(
-                                  color: c.isDark
-                                      ? AppColors.primary.withValues(alpha: 0.30)
-                                      : const Color(0xFFDBEAFE),
-                                  blurRadius: 15,
-                                  offset: const Offset(0, 10),
-                                  spreadRadius: -3,
-                                ),
-                              ]
-                            : null,
-                      ),
-                      child: Text(
-                        _filters[index],
-                        style: TextStyle(
-                          color: active
-                              ? Colors.white
-                              : c.textSecondary,
-                          fontSize: 14,
-                          fontFamily: 'Inter',
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // ── Course List ──
-            Expanded(
-              child: _filtered.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.school_outlined, size: 48, color: c.textMuted),
-                          const SizedBox(height: 16),
-                          Text(
-                            _courses.isEmpty ? 'No courses yet' : 'No courses in this category',
-                            style: TextStyle(color: c.textMuted, fontSize: 16, fontFamily: 'Inter'),
-                          ),
-                          if (_courses.isEmpty) ...[
-                            const SizedBox(height: 8),
-                            Text('Tap "+ Nouveau cours" to create one!',
-                                style: TextStyle(color: c.textMuted, fontSize: 14, fontFamily: 'Inter')),
-                          ],
-                        ],
-                      ),
-                    )
-                  : ListView.separated(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 24),
-                itemCount: _filtered.length,
-                separatorBuilder: (_, __) =>
-                    const SizedBox(height: 16),
-                itemBuilder: (context, index) {
-                  final course = _filtered[index];
-                  return _TeacherCourseListCard(
-                    course: course,
-                    onEdit: () {},
-                  );
-                },
-              ),
-            ),
+      appBar: AppBar(
+        backgroundColor: c.surface,
+        elevation: 0,
+        title: Text('Formation', style: TextStyle(color: c.textPrimary, fontFamily: 'Inter', fontWeight: FontWeight.w700)),
+        bottom: TabBar(
+          controller: _tabController,
+          labelColor: AppColors.primary,
+          unselectedLabelColor: c.textSecondary,
+          indicatorColor: AppColors.primary,
+          tabs: const [
+            Tab(text: 'My Courses'),
+            Tab(text: 'Explore'),
           ],
         ),
       ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          // ✅ التبويب الأول: كورساتي
+          _MyCoursesTab(),
+          
+          // ✅ التبويب الثاني: استكشاف (منظم ومطور)
+          _ExploreCoursesTab(),
+        ],
+      ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () =>
-            Navigator.pushNamed(context, '/enseignant/create-course'),
+        onPressed: () => Navigator.pushNamed(context, '/enseignant/create-course'),
         backgroundColor: AppColors.green,
-        icon: const Icon(Icons.add_rounded,
-            color: Colors.white),
-        label: const Text(
-          'Nouveau cours',
-          style: TextStyle(
-            color: Colors.white,
-            fontFamily: 'Inter',
-            fontWeight: FontWeight.w700,
-          ),
-        ),
+        icon: const Icon(Icons.add_rounded, color: Colors.white),
+        label: const Text('Nouveau cours', style: TextStyle(color: Colors.white, fontFamily: 'Inter', fontWeight: FontWeight.w700)),
       ),
     );
   }
 }
 
-class _TeacherCourseListCard extends StatelessWidget {
-  final Map<String, dynamic> course;
-  final VoidCallback onEdit;
+// ─────────────────────────────────────────────────────────────
+// ✅ التبويب الأول: كورساتي (كما هو)
+// ─────────────────────────────────────────────────────────────
+class _MyCoursesTab extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final user = FirebaseAuth.instance.currentUser;
 
-  const _TeacherCourseListCard(
-      {required this.course, required this.onEdit});
+    if (user == null) return const Center(child: Text('Please sign in'));
+
+    return StreamBuilder<List<CourseModel>>(
+      stream: CoursesService().getCoursesByInstructor(user.uid),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.book_outlined, size: 64, color: c.textMuted),
+                const SizedBox(height: 16),
+                Text('Aucun cours publié', style: TextStyle(color: c.textPrimary, fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                Text('Commencez par créer votre premier cours!', style: TextStyle(color: c.textSecondary)),
+              ],
+            ),
+          );
+        }
+
+        final courses = snapshot.data!;
+        return ListView.builder(
+          padding: const EdgeInsets.all(24),
+          itemCount: courses.length,
+          itemBuilder: (context, index) {
+            final course = courses[index];
+            return _MyCourseCard(course: course, c: c);
+          },
+        );
+      },
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// ✅ التبويب الثاني: استكشاف (منظم مع بحث وفلاتر)
+// ─────────────────────────────────────────────────────────────
+class _ExploreCoursesTab extends StatefulWidget {
+  @override
+  State<_ExploreCoursesTab> createState() => _ExploreCoursesTabState();
+}
+
+class _ExploreCoursesTabState extends State<_ExploreCoursesTab> {
+  String? _selectedCategory;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  final List<String> _categories = ['All', 'Langues', 'Design', 'Coding', 'Business', 'Marketing'];
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
 
-    return Container(
-      decoration: ShapeDecoration(
-        color: c.surface,
-        shape: RoundedRectangleBorder(
-          side: BorderSide(width: 1.24, color: c.border),
-          borderRadius: BorderRadius.circular(24),
+    return Column(
+      children: [
+        // ── Search Bar ──
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+          child: Container(
+            decoration: ShapeDecoration(
+              color: c.surface,
+              shape: RoundedRectangleBorder(
+                side: BorderSide(width: 1.24, color: c.border),
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (value) => setState(() => _searchQuery = value.toLowerCase()),
+              decoration: InputDecoration(
+                hintText: 'Rechercher un cours...',
+                hintStyle: TextStyle(color: c.textMuted),
+                prefixIcon: Icon(Icons.search, color: c.textSecondary),
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+              ),
+            ),
+          ),
         ),
-        shadows: const [
-          BoxShadow(
-            color: Color(0x19000000),
-            blurRadius: 2,
-            offset: Offset(0, 1),
-            spreadRadius: -1,
+
+        // ── Category Filters ──
+        SizedBox(
+          height: 45,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            itemCount: _categories.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            itemBuilder: (context, index) {
+              final cat = _categories[index];
+              final isSelected = _selectedCategory == cat || (_selectedCategory == null && index == 0);
+              
+              return GestureDetector(
+                onTap: () => setState(() => _selectedCategory = (index == 0 ? null : cat)),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: isSelected ? AppColors.primary : c.surface,
+                    borderRadius: BorderRadius.circular(100),
+                    border: Border.all(color: isSelected ? AppColors.primary : c.border),
+                  ),
+                  child: Text(
+                    cat,
+                    style: TextStyle(
+                      color: isSelected ? Colors.white : c.textSecondary,
+                      fontSize: 13,
+                      fontFamily: 'Inter',
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
-          BoxShadow(
-            color: Color(0x19000000),
-            blurRadius: 3,
-            offset: Offset(0, 1),
+        ),
+
+        const SizedBox(height: 8),
+
+        // ── Course List (Filtered) ──
+        Expanded(
+          child: StreamBuilder<List<CourseModel>>(
+            stream: CoursesService().getPublishedCourses(category: _selectedCategory),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.search_off_rounded, size: 64, color: c.textMuted),
+                      const SizedBox(height: 16),
+                      Text('No courses found', style: TextStyle(color: c.textPrimary, fontSize: 16)),
+                    ],
+                  ),
+                );
+              }
+
+              // ✅ فلترة محلية للبحث (Search Filter)
+              var courses = snapshot.data!;
+              if (_searchQuery.isNotEmpty) {
+                courses = courses.where((course) => 
+                  course.title.toLowerCase().contains(_searchQuery) ||
+                  course.instructorName.toLowerCase().contains(_searchQuery)
+                ).toList();
+              }
+
+              if (courses.isEmpty) {
+                 return Center(
+                  child: Text('No matches for "$_searchQuery"', style: TextStyle(color: c.textMuted)),
+                );
+              }
+
+              return ListView.builder(
+                padding: const EdgeInsets.all(24),
+                itemCount: courses.length,
+                itemBuilder: (context, index) {
+                  final course = courses[index];
+                  return _ExploreCourseCard(course: course, c: c);
+                },
+              );
+            },
           ),
-        ],
+        ),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// ✅ بطاقة كورساتي
+// ─────────────────────────────────────────────────────────────
+class _MyCourseCard extends StatelessWidget {
+  final CourseModel course;
+  final ThemeColors c;
+  const _MyCourseCard({required this.course, required this.c});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: c.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Image ──
-          Stack(
+          Row(
             children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(24),
-                  topRight: Radius.circular(24),
-                ),
-                child: Image.network(
-                  course['imageUrl'] as String,
-                  width: double.infinity,
-                  height: 192,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                    height: 192,
-                    color: c.border,
-                    child: Icon(Icons.image_outlined,
-                        color: c.textMuted, size: 40),
-                  ),
-                ),
+              Container(
+                width: 50, height: 50,
+                decoration: BoxDecoration(color: AppColors.primaryLight, borderRadius: BorderRadius.circular(12)),
+                child: Icon(Icons.menu_book, color: AppColors.primary),
               ),
-              Positioned(
-                top: 16,
-                left: 16,
-                child: Row(
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: Colors.white
-                            .withValues(alpha: 0.90),
-                        borderRadius:
-                            BorderRadius.circular(100),
-                      ),
-                      child: Text(
-                        course['category'] as String,
-                        style: const TextStyle(
-                          color: AppColors.primary,
-                          fontSize: 10,
-                          fontFamily: 'Inter',
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: const Color(0xE500C950),
-                        borderRadius:
-                            BorderRadius.circular(100),
-                      ),
-                      child: const Row(
-                        children: [
-                          Icon(Icons.quiz_rounded,
-                              color: Colors.white,
-                              size: 12),
-                          SizedBox(width: 4),
-                          Text(
-                            'QUIZ + GAMES',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontFamily: 'Inter',
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    Text(course.title, style: TextStyle(color: c.textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
+                    Text('${course.totalLessons} leçons • ${course.unitsCount} unités', style: TextStyle(color: c.textSecondary, fontSize: 12)),
                   ],
                 ),
               ),
             ],
           ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('${course.certificatePrice} € / Certificat', style: TextStyle(color: AppColors.green, fontWeight: FontWeight.bold)),
+              TextButton(
+                onPressed: () {},
+                child: Text('Gérer', style: TextStyle(color: AppColors.primary)),
+              )
+            ],
+          )
+        ],
+      ),
+    );
+  }
+}
 
-          // ── Info ──
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment:
-                      MainAxisAlignment.spaceBetween,
+// ─────────────────────────────────────────────────────────────
+// ✅ بطاقة الاستكشاف
+// ─────────────────────────────────────────────────────────────
+class _ExploreCourseCard extends StatelessWidget {
+  final CourseModel course;
+  final ThemeColors c;
+  const _ExploreCourseCard({required this.course, required this.c});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: c.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 50, height: 50,
+                decoration: BoxDecoration(color: AppColors.purpleLight, borderRadius: BorderRadius.circular(12)),
+                child: Icon(Icons.school, color: AppColors.purple),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Text(
-                        course['title'] as String,
-                        style: TextStyle(
-                          color: c.textPrimary,
-                          fontSize: 18,
-                          fontFamily: 'Inter',
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    Row(
-                      children: [
-                        const Icon(Icons.star_rounded,
-                            color: Color(0xFFD08700),
-                            size: 16),
-                        const SizedBox(width: 4),
-                        Text(
-                          course['rating'] as String,
-                          style: TextStyle(
-                            color: c.textPrimary,
-                            fontSize: 14,
-                            fontFamily: 'Inter',
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ),
+                    Text(course.title, style: TextStyle(color: c.textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
+                    Text('By ${course.instructorName}', style: TextStyle(color: c.textSecondary, fontSize: 12)),
                   ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  'By ${course['instructor']}',
-                  style: TextStyle(
-                    color: c.textSecondary,
-                    fontSize: 14,
-                    fontFamily: 'Inter',
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Divider(
-                    color: c.border,
-                    thickness: 1.24),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment:
-                      MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.access_time_rounded,
-                            color: c.textSecondary,
-                            size: 16),
-                        const SizedBox(width: 4),
-                        Text(
-                          course['duration'] as String,
-                          style: TextStyle(
-                            color: c.textSecondary,
-                            fontSize: 12,
-                            fontFamily: 'Inter',
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Icon(
-                            Icons
-                                .menu_book_rounded,
-                            color: c.textSecondary,
-                            size: 16),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${course['lessons']} Lessons',
-                          style: TextStyle(
-                            color: c.textSecondary,
-                            fontSize: 12,
-                            fontFamily: 'Inter',
-                          ),
-                        ),
-                      ],
-                    ),
-                    GestureDetector(
-                      onTap: onEdit,
-                      child: Text(
-                        '${course['students']} étudiants',
-                        style: const TextStyle(
-                          color: AppColors.primary,
-                          fontSize: 14,
-                          fontFamily: 'Inter',
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('${course.certificatePrice} €', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.bold)),
+              TextButton(
+                onPressed: () {},
+                child: Text('View', style: TextStyle(color: AppColors.purple)),
+              )
+            ],
+          )
         ],
       ),
     );
