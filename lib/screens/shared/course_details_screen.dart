@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:minipr/screens/shared/lesson_player_screen.dart';
+import 'package:minipr/services/progress_service.dart';
 import '../../theme/app_colors.dart';
 import '../../models/course_model.dart';
 import '../../services/courses_service.dart';
@@ -20,6 +21,13 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
   void initState() {
     super.initState();
     _courseFuture = CoursesService().getCourseById(widget.courseId);
+
+    // ✅ تحديث العدد الكلي للدروس في قاعدة بيانات التقدم لضمان حساب النسبة بشكل صحيح
+    _courseFuture.then((course) {
+      if (course != null) {
+        ProgressService().updateTotalLessons(course.id, course.totalLessons);
+      }
+    });
   }
 
   @override
@@ -48,7 +56,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
 
           return CustomScrollView(
             slivers: [
-              // ── App Bar with Image Background ✅ مصحح لعرض الصورة ──
+              // ── App Bar with Image Background ──
               SliverAppBar(
                 expandedHeight: 200,
                 pinned: true,
@@ -136,34 +144,68 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
                       ),
                       const SizedBox(height: 24),
 
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: c.surface,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: c.border),
+                      // ✅✅✅ Stats Row & Progress Bar (تم التعديل هنا) ✅✅✅
+                      StreamBuilder<double>(
+                        stream: ProgressService().getCourseProgressStream(
+                          course.id,
                         ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            _StatItem(
-                              icon: Icons.play_circle_outline,
-                              label: '${course.totalLessons} Lessons',
-                              c: c,
+                        builder: (context, snap) {
+                          final progress = snap.data ?? 0.0;
+                          final percentage = (progress * 100).toInt();
+
+                          return Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: c.surface,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: c.border),
                             ),
-                            _StatItem(
-                              icon: Icons.star_rounded,
-                              label: '5.0 Rating',
-                              c: c,
+                            child: Column(
+                              children: [
+                                // الصف العلوي: الأيقونات
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceAround,
+                                  children: [
+                                    _StatItem(
+                                      icon: Icons.play_circle_outline,
+                                      label: '${course.totalLessons} Lessons',
+                                      c: c,
+                                    ),
+                                    _StatItem(
+                                      icon: Icons.star_rounded,
+                                      label: '5.0 Rating',
+                                      c: c,
+                                    ),
+                                    _StatItem(
+                                      icon: Icons.trending_up_rounded,
+                                      label: '$percentage% Done',
+                                      c: c,
+                                    ),
+                                  ],
+                                ),
+
+                                // الصف السفلي: شريط التقدم
+                                if (course.totalLessons > 0) ...[
+                                  const SizedBox(height: 12),
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(100),
+                                    child: LinearProgressIndicator(
+                                      value: progress,
+                                      minHeight: 8,
+                                      backgroundColor: c.iconBg,
+                                      valueColor: AlwaysStoppedAnimation(
+                                        AppColors.green,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
-                            _StatItem(
-                              icon: Icons.people_outline,
-                              label: '${course.enrolledStudents} Students',
-                              c: c,
-                            ),
-                          ],
-                        ),
+                          );
+                        },
                       ),
+
                       const SizedBox(height: 24),
 
                       Text(
@@ -198,12 +240,10 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
                       ),
                       const SizedBox(height: 16),
 
-                      // ✅✅✅ إصلاح ترتيب الدروس (إزالة الديكلاج) ✅✅✅
                       Theme(
-                        data: Theme.of(context).copyWith(
-                          dividerColor:
-                              Colors.transparent, // إخفاء الخطوط الافتراضية
-                        ),
+                        data: Theme.of(
+                          context,
+                        ).copyWith(dividerColor: Colors.transparent),
                         child: _CourseCurriculum(courseId: course.id, c: c),
                       ),
 
@@ -225,8 +265,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
           final c = context.colors;
 
           return Container(
-            // ✅ تقليل الـ Padding لمنع الـ Overflow
-            padding: const EdgeInsets.fromLTRB(24, 16, 24, 24), 
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
             decoration: BoxDecoration(
               color: c.surface,
               boxShadow: [
@@ -261,13 +300,11 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
-                      // TODO: سنربط هذا الزر لاحقاً بأول درس أو بدفع الشهادة
                       debugPrint('Start Learning pressed');
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.green,
                       foregroundColor: Colors.white,
-                      // ✅ تقليل الارتفاع قليلاً ليتناسب مع الشاشات الصغيرة
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
@@ -287,7 +324,8 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
             ),
           );
         },
-      ),    );
+      ),
+    );
   }
 }
 
@@ -355,9 +393,7 @@ class _CourseCurriculum extends StatelessWidget {
         return Column(
           children: units.entries.map((entry) {
             return ExpansionTile(
-              childrenPadding: const EdgeInsets.only(
-                left: 16,
-              ), // ✅ هامش فقط للمحتوى الداخلي
+              childrenPadding: const EdgeInsets.only(left: 16),
               backgroundColor: c.surface.withOpacity(0.5),
               collapsedBackgroundColor: c.surface.withOpacity(0.5),
               shape: RoundedRectangleBorder(
@@ -400,24 +436,19 @@ class _CourseCurriculum extends StatelessWidget {
                     data['type'] == 'video' ? 'Video' : 'PDF',
                     style: TextStyle(color: c.textMuted, fontSize: 10),
                   ),
-                  // onTap: () {
-                  //   debugPrint(
-                  //     'Opening lesson: ${data['title']} - URL: ${data['videoUrl']}',
-                  //   );
-                  // },
                   onTap: () {
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (_) => LessonPlayerScreen(
-        videoUrl: data['videoUrl'],
-        lessonTitle: data['title'],
-        courseId: courseId,
-        lessonId: doc.id,
-      ),
-    ),
-  );
-},
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => LessonPlayerScreen(
+                          videoUrl: data['videoUrl'],
+                          lessonTitle: data['title'],
+                          courseId: courseId,
+                          lessonId: doc.id,
+                        ),
+                      ),
+                    );
+                  },
                 );
               }).toList(),
             );

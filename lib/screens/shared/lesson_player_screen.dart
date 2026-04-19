@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:minipr/services/progress_service.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import '../../theme/app_colors.dart';
 
@@ -24,11 +25,13 @@ class LessonPlayerScreen extends StatefulWidget {
 class _LessonPlayerScreenState extends State<LessonPlayerScreen> {
   late YoutubePlayerController _controller;
   bool _isCompleted = false;
+  
+  // ✅✅✅ المكان الصحيح لتعريف الخدمة: هنا كمتغير للكلاس
+  final ProgressService _progressService = ProgressService();
 
   @override
   void initState() {
     super.initState();
-    // ✅ السماح بالاتجاهين (أفقي وعمودي) أثناء وجود هذه الشاشة
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
       DeviceOrientation.landscapeLeft,
@@ -60,17 +63,15 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen> {
   @override
   void dispose() {
     _controller.dispose();
-    
-    // ✅✅✅ التعديل المهم هنا:
-    // لا نجبر الوضع العمودي هنا بشكل صارم إذا كنا في منتصف عملية انتقال
-    // نعيد الإعدادات الافتراضية للتطبيق (والتي عادة ما تكون عمودية)
     SystemChrome.setPreferredOrientations(DeviceOrientation.values);
-    
     super.dispose();
   }
 
-  void _markAsComplete() {
+  void _markAsComplete() async {
+    await _progressService.markLessonAsComplete(widget.courseId, widget.lessonId);
+    
     setState(() => _isCompleted = true);
+    
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: const Text('Lesson completed! 🎉'),
@@ -79,14 +80,13 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen> {
       ),
     );
   }
-
+  
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
 
     return WillPopScope(
       onWillPop: () async {
-        // ✅ عند الضغط على زر الرجوع، نرجع للوضع العمودي
         await SystemChrome.setPreferredOrientations([
           DeviceOrientation.portraitUp,
           DeviceOrientation.portraitDown,
@@ -94,13 +94,10 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen> {
         return true;
       },
       child: YoutubePlayerBuilder(
-        // ✅✅✅ هذا السطر هو السر: عند الخروج من Full Screen نسمح بكل الاتجاهات
-        // حتى لا يقفز التطبيق للعمودي فوراً
         onExitFullScreen: () {
           SystemChrome.setPreferredOrientations(DeviceOrientation.values);
         },
         onEnterFullScreen: () {
-          // عند الدخول لملء الشاشة، نسمح بالأفقي فقط لتثبيت التجربة
            SystemChrome.setPreferredOrientations([
             DeviceOrientation.landscapeLeft,
             DeviceOrientation.landscapeRight,
@@ -151,10 +148,8 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen> {
             ),
             body: Column(
               children: [
-                // ── Video Player ──
                 player,
 
-                // ── Lesson Info & Actions ──
                 Expanded(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.all(24),
@@ -181,32 +176,35 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen> {
                         ),
                         const SizedBox(height: 32),
 
-                        SizedBox(
-                          width: double.infinity,
-                          height: 50,
-                          child: ElevatedButton.icon(
-                            onPressed: _isCompleted ? null : _markAsComplete,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: _isCompleted 
-                                  ? Colors.green 
-                                  : AppColors.primary,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
+                        // ✅✅✅ زر إكمال الدرس مع StreamBuilder
+                        StreamBuilder<bool>(
+                          stream: _progressService.isLessonCompletedStream(widget.courseId, widget.lessonId),
+                          builder: (context, snap) {
+                            final isDone = snap.data ?? false;
+                            // تحديث الحالة المحلية لتحديث الواجهة فوراً دون انتظار
+                            if (isDone && !_isCompleted) {
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                if(mounted) setState(() => _isCompleted = true);
+                              });
+                            }
+                            
+                            return SizedBox(
+                              width: double.infinity,
+                              height: 50,
+                              child: ElevatedButton.icon(
+                                onPressed: isDone ? null : _markAsComplete,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: isDone ? AppColors.green : AppColors.primary,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                ),
+                                icon: Icon(isDone ? Icons.check_circle : Icons.play_circle_fill, color: Colors.white),
+                                label: Text(
+                                  isDone ? 'Completed' : 'Mark as Complete',
+                                  style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                                ),
                               ),
-                            ),
-                            icon: Icon(
-                              _isCompleted ? Icons.check_circle : Icons.play_circle_fill,
-                              color: Colors.white,
-                            ),
-                            label: Text(
-                              _isCompleted ? 'Completed' : 'Mark as Complete',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
+                            );
+                          },
                         ),
 
                         const SizedBox(height: 20),
