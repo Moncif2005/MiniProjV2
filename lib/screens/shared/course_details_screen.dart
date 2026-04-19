@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:minipr/screens/shared/lesson_player_screen.dart';
 import '../../theme/app_colors.dart';
 import '../../models/course_model.dart';
 import '../../services/courses_service.dart';
@@ -224,7 +225,8 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
           final c = context.colors;
 
           return Container(
-            padding: const EdgeInsets.all(24),
+            // ✅ تقليل الـ Padding لمنع الـ Overflow
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 24), 
             decoration: BoxDecoration(
               color: c.surface,
               boxShadow: [
@@ -235,58 +237,57 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
                 ),
               ],
             ),
-            child: SafeArea(
-              child: Row(
-                children: [
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Certificate Price',
-                        style: TextStyle(color: c.textMuted, fontSize: 12),
+            child: Row(
+              children: [
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Certificate Price',
+                      style: TextStyle(color: c.textMuted, fontSize: 12),
+                    ),
+                    Text(
+                      '${course.certificatePrice} €',
+                      style: TextStyle(
+                        color: c.textPrimary,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
                       ),
-                      Text(
-                        '${course.certificatePrice} €',
-                        style: TextStyle(
-                          color: c.textPrimary,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      // TODO: سنربط هذا الزر لاحقاً بأول درس أو بدفع الشهادة
+                      debugPrint('Start Learning pressed');
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.green,
+                      foregroundColor: Colors.white,
+                      // ✅ تقليل الارتفاع قليلاً ليتناسب مع الشاشات الصغيرة
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
                       ),
-                    ],
-                  ),
-                  const Spacer(),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        debugPrint('Start Learning pressed');
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.green,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                      child: const Text(
-                        'Start Learning',
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontWeight: FontWeight.w700,
-                          fontSize: 16,
-                        ),
+                    ),
+                    child: const Text(
+                      'Start Learning',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
                       ),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           );
         },
-      ),
-    );
+      ),    );
   }
 }
 
@@ -399,11 +400,24 @@ class _CourseCurriculum extends StatelessWidget {
                     data['type'] == 'video' ? 'Video' : 'PDF',
                     style: TextStyle(color: c.textMuted, fontSize: 10),
                   ),
+                  // onTap: () {
+                  //   debugPrint(
+                  //     'Opening lesson: ${data['title']} - URL: ${data['videoUrl']}',
+                  //   );
+                  // },
                   onTap: () {
-                    debugPrint(
-                      'Opening lesson: ${data['title']} - URL: ${data['videoUrl']}',
-                    );
-                  },
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => LessonPlayerScreen(
+        videoUrl: data['videoUrl'],
+        lessonTitle: data['title'],
+        courseId: courseId,
+        lessonId: doc.id,
+      ),
+    ),
+  );
+},
                 );
               }).toList(),
             );
