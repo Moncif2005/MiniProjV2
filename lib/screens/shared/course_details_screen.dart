@@ -144,11 +144,9 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
                       ),
                       const SizedBox(height: 24),
 
-                      // ✅✅✅ Stats Row & Progress Bar (تم التعديل هنا) ✅✅✅
+                      // ✅✅✅ Stats Row & Progress Bar (النسخة النهائية الشاملة) ✅✅✅
                       StreamBuilder<double>(
-                        stream: ProgressService().getCourseProgressStream(
-                          course.id,
-                        ),
+                        stream: ProgressService().getCourseProgressStream(course.id),
                         builder: (context, snap) {
                           final progress = snap.data ?? 0.0;
                           final percentage = (progress * 100).toInt();
@@ -162,10 +160,9 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
                             ),
                             child: Column(
                               children: [
-                                // الصف العلوي: الأيقونات
+                                // الصف العلوي: أهم 3 إحصائيات عامة
                                 Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceAround,
+                                  mainAxisAlignment: MainAxisAlignment.spaceAround,
                                   children: [
                                     _StatItem(
                                       icon: Icons.play_circle_outline,
@@ -174,38 +171,46 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
                                     ),
                                     _StatItem(
                                       icon: Icons.star_rounded,
-                                      label: '5.0 Rating',
+                                      label: '5.0', // ✅ التقييم
+                                      // label: course.rating.isNotEmpty ? course.rating : '5.0', // ✅ التقييم
                                       c: c,
                                     ),
                                     _StatItem(
-                                      icon: Icons.trending_up_rounded,
-                                      label: '$percentage% Done',
+                                      icon: Icons.people_alt_rounded,
+                                      label: '${course.enrolledStudents} Students', // ✅ عدد الطلاب
                                       c: c,
                                     ),
                                   ],
                                 ),
-
-                                // الصف السفلي: شريط التقدم
-                                if (course.totalLessons > 0) ...[
-                                  const SizedBox(height: 12),
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(100),
-                                    child: LinearProgressIndicator(
-                                      value: progress,
-                                      minHeight: 8,
-                                      backgroundColor: c.iconBg,
-                                      valueColor: AlwaysStoppedAnimation(
-                                        AppColors.green,
-                                      ),
+                                
+                                const SizedBox(height: 12),
+                                
+                                // الصف السفلي: شريط التقدم الشخصي (يظهر دائماً لكن يتغير قيمته)
+                                Row(
+                                  children: [
+                                    Icon(Icons.trending_up_rounded, size: 16, color: AppColors.green),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Your Progress: $percentage%',
+                                      style: TextStyle(color: c.textPrimary, fontSize: 12, fontWeight: FontWeight.bold),
                                     ),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(100),
+                                  child: LinearProgressIndicator(
+                                    value: progress,
+                                    minHeight: 6,
+                                    backgroundColor: c.iconBg,
+                                    valueColor: AlwaysStoppedAnimation(AppColors.green),
                                   ),
-                                ],
+                                ),
                               ],
                             ),
                           );
                         },
                       ),
-
                       const SizedBox(height: 24),
 
                       Text(
