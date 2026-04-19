@@ -49,6 +49,7 @@ class CoursesService {
     });
   }
 
+
   /// ✅ جلب تفاصيل كورس واحد (بما في ذلك الدروس لاحقاً)
   Future<CourseModel?> getCourseById(String courseId) async {
     try {

@@ -1,9 +1,12 @@
+import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../theme/app_colors.dart';
 import '../../services/courses_service.dart';
 import '../../models/course_model.dart';
+import '../../services/cloudinary_service.dart';
 
 class CreateCourseScreen extends StatefulWidget {
   const CreateCourseScreen({super.key});
@@ -30,6 +33,11 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
   final _lessonTitleCtrl = TextEditingController();
   final _lessonUrlCtrl = TextEditingController();
 
+  // ✅ متغيرات رفع الصورة
+  File? _coverImage;
+  String? _uploadedImageUrl;
+  bool _isUploadingImage = false;
+
   final _categories = ['Langues', 'Design', 'Coding', 'Business', 'Marketing'];
 
   @override
@@ -46,11 +54,62 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
 
   int get _unitCount => int.tryParse(_unitsCtrl.text) ?? 0;
 
+  // ✅ دالة اختيار ورفع الصورة
+  Future<void> _pickAndUploadImage() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+
+    if (image == null) return;
+
+    setState(() {
+      _coverImage = File(image.path);
+      _isUploadingImage = true;
+      _uploadedImageUrl = null;
+    });
+
+    try {
+      // ✅ زيادة الوقت إلى 60 ثانية
+      final url = await CloudinaryService.upload(
+        file: _coverImage!,
+        folder: 'course_covers',
+        resourceType: 'image',
+      ).timeout(const Duration(seconds: 60));
+
+      if (url != null && url.isNotEmpty) {
+        setState(() {
+          _uploadedImageUrl = url;
+          _isUploadingImage = false;
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('✅ Image uploaded successfully!'), backgroundColor: AppColors.green),
+          );
+        }
+      } else {
+        throw Exception('Cloudinary returned null URL. Check Console for details.');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isUploadingImage = false);
+        
+        // ✅ عرض رسالة خطأ واضحة للمستخدم
+        String errorMsg = 'Upload failed.';
+        if (e.toString().contains('Timeout')) {
+          errorMsg = 'Connection timed out. Check your internet or Cloudinary settings.';
+        } else {
+          errorMsg = 'Error: $e';
+        }
+        
+        _showError(errorMsg);
+        debugPrint('❌ Detailed Upload Error: $e');
+      }
+    }
+  }
+
   // ── Validation ──────────────────────────────────────────────────────────
   String? _validateStep0() {
     if (_nameCtrl.text.trim().isEmpty)
       return 'Le nom du cours est obligatoire.';
-    // السعر اختياري الآن (يمكن أن يكون 0)
     if (double.tryParse(_priceCtrl.text.trim()) == null)
       return 'Le prix doit être un nombre valide.';
     if (_category == null) return 'Veuillez choisir une catégorie.';
@@ -124,7 +183,6 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
         return;
       }
 
-      // إظهار مؤشر تحميل
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -132,14 +190,13 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
       );
 
       try {
-        // حساب إجمالي الدروس
         int totalLessons = 0;
         for (var unit in _unitLessons) {
           totalLessons += unit.length;
         }
 
         final course = CourseModel(
-          id: '', // Firestore will generate it
+          id: '', 
           title: _nameCtrl.text.trim(),
           description: _descCtrl.text.trim(),
           instructorId: user.uid,
@@ -147,7 +204,7 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
           category: _category!,
           coursePrice: double.tryParse(_priceCtrl.text) ?? 0.0,
           certificatePrice: double.tryParse(_certificatePriceCtrl.text) ?? 0.0,
-          imageUrl: null, // TODO: Add image upload later
+          imageUrl: _uploadedImageUrl, // ✅ استخدام رابط الصورة المرفوع
           unitsCount: _unitLessons.length,
           totalLessons: totalLessons,
           createdAt: DateTime.now(),
@@ -157,10 +214,8 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
         final courseId = await CoursesService().createCourse(course);
 
         if (courseId != null) {
-          // ✅ حفظ الدروس كـ Subcollection
           await _saveLessonsToFirestore(courseId);
-
-          Navigator.pop(context); // Hide loader
+          Navigator.pop(context); 
 
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -186,21 +241,18 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
     }
   }
 
-  // ✅ دالة مساعدة لحفظ الدروس في Subcollection
   Future<void> _saveLessonsToFirestore(String courseId) async {
     final db = FirebaseFirestore.instance;
-
     for (int unitIndex = 0; unitIndex < _unitLessons.length; unitIndex++) {
       final lessons = _unitLessons[unitIndex];
       for (int lessonIndex = 0; lessonIndex < lessons.length; lessonIndex++) {
         final lessonData = lessons[lessonIndex];
-
         await db.collection('courses').doc(courseId).collection('lessons').add({
           'unitNumber': unitIndex + 1,
           'orderInUnit': lessonIndex + 1,
           'title': lessonData['title'],
           'videoUrl': lessonData['url'],
-          'type': 'video', // Default type
+          'type': 'video',
           'createdAt': FieldValue.serverTimestamp(),
         });
       }
@@ -230,7 +282,6 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
       backgroundColor: c.bg,
       body: Column(
         children: [
-          // ── AppBar ───────────────────────────────────────────────────────────
           Container(
             padding: const EdgeInsets.fromLTRB(24, 48, 24, 16),
             decoration: BoxDecoration(
@@ -252,9 +303,7 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
                       ),
                       shadows: [
                         BoxShadow(
-                          color: Theme.of(
-                            context,
-                          ).shadowColor.withOpacity(0.10),
+                          color: Theme.of(context).shadowColor.withOpacity(0.10),
                           blurRadius: 2,
                           offset: const Offset(0, 1),
                         ),
@@ -295,8 +344,6 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
               ],
             ),
           ),
-
-          // ── Scrollable content ───────────────────────────────────────────────
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(24),
@@ -312,8 +359,6 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
               ),
             ),
           ),
-
-          // ── Bottom bar ───────────────────────────────────────────────────────
           Container(
             padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
             decoration: BoxDecoration(
@@ -358,8 +403,7 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
                         borderRadius: BorderRadius.circular(14),
                         boxShadow: [
                           BoxShadow(
-                            color:
-                                Theme.of(context).brightness == Brightness.dark
+                            color: Theme.of(context).brightness == Brightness.dark
                                 ? AppColors.green.withOpacity(0.25)
                                 : const Color(0xFFB9F8CF),
                             blurRadius: 15,
@@ -390,7 +434,6 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
     );
   }
 
-  // ── Stepper ──────────────────────────────────────────────────────────────
   Widget _buildStepper(ThemeColors c) => Row(
     children: List.generate(3, (i) {
       final isActive = i == _step;
@@ -406,8 +449,8 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
                 color: isComplete
                     ? AppColors.green
                     : isActive
-                    ? AppColors.green
-                    : c.iconBg,
+                        ? AppColors.green
+                        : c.iconBg,
                 shape: BoxShape.circle,
                 border: isActive
                     ? Border.all(
@@ -418,9 +461,7 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
               ),
               child: Icon(
                 isComplete ? Icons.check_rounded : Icons.circle_outlined,
-                color: (isComplete || isActive)
-                    ? Colors.white
-                    : c.textSecondary,
+                color: (isComplete || isActive) ? Colors.white : c.textSecondary,
                 size: isActive ? 20 : 16,
               ),
             ),
@@ -441,7 +482,6 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
     }),
   );
 
-  // ── STEP 1: Informations du cours ────────────────────────────────────────
   Widget _step1(ThemeColors c) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
@@ -463,12 +503,7 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
               children: [
                 _label('Prix du cours (€)', c),
                 const SizedBox(height: 8),
-                _field(
-                  _priceCtrl,
-                  '0 (Gratuit)',
-                  c,
-                  keyboardType: TextInputType.number,
-                ),
+                _field(_priceCtrl, '0 (Gratuit)', c, keyboardType: TextInputType.number),
               ],
             ),
           ),
@@ -479,13 +514,7 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
               children: [
                 _label('Catégorie *', c),
                 const SizedBox(height: 8),
-                _dropdown(
-                  _category,
-                  'Choisir',
-                  _categories,
-                  (v) => setState(() => _category = v),
-                  c,
-                ),
+                _dropdown(_category, 'Choisir', _categories, (v) => setState(() => _category = v), c),
               ],
             ),
           ),
@@ -501,12 +530,7 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
               children: [
                 _label('Prix Certificat (€)', c),
                 const SizedBox(height: 8),
-                _field(
-                  _certificatePriceCtrl,
-                  '10',
-                  c,
-                  keyboardType: TextInputType.number,
-                ),
+                _field(_certificatePriceCtrl, '10', c, keyboardType: TextInputType.number),
               ],
             ),
           ),
@@ -516,24 +540,14 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
 
       _label("Nombre d'unités (chapitres) *", c),
       const SizedBox(height: 8),
-      _field(
-        _unitsCtrl,
-        'Ex: 5',
-        c,
-        keyboardType: TextInputType.number,
-        onChanged: (_) => setState(() {}),
-      ),
+      _field(_unitsCtrl, 'Ex: 5', c, keyboardType: TextInputType.number, onChanged: (_) => setState(() {})),
       if (_unitsCtrl.text.isNotEmpty) ...[
         const SizedBox(height: 4),
         Padding(
           padding: const EdgeInsets.only(left: 4),
           child: Text(
             'Vous allez créer $_unitCount unité(s)',
-            style: TextStyle(
-              color: c.textSecondary,
-              fontSize: 13,
-              fontFamily: 'Inter',
-            ),
+            style: TextStyle(color: c.textSecondary, fontSize: 13, fontFamily: 'Inter'),
           ),
         ),
       ],
@@ -541,37 +555,46 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
 
       _label('Image de couverture', c),
       const SizedBox(height: 8),
-      Container(
-        width: double.infinity,
-        height: 120,
-        decoration: ShapeDecoration(
-          color: c.inputBg,
-          shape: RoundedRectangleBorder(
-            side: BorderSide(width: 1.17, color: c.border),
-            borderRadius: BorderRadius.circular(14),
-          ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.cloud_upload_outlined, size: 32, color: c.textSecondary),
-            const SizedBox(height: 8),
-            Text(
-              'Bientôt disponible',
-              style: TextStyle(
-                color: c.textSecondary,
-                fontSize: 14,
-                fontFamily: 'Inter',
-                fontWeight: FontWeight.w500,
-              ),
+      GestureDetector(
+        onTap: _isUploadingImage ? null : _pickAndUploadImage,
+        child: Container(
+          width: double.infinity,
+          height: 120,
+          decoration: ShapeDecoration(
+            color: c.inputBg,
+            shape: RoundedRectangleBorder(
+              side: BorderSide(width: 1.17, color: c.border),
+              borderRadius: BorderRadius.circular(14),
             ),
-          ],
+          ),
+          child: _isUploadingImage
+              ? const Center(child: CircularProgressIndicator())
+              : _uploadedImageUrl != null
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(14),
+                      child: Image.network(_uploadedImageUrl!, fit: BoxFit.cover),
+                    )
+                  : _coverImage != null
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(14),
+                          child: Image.file(_coverImage!, fit: BoxFit.cover),
+                        )
+                      : Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.cloud_upload_outlined, size: 32, color: c.textSecondary),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Appuyez pour sélectionner une image',
+                              style: TextStyle(color: c.textSecondary, fontSize: 14, fontFamily: 'Inter', fontWeight: FontWeight.w500),
+                            ),
+                          ],
+                        ),
         ),
       ),
     ],
   );
 
-  // ── STEP 2: Unités / Vidéos ───────────────────────────────────────────────
   Widget _step2(ThemeColors c) {
     if (_unitLessons.isEmpty) {
       return Center(
@@ -580,11 +603,7 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
           child: Text(
             "Aucune unité définie. Retournez à l'étape 1.",
             textAlign: TextAlign.center,
-            style: TextStyle(
-              color: c.textSecondary,
-              fontFamily: 'Inter',
-              fontSize: 14,
-            ),
+            style: TextStyle(color: c.textSecondary, fontFamily: 'Inter', fontSize: 14),
           ),
         ),
       );
@@ -596,74 +615,44 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Unit navigation header
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
               'Unité ${_currentUnit + 1} sur $totalUnits',
-              style: TextStyle(
-                color: c.textPrimary,
-                fontSize: 18,
-                fontFamily: 'Inter',
-                fontWeight: FontWeight.w700,
-              ),
+              style: TextStyle(color: c.textPrimary, fontSize: 18, fontFamily: 'Inter', fontWeight: FontWeight.w700),
             ),
             Row(
               children: [
                 if (_currentUnit > 0)
-                  _iconBtn(
-                    Icons.chevron_left_rounded,
-                    c,
-                    () => setState(() {
-                      _lessonTitleCtrl.clear();
-                      _lessonUrlCtrl.clear();
-                      _currentUnit--;
-                    }),
-                  ),
+                  _iconBtn(Icons.chevron_left_rounded, c, () => setState(() { _lessonTitleCtrl.clear(); _lessonUrlCtrl.clear(); _currentUnit--; })),
                 const SizedBox(width: 8),
                 if (_currentUnit < totalUnits - 1)
-                  _iconBtn(
-                    Icons.chevron_right_rounded,
-                    c,
-                    () => setState(() {
-                      _lessonTitleCtrl.clear();
-                      _lessonUrlCtrl.clear();
-                      _currentUnit++;
-                    }),
-                  ),
+                  _iconBtn(Icons.chevron_right_rounded, c, () => setState(() { _lessonTitleCtrl.clear(); _lessonUrlCtrl.clear(); _currentUnit++; })),
               ],
             ),
           ],
         ),
         const SizedBox(height: 16),
 
-        // Title Input
         _label("Titre de la leçon", c),
         const SizedBox(height: 8),
         _field(_lessonTitleCtrl, 'Ex: Introduction', c),
         const SizedBox(height: 12),
 
-        // URL Input
         _label("Lien YouTube / Vimeo", c),
         const SizedBox(height: 8),
         Row(
           children: [
-            Expanded(
-              child: _field(_lessonUrlCtrl, 'https://youtube.com/...', c),
-            ),
+            Expanded(child: _field(_lessonUrlCtrl, 'https://youtube.com/...', c)),
             const SizedBox(width: 8),
             GestureDetector(
               onTap: () {
                 final url = _lessonUrlCtrl.text.trim();
                 final title = _lessonTitleCtrl.text.trim();
-
                 if (url.isNotEmpty && title.isNotEmpty) {
                   setState(() {
-                    _unitLessons[_currentUnit].add({
-                      'title': title,
-                      'url': url,
-                    });
+                    _unitLessons[_currentUnit].add({'title': title, 'url': url});
                     _lessonTitleCtrl.clear();
                     _lessonUrlCtrl.clear();
                   });
@@ -674,10 +663,7 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
               child: Container(
                 width: 52,
                 height: 50,
-                decoration: BoxDecoration(
-                  color: AppColors.green,
-                  borderRadius: BorderRadius.circular(14),
-                ),
+                decoration: BoxDecoration(color: AppColors.green, borderRadius: BorderRadius.circular(14)),
                 child: const Icon(Icons.add_rounded, color: Colors.white),
               ),
             ),
@@ -687,15 +673,10 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
 
         Text(
           '${_unitLessons[_currentUnit].length} leçon(s) ajoutée(s)',
-          style: TextStyle(
-            color: c.textSecondary,
-            fontSize: 14,
-            fontFamily: 'Inter',
-          ),
+          style: TextStyle(color: c.textSecondary, fontSize: 14, fontFamily: 'Inter'),
         ),
         const SizedBox(height: 8),
 
-        // Lessons list display
         ...List.generate(_unitLessons[_currentUnit].length, (i) {
           final lesson = _unitLessons[_currentUnit][i];
           return Container(
@@ -713,51 +694,23 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
                 Container(
                   width: 32,
                   height: 32,
-                  decoration: BoxDecoration(
-                    color: c.iconBg,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    Icons.play_circle_outline_rounded,
-                    color: AppColors.green,
-                    size: 18,
-                  ),
+                  decoration: BoxDecoration(color: c.iconBg, borderRadius: BorderRadius.circular(10)),
+                  child: Icon(Icons.play_circle_outline_rounded, color: AppColors.green, size: 18),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        lesson['title']!,
-                        style: TextStyle(
-                          color: c.textPrimary,
-                          fontSize: 14,
-                          fontFamily: 'Inter',
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
+                      Text(lesson['title']!, style: TextStyle(color: c.textPrimary, fontSize: 14, fontFamily: 'Inter', fontWeight: FontWeight.w500)),
                       const SizedBox(height: 2),
-                      Text(
-                        lesson['url']!,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: c.textMuted,
-                          fontSize: 12,
-                          fontFamily: 'Inter',
-                        ),
-                      ),
+                      Text(lesson['url']!, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textMuted, fontSize: 12, fontFamily: 'Inter')),
                     ],
                   ),
                 ),
                 GestureDetector(
-                  onTap: () =>
-                      setState(() => _unitLessons[_currentUnit].removeAt(i)),
-                  child: const Icon(
-                    Icons.delete_outline_rounded,
-                    color: AppColors.red,
-                    size: 20,
-                  ),
+                  onTap: () => setState(() => _unitLessons[_currentUnit].removeAt(i)),
+                  child: const Icon(Icons.delete_outline_rounded, color: AppColors.red, size: 20),
                 ),
               ],
             ),
@@ -767,7 +720,6 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
     );
   }
 
-  // ── STEP 3: Récapitulatif ─────────────────────────────────────────────────
   Widget _step3(ThemeColors c) {
     final totalVideos = _unitLessons.fold(0, (sum, v) => sum + v.length);
     return Column(
@@ -777,13 +729,9 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
           width: double.infinity,
           padding: const EdgeInsets.all(25),
           decoration: BoxDecoration(
-            color: Theme.of(context).brightness == Brightness.dark
-                ? AppColors.green.withOpacity(0.10)
-                : const Color(0xFFF0FDF4),
+            color: Theme.of(context).brightness == Brightness.dark ? AppColors.green.withOpacity(0.10) : const Color(0xFFF0FDF4),
             border: Border.all(
-              color: Theme.of(context).brightness == Brightness.dark
-                  ? AppColors.green.withOpacity(0.30)
-                  : const Color(0xFFB9F8CF),
+              color: Theme.of(context).brightness == Brightness.dark ? AppColors.green.withOpacity(0.30) : const Color(0xFFB9F8CF),
               width: 1.17,
             ),
             borderRadius: BorderRadius.circular(16),
@@ -796,91 +744,38 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
                   Container(
                     width: 40,
                     height: 40,
-                    decoration: const BoxDecoration(
-                      color: AppColors.green,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.check_rounded,
-                      color: Colors.white,
-                      size: 20,
-                    ),
+                    decoration: const BoxDecoration(color: AppColors.green, shape: BoxShape.circle),
+                    child: const Icon(Icons.check_rounded, color: Colors.white, size: 20),
                   ),
                   const SizedBox(width: 12),
                   Text(
                     'Récapitulatif du cours',
-                    style: TextStyle(
-                      color: c.textPrimary,
-                      fontSize: 18,
-                      fontFamily: 'Inter',
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: TextStyle(color: c.textPrimary, fontSize: 18, fontFamily: 'Inter', fontWeight: FontWeight.w700),
                   ),
                 ],
               ),
               const SizedBox(height: 16),
-
-              _summaryCard(
-                'Nom du cours',
-                _nameCtrl.text.isNotEmpty ? _nameCtrl.text : '—',
-                c,
-              ),
+              _summaryCard('Nom du cours', _nameCtrl.text.isNotEmpty ? _nameCtrl.text : '—', c),
               const SizedBox(height: 12),
-              _summaryCard(
-                'Description',
-                _descCtrl.text.isNotEmpty ? _descCtrl.text : '—',
-                c,
-              ),
+              _summaryCard('Description', _descCtrl.text.isNotEmpty ? _descCtrl.text : '—', c),
               const SizedBox(height: 12),
-
               Row(
                 children: [
-                  Expanded(
-                    child: _summaryCard(
-                      'Prix Cours',
-                      '${_priceCtrl.text} €',
-                      c,
-                      valueColor: AppColors.green,
-                    ),
-                  ),
+                  Expanded(child: _summaryCard('Prix Cours', '${_priceCtrl.text} €', c, valueColor: AppColors.green)),
                   const SizedBox(width: 12),
-                  Expanded(
-                    child: _summaryCard(
-                      'Prix Certif',
-                      '${_certificatePriceCtrl.text} €',
-                      c,
-                    ),
-                  ),
+                  Expanded(child: _summaryCard('Prix Certif', '${_certificatePriceCtrl.text} €', c)),
                 ],
               ),
               const SizedBox(height: 12),
-
               Container(
                 padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: c.surface.withOpacity(0.6),
-                  borderRadius: BorderRadius.circular(10),
-                ),
+                decoration: BoxDecoration(color: c.surface.withOpacity(0.6), borderRadius: BorderRadius.circular(10)),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Contenu',
-                      style: TextStyle(
-                        color: c.textSecondary,
-                        fontSize: 12,
-                        fontFamily: 'Inter',
-                      ),
-                    ),
+                    Text('Contenu', style: TextStyle(color: c.textSecondary, fontSize: 12, fontFamily: 'Inter')),
                     const SizedBox(height: 4),
-                    Text(
-                      '${_unitLessons.length} Unités • $totalVideos Leçons',
-                      style: TextStyle(
-                        color: c.textPrimary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    Text('${_unitLessons.length} Unités • $totalVideos Leçons', style: TextStyle(color: c.textPrimary, fontSize: 14, fontWeight: FontWeight.bold)),
                   ],
                 ),
               ),
@@ -888,18 +783,13 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
           ),
         ),
         const SizedBox(height: 16),
-
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(17),
           decoration: BoxDecoration(
-            color: Theme.of(context).brightness == Brightness.dark
-                ? const Color(0xFF1447E6).withOpacity(0.12)
-                : const Color(0xFFEFF6FF),
+            color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1447E6).withOpacity(0.12) : const Color(0xFFEFF6FF),
             border: Border.all(
-              color: Theme.of(context).brightness == Brightness.dark
-                  ? const Color(0xFF1447E6).withOpacity(0.35)
-                  : const Color(0xFFBEDBFF),
+              color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1447E6).withOpacity(0.35) : const Color(0xFFBEDBFF),
               width: 1.17,
             ),
             borderRadius: BorderRadius.circular(14),
@@ -907,23 +797,8 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
           child: Text.rich(
             TextSpan(
               children: [
-                const TextSpan(
-                  text: '✨ Prêt à publier ? ',
-                  style: TextStyle(
-                    color: Color(0xFF1447E6),
-                    fontSize: 14,
-                    fontFamily: 'Inter',
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                TextSpan(
-                  text: 'Appuyez sur "Publier" pour mettre en ligne.',
-                  style: TextStyle(
-                    color: c.textSecondary,
-                    fontSize: 13,
-                    fontFamily: 'Inter',
-                  ),
-                ),
+                const TextSpan(text: '✨ Prêt à publier ? ', style: TextStyle(color: Color(0xFF1447E6), fontSize: 14, fontFamily: 'Inter', fontWeight: FontWeight.w700)),
+                TextSpan(text: 'Appuyez sur "Publier" pour mettre en ligne.', style: TextStyle(color: c.textSecondary, fontSize: 13, fontFamily: 'Inter')),
               ],
             ),
           ),
@@ -932,30 +807,20 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
     );
   }
 
-  // ── Reusable helpers ──────────────────────────────────────────────────────
-  Widget _iconBtn(IconData icon, ThemeColors c, VoidCallback onTap) =>
-      GestureDetector(
+  Widget _iconBtn(IconData icon, ThemeColors c, VoidCallback onTap) => GestureDetector(
         onTap: onTap,
         child: Container(
           width: 36,
           height: 36,
-          decoration: BoxDecoration(
-            color: c.iconBg,
-            borderRadius: BorderRadius.circular(10),
-          ),
+          decoration: BoxDecoration(color: c.iconBg, borderRadius: BorderRadius.circular(10)),
           child: Icon(icon, color: c.textPrimary, size: 20),
         ),
       );
 
   Widget _label(String text, ThemeColors c) => Text(
-    text,
-    style: TextStyle(
-      color: c.textPrimary,
-      fontSize: 14,
-      fontFamily: 'Inter',
-      fontWeight: FontWeight.w700,
-    ),
-  );
+        text,
+        style: TextStyle(color: c.textPrimary, fontSize: 14, fontFamily: 'Inter', fontWeight: FontWeight.w700),
+      );
 
   Widget _field(
     TextEditingController ctrl,
@@ -964,35 +829,29 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
     int maxLines = 1,
     TextInputType? keyboardType,
     ValueChanged<String>? onChanged,
-  }) => Container(
-    decoration: ShapeDecoration(
-      color: c.inputBg,
-      shape: RoundedRectangleBorder(
-        side: BorderSide(width: 1.17, color: c.border),
-        borderRadius: BorderRadius.circular(14),
-      ),
-    ),
-    child: TextField(
-      controller: ctrl,
-      maxLines: maxLines,
-      keyboardType: keyboardType,
-      onChanged: onChanged,
-      style: TextStyle(color: c.textPrimary),
-      decoration: InputDecoration(
-        hintText: hint,
-        hintStyle: TextStyle(
-          color: c.textMuted,
-          fontSize: 16,
-          fontFamily: 'Inter',
+  }) =>
+      Container(
+        decoration: ShapeDecoration(
+          color: c.inputBg,
+          shape: RoundedRectangleBorder(
+            side: BorderSide(width: 1.17, color: c.border),
+            borderRadius: BorderRadius.circular(14),
+          ),
         ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 12,
+        child: TextField(
+          controller: ctrl,
+          maxLines: maxLines,
+          keyboardType: keyboardType,
+          onChanged: onChanged,
+          style: TextStyle(color: c.textPrimary),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(color: c.textMuted, fontSize: 16, fontFamily: 'Inter'),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            border: InputBorder.none,
+          ),
         ),
-        border: InputBorder.none,
-      ),
-    ),
-  );
+      );
 
   Widget _dropdown(
     String? value,
@@ -1000,82 +859,39 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
     List<String> items,
     ValueChanged<String?> onChange,
     ThemeColors c,
-  ) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 12),
-    decoration: ShapeDecoration(
-      color: c.inputBg,
-      shape: RoundedRectangleBorder(
-        side: BorderSide(width: 1.17, color: c.border),
-        borderRadius: BorderRadius.circular(14),
-      ),
-    ),
-    child: DropdownButtonHideUnderline(
-      child: DropdownButton<String>(
-        value: value,
-        isExpanded: true,
-        dropdownColor: c.surface,
-        hint: Text(
-          hint,
-          style: TextStyle(
-            color: c.textMuted,
-            fontSize: 14,
-            fontFamily: 'Inter',
+  ) =>
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: ShapeDecoration(
+          color: c.inputBg,
+          shape: RoundedRectangleBorder(
+            side: BorderSide(width: 1.17, color: c.border),
+            borderRadius: BorderRadius.circular(14),
           ),
         ),
-        items: items
-            .map(
-              (e) => DropdownMenuItem(
-                value: e,
-                child: Text(
-                  e,
-                  style: TextStyle(
-                    color: c.textPrimary,
-                    fontFamily: 'Inter',
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-            )
-            .toList(),
-        onChanged: onChange,
-      ),
-    ),
-  );
+        child: DropdownButtonHideUnderline(
+          child: DropdownButton<String>(
+            value: value,
+            isExpanded: true,
+            dropdownColor: c.surface,
+            hint: Text(hint, style: TextStyle(color: c.textMuted, fontSize: 14, fontFamily: 'Inter')),
+            items: items.map((e) => DropdownMenuItem(value: e, child: Text(e, style: TextStyle(color: c.textPrimary, fontFamily: 'Inter', fontSize: 14)))).toList(),
+            onChanged: onChange,
+          ),
+        ),
+      );
 
-  Widget _summaryCard(
-    String label,
-    String value,
-    ThemeColors c, {
-    Color? valueColor,
-  }) => Container(
-    width: double.infinity,
-    padding: const EdgeInsets.all(12),
-    decoration: BoxDecoration(
-      color: c.surface.withOpacity(0.6),
-      borderRadius: BorderRadius.circular(10),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: c.textSecondary,
-            fontSize: 12,
-            fontFamily: 'Inter',
-          ),
+  Widget _summaryCard(String label, String value, ThemeColors c, {Color? valueColor}) => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(color: c.surface.withOpacity(0.6), borderRadius: BorderRadius.circular(10)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: TextStyle(color: c.textSecondary, fontSize: 12, fontFamily: 'Inter')),
+            const SizedBox(height: 4),
+            Text(value, style: TextStyle(color: valueColor ?? c.textPrimary, fontSize: 15, fontFamily: 'Inter', fontWeight: FontWeight.w700)),
+          ],
         ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: TextStyle(
-            color: valueColor ?? c.textPrimary,
-            fontSize: 15,
-            fontFamily: 'Inter',
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ],
-    ),
-  );
+      );
 }

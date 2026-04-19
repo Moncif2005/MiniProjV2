@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:minipr/screens/shared/course_details_screen.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/bottom_nav_bar.dart';
 import '../../services/courses_service.dart'; // ✅ استيراد الخدمة
@@ -187,11 +188,19 @@ class _LearnEtudiantScreenState extends State<LearnEtudiantScreen> {
                         enrolled:
                             false, // TODO: التحقق مما إذا كان الطالب مسجلاً
                         progress: 0.0,
-                        onTap: () {
-                          // TODO: الانتقال لتفاصيل الكورس
-                          debugPrint('Tapped on course: ${course.id}');
-                          // Navigator.pushNamed(context, '/course/details', arguments: course.id);
-                        },
+                        // onTap: () {
+                        //   // TODO: الانتقال لتفاصيل الكورس
+                        //   debugPrint('Tapped on course: ${course.id}');
+                        //   // Navigator.pushNamed(context, '/course/details', arguments: course.id);
+                        // },
+onTap: () {
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => CourseDetailsScreen(courseId: course.id),
+    ),
+  );
+},
                       );
                     },
                   );

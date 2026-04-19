@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:minipr/screens/shared/course_details_screen.dart';
 import '../../theme/app_colors.dart';
 import '../../services/courses_service.dart';
 import '../../models/course_model.dart';
@@ -360,11 +361,17 @@ class _ExploreCourseCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('${course.certificatePrice} €', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.bold)),
-              TextButton(
-                onPressed: () {},
-                child: Text('View', style: TextStyle(color: AppColors.purple)),
-              )
-            ],
+TextButton(
+  onPressed: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CourseDetailsScreen(courseId: course.id),
+      ),
+    );
+  },
+  child: const Text('View', style: TextStyle(color: AppColors.purple)),
+),            ],
           )
         ],
       ),
