@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:url_launcher/url_launcher.dart';
-
+import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart'; // ✅ استيراد مكتبة PDF
 import '../../services/portfolio_cert_service.dart';
 import '../../theme/app_colors.dart';
-import '../../providers/user_provider.dart'; // قد نحتاجه لجلب بيانات المستخدم المعروض
 
 class PublicPortfolioScreen extends StatefulWidget {
-  final String userId; // ✅ نحتاج لمعرف الشخص الذي نتصفح بورتفوليو الخاص به
+  final String userId;
   const PublicPortfolioScreen({super.key, required this.userId});
 
   @override
@@ -19,10 +16,20 @@ class _PublicPortfolioScreenState extends State<PublicPortfolioScreen> {
   final _portfolioService = PortfolioCertService();
   String _activeFilter = 'all';
 
+  // ✅ دالة لفتح الملف داخلياً (PDF أو Image)
+  void _openFileInternally(String url) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => _InternalFileViewerScreen(fileUrl: url),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    
+
     return Scaffold(
       backgroundColor: c.bg,
       appBar: AppBar(
@@ -33,33 +40,61 @@ class _PublicPortfolioScreenState extends State<PublicPortfolioScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: FutureBuilder<DocumentSnapshot>(
-          future: FirebaseFirestore.instance.collection('users').doc(widget.userId).get(),
+          future: FirebaseFirestore.instance
+              .collection('users')
+              .doc(widget.userId)
+              .get(),
           builder: (ctx, snapshot) {
             if (snapshot.hasData) {
               final data = snapshot.data!.data() as Map<String, dynamic>?;
               return Text(
                 "${data?['firstName'] ?? 'Portfolio'} ${data?['lastName'] ?? ''}",
-                style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.bold, fontFamily: 'Inter'),
+                style: TextStyle(
+                  color: c.textPrimary,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Inter',
+                ),
               );
             }
-            return const Text('Portfolio', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold));
+            return const Text(
+              'Portfolio',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            );
           },
         ),
         centerTitle: true,
       ),
       body: Column(
         children: [
-          // ── 1. Filter Chips (للعرض العام) ──
+          // ── 1. Filter Chips ──
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             child: Row(
               children: [
-                _PublicFilterChip(label: 'All', filter: 'all', active: _activeFilter, onSelect: (v) => setState(() => _activeFilter = v)),
+                _PublicFilterChip(
+                  label: 'All',
+                  filter: 'all',
+                  active: _activeFilter,
+                  onSelect: (v) => setState(() => _activeFilter = v),
+                ),
                 const SizedBox(width: 12),
-                _PublicFilterChip(label: 'Projects', filter: 'project', active: _activeFilter, onSelect: (v) => setState(() => _activeFilter = v)),
+                _PublicFilterChip(
+                  label: 'Projects',
+                  filter: 'project',
+                  active: _activeFilter,
+                  onSelect: (v) => setState(() => _activeFilter = v),
+                ),
                 const SizedBox(width: 12),
-                _PublicFilterChip(label: 'Certificates', filter: 'external_cert', active: _activeFilter, onSelect: (v) => setState(() => _activeFilter = v)),
+                _PublicFilterChip(
+                  label: 'Certificates',
+                  filter: 'external_cert',
+                  active: _activeFilter,
+                  onSelect: (v) => setState(() => _activeFilter = v),
+                ),
               ],
             ),
           ),
@@ -67,22 +102,30 @@ class _PublicPortfolioScreenState extends State<PublicPortfolioScreen> {
           // ── 2. Stream of Public Portfolio Items ──
           Expanded(
             child: StreamBuilder<List<Map<String, dynamic>>>(
-              // ✅ هنا الفرق: نجلب بيانات userId الممرر، وليس المستخدم الحالي
-              stream: _portfolioService.getPortfolioStream(widget.userId), 
+              stream: _portfolioService.getPortfolioStream(widget.userId),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(child: CircularProgressIndicator(color: AppColors.primary));
+                  return Center(
+                    child: CircularProgressIndicator(color: AppColors.primary),
+                  );
                 }
 
                 if (snapshot.hasError) {
-                  return Center(child: Text('Failed to load portfolio', style: TextStyle(color: AppColors.red)));
+                  return Center(
+                    child: Text(
+                      'Failed to load portfolio',
+                      style: TextStyle(color: AppColors.red),
+                    ),
+                  );
                 }
 
                 var items = snapshot.data ?? [];
 
                 // Apply filter
                 if (_activeFilter != 'all') {
-                  items = items.where((i) => i['type'] == _activeFilter).toList();
+                  items = items
+                      .where((i) => i['type'] == _activeFilter)
+                      .toList();
                 }
 
                 if (items.isEmpty) {
@@ -90,9 +133,19 @@ class _PublicPortfolioScreenState extends State<PublicPortfolioScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.folder_open_outlined, size: 48, color: c.textMuted),
+                        Icon(
+                          Icons.folder_open_outlined,
+                          size: 48,
+                          color: c.textMuted,
+                        ),
                         const SizedBox(height: 12),
-                        Text('No items found in this section', style: TextStyle(color: c.textMuted, fontFamily: 'Inter')),
+                        Text(
+                          'No items found in this section',
+                          style: TextStyle(
+                            color: c.textMuted,
+                            fontFamily: 'Inter',
+                          ),
+                        ),
                       ],
                     ),
                   );
@@ -105,10 +158,12 @@ class _PublicPortfolioScreenState extends State<PublicPortfolioScreen> {
                   itemBuilder: (_, index) {
                     final item = items[index];
                     final fileUrl = item['fileUrl'] as String?;
-                    // ✅ نستخدم بطاقة العرض فقط (بدون أزرار التعديل)
+
                     return _PublicPortfolioCard(
                       item: item,
-                      onView: fileUrl != null ? () => _openFileViewer(fileUrl) : null,
+                      onView: fileUrl != null
+                          ? () => _openFileInternally(fileUrl)
+                          : null, // ✅ فتح داخلي
                     );
                   },
                 );
@@ -119,36 +174,34 @@ class _PublicPortfolioScreenState extends State<PublicPortfolioScreen> {
       ),
     );
   }
-
-  void _openFileViewer(String url) async {
-    try {
-      final uri = Uri.parse(url);
-      if (url.contains('cloudinary.com') && url.contains('/raw/')) {
-        // إذا كان PDF، نضيف flag للعرض
-        await launchUrl(Uri.parse('$url?fl_inline'), mode: LaunchMode.externalApplication);
-      } else {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not open file')));
-    }
-  }
 }
 
 // ─────────────────────────────────────────────────────────────
-// 🎨 Filter Chip (للعرض العام)
+// 🎨 Filter Chip
 // ─────────────────────────────────────────────────────────────
 class _PublicFilterChip extends StatelessWidget {
   final String label, filter, active;
   final Function(String) onSelect;
-  const _PublicFilterChip({required this.label, required this.filter, required this.active, required this.onSelect});
+  const _PublicFilterChip({
+    required this.label,
+    required this.filter,
+    required this.active,
+    required this.onSelect,
+  });
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
     final isSelected = active == filter;
     return ChoiceChip(
-      label: Text(label, style: TextStyle(color: isSelected ? Colors.white : c.textSecondary, fontWeight: FontWeight.bold, fontFamily: 'Inter')),
+      label: Text(
+        label,
+        style: TextStyle(
+          color: isSelected ? Colors.white : c.textSecondary,
+          fontWeight: FontWeight.bold,
+          fontFamily: 'Inter',
+        ),
+      ),
       selected: isSelected,
       onSelected: (_) => onSelect(filter),
       selectedColor: AppColors.primary,
@@ -180,7 +233,13 @@ class _PublicPortfolioCard extends StatelessWidget {
         color: c.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: c.border),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 2))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -188,11 +247,14 @@ class _PublicPortfolioCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Badge
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
-                  color: (isProject ? AppColors.primary : AppColors.green).withOpacity(0.1),
+                  color: (isProject ? AppColors.primary : AppColors.green)
+                      .withOpacity(0.1),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
@@ -205,19 +267,28 @@ class _PublicPortfolioCard extends StatelessWidget {
                   ),
                 ),
               ),
-              // ✅ لا توجد أزرار تعديل هنا
             ],
           ),
           const SizedBox(height: 8),
           Text(
             item['title'] ?? '',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'Inter', color: c.textPrimary),
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+              fontFamily: 'Inter',
+              color: c.textPrimary,
+            ),
           ),
           if (item['description']?.isNotEmpty ?? false) ...[
             const SizedBox(height: 4),
             Text(
               item['description'],
-              style: TextStyle(color: c.textSecondary, fontSize: 13, fontFamily: 'Inter', height: 1.4),
+              style: TextStyle(
+                color: c.textSecondary,
+                fontSize: 13,
+                fontFamily: 'Inter',
+                height: 1.4,
+              ),
             ),
           ],
           const SizedBox(height: 12),
@@ -232,12 +303,73 @@ class _PublicPortfolioCard extends StatelessWidget {
                   foregroundColor: AppColors.primary,
                   side: BorderSide(color: AppColors.primary.withOpacity(0.3)),
                   padding: const EdgeInsets.symmetric(vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
               ),
             ),
         ],
       ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// 📄 شاشة عرض ذكية ومصححة (PDF أو Image) - نفس النسخة الناجحة
+// ─────────────────────────────────────────────────────────────
+class _InternalFileViewerScreen extends StatefulWidget {
+  final String fileUrl;
+  const _InternalFileViewerScreen({required this.fileUrl});
+
+  @override
+  State<_InternalFileViewerScreen> createState() =>
+      _InternalFileViewerScreenState();
+}
+
+class _InternalFileViewerScreenState extends State<_InternalFileViewerScreen> {
+  bool _isPdf = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final url = widget.fileUrl.toLowerCase();
+    // ✅ المنطق الصحيح للتمييز بين PDF و Image في Cloudinary
+    if (url.contains('/raw/') || url.endsWith('.pdf')) {
+      _isPdf = true;
+    } else {
+      _isPdf = false;
+    }
+    // ✅ طباعة الرابط للتأكد من صحته في Console
+    debugPrint(
+      '🔍 Opening URL: ${widget.fileUrl} | Type: ${_isPdf ? "PDF" : "Image"}',
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(_isPdf ? 'PDF Viewer' : 'Image Viewer'),
+        backgroundColor: c.surface,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: _isPdf
+          ? SfPdfViewer.network(widget.fileUrl)
+          : InteractiveViewer(
+              child: Image.network(
+                widget.fileUrl,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  debugPrint('❌ Image Error: $error');
+                  return Center(child: Text('Failed to load image'));
+                },
+              ),
+            ),
     );
   }
 }

@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart'; // ✅ استيراد مكتبة PDF للعرض الداخلي
 
 import '../../services/media_service.dart';
 import '../../services/portfolio_cert_service.dart';
@@ -22,6 +22,16 @@ class _MyPortfolioScreenState extends State<MyPortfolioScreen> {
   final _portfolioService = PortfolioCertService();
   bool _isUploadingCV = false;
   String _activeFilter = 'all';
+
+  // ✅ دالة لفتح الملف داخلياً (PDF أو Image) بدلاً من المتصفح
+  void _openFileInternally(String url) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => _InternalFileViewerScreen(fileUrl: url),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +67,7 @@ class _MyPortfolioScreenState extends State<MyPortfolioScreen> {
               isLoading: _isUploadingCV,
               onUpload: _handleCVUpload,
               onDelete: _deleteCV,
-              onView: (url) => _openFileViewer(url),
+              onView: (url) => _openFileInternally(url), // ✅ تعديل هنا
             ),
           ),
 
@@ -129,7 +139,6 @@ class _MyPortfolioScreenState extends State<MyPortfolioScreen> {
 
                 var items = snapshot.data ?? [];
 
-                // ✅ تصحيح الفلترة: تطبيق الفلتر داخل الـ Builder مع إعادة بناء القائمة
                 if (_activeFilter != 'all') {
                   items = items
                       .where((i) => i['type'] == _activeFilter)
@@ -150,7 +159,8 @@ class _MyPortfolioScreenState extends State<MyPortfolioScreen> {
                       onDelete: () => _confirmDelete(uid, item['id']),
                       onEdit: () => _showEditDialog(item),
                       onView: fileUrl != null
-                          ? () => _openFileViewer(fileUrl)
+                          ? () =>
+                                _openFileInternally(fileUrl) // ✅ تعديل هنا
                           : null,
                     );
                   },
@@ -170,30 +180,6 @@ class _MyPortfolioScreenState extends State<MyPortfolioScreen> {
         ),
       ),
     );
-  }
-
-  // ─────────────────────────────────────────────────────────────
-  // 👁️ فتح الملفات عبر المتصفح/العارض الافتراضي (بدون مكتبات ثقيلة)
-  // ─────────────────────────────────────────────────────────────
-  void _openFileViewer(String url) async {
-    try {
-      final inlineUrl = _makeUrlInline(url);
-      final uri = Uri.parse(inlineUrl);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        _showSnackBar('Could not open file', AppColors.red);
-      }
-    } catch (e) {
-      _showSnackBar('Error opening file: $e', AppColors.red);
-    }
-  }
-
-  String _makeUrlInline(String url) {
-    if (url.contains('cloudinary.com') && url.contains('/raw/')) {
-      return '$url?fl_inline';
-    }
-    return url;
   }
 
   Future<void> _handleCVUpload() async {
@@ -288,102 +274,138 @@ class _MyPortfolioScreenState extends State<MyPortfolioScreen> {
       await _portfolioService.deletePortfolioItem(uid, itemId);
   }
 
-void _showEditDialog(Map<String, dynamic> item) {
-  // ✅ 1. لا تستخدم context.colors هنا! استخدم القيم مباشرة من AppColors و Theme.of
-  final themeData = Theme.of(context);
-  
-  final titleCtrl = TextEditingController(text: item['title']);
-  final descCtrl = TextEditingController(text: item['description'] ?? '');
-  final uid = FirebaseAuth.instance.currentUser?.uid;
-  final itemId = item['id'];
+  void _showEditDialog(Map<String, dynamic> item) {
+    final themeData = Theme.of(context);
+    final titleCtrl = TextEditingController(text: item['title']);
+    final descCtrl = TextEditingController(text: item['description'] ?? '');
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final itemId = item['id'];
 
-  // ✅ 2. تأكد أن الـ State لا تزال مثبتة قبل فتح أي شيء
-  if (!mounted) return;
+    if (!mounted) return;
 
-  showDialog(
-    context: context,
-    builder: (dialogCtx) {
-      // ✅ 3. احصل على الألوان من سياق الحوار نفسه باستخدام Builder داخلي إذا لزم
-      // لكن الأسهل: استخدم القيم الثابتة من AppColors و Theme.of(context) التي جلبناها مسبقاً
-      return AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          'Edit Item',
-          style: TextStyle(
-            color: themeData.colorScheme.onSurface, // ✅ بديل آمن لـ theme.textPrimary
-            fontWeight: FontWeight.bold,
-            fontFamily: 'Inter',
-            fontSize: 18,
+    showDialog(
+      context: context,
+      builder: (dialogCtx) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
           ),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: titleCtrl,
-              style: TextStyle(color: themeData.colorScheme.onSurface, fontFamily: 'Inter'),
-              decoration: InputDecoration(
-                labelText: 'Title',
-                labelStyle: TextStyle(color: themeData.colorScheme.onSurfaceVariant),
-                filled: true,
-                fillColor: themeData.colorScheme.surfaceContainerHighest,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: themeData.colorScheme.outline)),
-                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.primary, width: 1.5)),
+          title: Text(
+            'Edit Item',
+            style: TextStyle(
+              color: themeData.colorScheme.onSurface,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Inter',
+              fontSize: 18,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: titleCtrl,
+                style: TextStyle(
+                  color: themeData.colorScheme.onSurface,
+                  fontFamily: 'Inter',
+                ),
+                decoration: InputDecoration(
+                  labelText: 'Title',
+                  labelStyle: TextStyle(
+                    color: themeData.colorScheme.onSurfaceVariant,
+                  ),
+                  filled: true,
+                  fillColor: themeData.colorScheme.surfaceContainerHighest,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: themeData.colorScheme.outline,
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: AppColors.primary,
+                      width: 1.5,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: descCtrl,
+                maxLines: 3,
+                style: TextStyle(
+                  color: themeData.colorScheme.onSurface,
+                  fontFamily: 'Inter',
+                ),
+                decoration: InputDecoration(
+                  labelText: 'Description',
+                  labelStyle: TextStyle(
+                    color: themeData.colorScheme.onSurfaceVariant,
+                  ),
+                  filled: true,
+                  fillColor: themeData.colorScheme.surfaceContainerHighest,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: themeData.colorScheme.outline,
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: AppColors.primary,
+                      width: 1.5,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogCtx),
+              child: Text(
+                'Cancel',
+                style: TextStyle(
+                  color: themeData.colorScheme.onSurfaceVariant,
+                  fontFamily: 'Inter',
+                ),
               ),
             ),
-            const SizedBox(height: 14),
-            TextField(
-              controller: descCtrl,
-              maxLines: 3,
-              style: TextStyle(color: themeData.colorScheme.onSurface, fontFamily: 'Inter'),
-              decoration: InputDecoration(
-                labelText: 'Description',
-                labelStyle: TextStyle(color: themeData.colorScheme.onSurfaceVariant),
-                filled: true,
-                fillColor: themeData.colorScheme.surfaceContainerHighest,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: themeData.colorScheme.outline)),
-                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.primary, width: 1.5)),
-              ),
-            ),
-          ],
-        ),
-        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx),
-            child: Text('Cancel', style: TextStyle(color: themeData.colorScheme.onSurfaceVariant, fontFamily: 'Inter')),
-          ),
-          FilledButton(
-            onPressed: () async {
-              if (uid == null) return;
-              
-              await PortfolioCertService().updatePortfolioItem(
-                uid,
-                itemId,
-                {
+            FilledButton(
+              onPressed: () async {
+                if (uid == null) return;
+
+                await PortfolioCertService().updatePortfolioItem(uid, itemId, {
                   'title': titleCtrl.text.trim(),
                   'description': descCtrl.text.trim(),
-                },
-              );
-              
-              // ✅ 4. استخدم (mounted) الخاص بـ State وليس (dialogCtx)
-              if (mounted) {
-                Navigator.pop(dialogCtx);
-              }
-            },
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                });
+
+                if (mounted) {
+                  Navigator.pop(dialogCtx);
+                }
+              },
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              child: const Text('Save', style: TextStyle(fontFamily: 'Inter')),
             ),
-            child: const Text('Save', style: TextStyle(fontFamily: 'Inter')),
-          ),
-        ],
-      );
-    },
-  );
-}
+          ],
+        );
+      },
+    );
+  }
 
   void _openAddModal(String uid) {
     showModalBottomSheet(
@@ -518,17 +540,21 @@ class _PortfolioCard extends StatelessWidget {
               ),
               Row(
                 children: [
-IconButton(
-  onPressed: onEdit,
-  icon: Icon(Icons.edit_outlined, size: 18, color: c.textSecondary),
-  // بدلاً من جعلها صفر، نعطيها مساحة لمس معقولة
-  padding: const EdgeInsets.all(8.0), 
-  constraints: const BoxConstraints(
-    minWidth: 32, // تضمن وجود مساحة دنيا للضغط
-    minHeight: 32,
-  ),
-  splashRadius: 20, // يجعل تأثير الضغطة (الأنيميشن) دائري وجميل
-),                  IconButton(
+                  IconButton(
+                    onPressed: onEdit,
+                    icon: Icon(
+                      Icons.edit_outlined,
+                      size: 18,
+                      color: c.textSecondary,
+                    ),
+                    padding: const EdgeInsets.all(8.0),
+                    constraints: const BoxConstraints(
+                      minWidth: 32,
+                      minHeight: 32,
+                    ),
+                    splashRadius: 20,
+                  ),
+                  IconButton(
                     onPressed: onDelete,
                     icon: const Icon(
                       Icons.delete_outline,
@@ -691,7 +717,7 @@ class _CVSection extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────
-// 📝 Add Item Form (نفس الكود الأصلي الذي عمل معك بدون تعديل)
+// 📝 Add Item Form
 // ─────────────────────────────────────────────────────────────
 class _AddItemForm extends StatefulWidget {
   final String uid;
@@ -719,7 +745,12 @@ class _AddItemFormState extends State<_AddItemForm> {
     final c = context.colors;
     return SafeArea(
       child: Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, top: 24, left: 24, right: 24),
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+          top: 24,
+          left: 24,
+          right: 24,
+        ),
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -728,17 +759,31 @@ class _AddItemFormState extends State<_AddItemForm> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Add New Item', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, fontFamily: 'Inter', color: c.textPrimary)),
-                  IconButton(onPressed: _isSaving ? null : () => Navigator.pop(context), icon: Icon(Icons.close_rounded, color: c.textSecondary)),
+                  Text(
+                    'Add New Item',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Inter',
+                      color: c.textPrimary,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: _isSaving ? null : () => Navigator.pop(context),
+                    icon: Icon(Icons.close_rounded, color: c.textSecondary),
+                  ),
                 ],
               ),
               const SizedBox(height: 20),
-              
+
               DropdownButtonFormField<String>(
                 value: _type,
                 items: const [
                   DropdownMenuItem(value: 'project', child: Text('💼 Project')),
-                  DropdownMenuItem(value: 'external_cert', child: Text('📜 Certificate')),
+                  DropdownMenuItem(
+                    value: 'external_cert',
+                    child: Text('📜 Certificate'),
+                  ),
                 ],
                 onChanged: _isSaving ? null : (v) => setState(() => _type = v!),
                 decoration: InputDecoration(
@@ -746,14 +791,26 @@ class _AddItemFormState extends State<_AddItemForm> {
                   labelStyle: TextStyle(color: c.textSecondary),
                   filled: true,
                   fillColor: c.bg,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: c.border)),
-                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.primary, width: 1.5)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: c.border),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: AppColors.primary,
+                      width: 1.5,
+                    ),
+                  ),
                 ),
                 style: TextStyle(color: c.textPrimary, fontFamily: 'Inter'),
               ),
               const SizedBox(height: 14),
-              
+
               TextField(
                 controller: _title,
                 style: TextStyle(color: c.textPrimary, fontFamily: 'Inter'),
@@ -762,13 +819,25 @@ class _AddItemFormState extends State<_AddItemForm> {
                   labelStyle: TextStyle(color: c.textSecondary),
                   filled: true,
                   fillColor: c.bg,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: c.border)),
-                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.primary, width: 1.5)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: c.border),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: AppColors.primary,
+                      width: 1.5,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 14),
-              
+
               TextField(
                 controller: _desc,
                 maxLines: 3,
@@ -778,50 +847,100 @@ class _AddItemFormState extends State<_AddItemForm> {
                   labelStyle: TextStyle(color: c.textSecondary),
                   filled: true,
                   fillColor: c.bg,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: c.border)),
-                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.primary, width: 1.5)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: c.border),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: AppColors.primary,
+                      width: 1.5,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
-              
+
               InkWell(
-                onTap: _isSaving ? null : () async {
-                  final res = await ImagePicker().pickImage(source: ImageSource.gallery);
-                  if (res != null) setState(() => _file = File(res.path));
-                },
+                onTap: _isSaving
+                    ? null
+                    : () async {
+                        final res = await ImagePicker().pickImage(
+                          source: ImageSource.gallery,
+                        );
+                        if (res != null) setState(() => _file = File(res.path));
+                      },
                 borderRadius: BorderRadius.circular(12),
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    border: Border.all(color: _file == null ? c.border : AppColors.green),
+                    border: Border.all(
+                      color: _file == null ? c.border : AppColors.green,
+                    ),
                     borderRadius: BorderRadius.circular(12),
-                    color: _file == null ? c.bg : AppColors.green.withOpacity(0.05),
+                    color: _file == null
+                        ? c.bg
+                        : AppColors.green.withOpacity(0.05),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(_file == null ? Icons.attach_file_rounded : Icons.check_circle_rounded, color: _file == null ? c.textMuted : AppColors.green, size: 20),
+                      Icon(
+                        _file == null
+                            ? Icons.attach_file_rounded
+                            : Icons.check_circle_rounded,
+                        color: _file == null ? c.textMuted : AppColors.green,
+                        size: 20,
+                      ),
                       const SizedBox(width: 10),
                       Text(
                         _file == null ? 'Attach Image/File' : 'File Selected ✓',
-                        style: TextStyle(color: _file == null ? c.textMuted : AppColors.green, fontWeight: FontWeight.w600, fontFamily: 'Inter'),
+                        style: TextStyle(
+                          color: _file == null ? c.textMuted : AppColors.green,
+                          fontWeight: FontWeight.w600,
+                          fontFamily: 'Inter',
+                        ),
                       ),
                     ],
                   ),
                 ),
               ),
               const SizedBox(height: 20),
-              
+
               SizedBox(
                 width: double.infinity,
                 height: 50,
                 child: FilledButton(
                   onPressed: _isSaving ? null : _save,
-                  style: FilledButton.styleFrom(backgroundColor: AppColors.primary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
                   child: _isSaving
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                      : const Text('Save to Portfolio', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold, fontFamily: 'Inter')),
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text(
+                          'Save to Portfolio',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Inter',
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(height: 24),
@@ -832,12 +951,14 @@ class _AddItemFormState extends State<_AddItemForm> {
     );
   }
 
-  // ✅ المنطق الأصلي لم يُمس حرفياً واحداً
   Future<void> _save() async {
     if (_title.text.isEmpty || _file == null) return;
     setState(() => _isSaving = true);
     try {
-      final url = await MediaService.uploadPortfolioItem('${DateTime.now().millisecondsSinceEpoch}', _file!);
+      final url = await MediaService.uploadPortfolioItem(
+        '${DateTime.now().millisecondsSinceEpoch}',
+        _file!,
+      );
       if (url != null) {
         await PortfolioCertService().addPortfolioItem(widget.uid, {
           'type': _type,
@@ -850,5 +971,67 @@ class _AddItemFormState extends State<_AddItemForm> {
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// 📄 شاشة عرض ذكية ومصححة (PDF أو Image) - مع توسيط مثالي للصورة
+// ─────────────────────────────────────────────────────────────
+class _InternalFileViewerScreen extends StatefulWidget {
+  final String fileUrl;
+  const _InternalFileViewerScreen({required this.fileUrl});
+
+  @override
+  State<_InternalFileViewerScreen> createState() => _InternalFileViewerScreenState();
+}
+
+class _InternalFileViewerScreenState extends State<_InternalFileViewerScreen> {
+  bool _isPdf = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final url = widget.fileUrl.toLowerCase();
+    if (url.contains('/raw/') || url.endsWith('.pdf')) {
+      _isPdf = true;
+    } else {
+      _isPdf = false;
+    }
+    debugPrint('🔍 Opening URL: ${widget.fileUrl} | Type: ${_isPdf ? "PDF" : "Image"}');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(_isPdf ? 'PDF Viewer' : 'Image Viewer'),
+        backgroundColor: c.surface,
+        leading: IconButton(icon: Icon(Icons.arrow_back), onPressed: () => Navigator.pop(context)),
+      ),
+      body: _isPdf
+          ? SfPdfViewer.network(widget.fileUrl)
+          : InteractiveViewer(
+              minScale: 0.5,
+              maxScale: 4.0,
+              // ✅ الحل هنا: استخدام Center و ConstrainedBox لضمان التوسيط
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: MediaQuery.of(context).size.width,
+                    maxHeight: MediaQuery.of(context).size.height,
+                  ),
+                  child: Image.network(
+                    widget.fileUrl,
+                    fit: BoxFit.contain, // ✅ هذا يضمن ظهور الصورة كاملة داخل الحدود
+                    errorBuilder: (context, error, stackTrace) {
+                      debugPrint('❌ Image Error: $error');
+                      return Center(child: Text('Failed to load image'));
+                    },
+                  ),
+                ),
+              ),
+            ),
+    );
   }
 }

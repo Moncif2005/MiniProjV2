@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -23,20 +24,21 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
   final _unitsCtrl = TextEditingController();
   String? _category;
 
-  // هيكلية جديدة للدروس: List of Units, where each Unit is a List of Lessons (Map)
   List<List<Map<String, String>>> _unitLessons = [];
-
   int _currentUnit = 0;
   int _lastBuiltUnitCount = 0;
 
-  // تحكمات خاصة بإضافة درس جديد
   final _lessonTitleCtrl = TextEditingController();
   final _lessonUrlCtrl = TextEditingController();
 
-  // ✅ متغيرات رفع الصورة
   File? _coverImage;
   String? _uploadedImageUrl;
   bool _isUploadingImage = false;
+
+  String _currentLessonType = 'video';
+  File? _selectedPdfFile;
+  bool _isUploadingPdf = false;
+  String? _uploadedPdfUrl;
 
   final _categories = ['Langues', 'Design', 'Coding', 'Business', 'Marketing'];
 
@@ -54,7 +56,51 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
 
   int get _unitCount => int.tryParse(_unitsCtrl.text) ?? 0;
 
-  // ✅ دالة اختيار ورفع الصورة
+  Future<void> _pickAndUploadPdf() async {
+    // ✅ التصحيح هنا: استخدام FilePicker.platform
+    FilePickerResult? result = await FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf'],
+    );
+
+    if (result != null && result.files.single.path != null) {
+      setState(() {
+        _selectedPdfFile = File(result.files.single.path!);
+        _isUploadingPdf = true;
+        _uploadedPdfUrl = null;
+      });
+
+      try {
+        final url = await CloudinaryService.upload(
+          file: _selectedPdfFile!,
+          folder: 'course_pdfs',
+          resourceType: 'raw',
+        );
+
+        if (url != null) {
+          setState(() {
+            _uploadedPdfUrl = url;
+            _isUploadingPdf = false;
+          });
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('PDF uploaded successfully!'),
+                backgroundColor: AppColors.green,
+              ),
+            );
+          }
+        } else {
+          setState(() => _isUploadingPdf = false);
+          _showError('Failed to upload PDF.');
+        }
+      } catch (e) {
+        setState(() => _isUploadingPdf = false);
+        _showError('Error: $e');
+      }
+    }
+  }
+
   Future<void> _pickAndUploadImage() async {
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
@@ -68,7 +114,6 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
     });
 
     try {
-      // ✅ زيادة الوقت إلى 60 ثانية
       final url = await CloudinaryService.upload(
         file: _coverImage!,
         folder: 'course_covers',
@@ -82,38 +127,29 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
         });
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('✅ Image uploaded successfully!'), backgroundColor: AppColors.green),
+            const SnackBar(
+              content: Text('✅ Image uploaded successfully!'),
+              backgroundColor: AppColors.green,
+            ),
           );
         }
       } else {
-        throw Exception('Cloudinary returned null URL. Check Console for details.');
+        throw Exception('Cloudinary returned null URL.');
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isUploadingImage = false);
-        
-        // ✅ عرض رسالة خطأ واضحة للمستخدم
-        String errorMsg = 'Upload failed.';
-        if (e.toString().contains('Timeout')) {
-          errorMsg = 'Connection timed out. Check your internet or Cloudinary settings.';
-        } else {
-          errorMsg = 'Error: $e';
-        }
-        
-        _showError(errorMsg);
-        debugPrint('❌ Detailed Upload Error: $e');
+        _showError('Upload failed: $e');
       }
     }
   }
 
-  // ── Validation ──────────────────────────────────────────────────────────
   String? _validateStep0() {
     if (_nameCtrl.text.trim().isEmpty)
       return 'Le nom du cours est obligatoire.';
     if (double.tryParse(_priceCtrl.text.trim()) == null)
       return 'Le prix doit être un nombre valide.';
     if (_category == null) return 'Veuillez choisir une catégorie.';
-
     final count = _unitCount;
     if (count <= 0) return "Le nombre d'unités doit être supérieur à 0.";
     if (count > 50) return "Le nombre d'unités ne peut pas dépasser 50.";
@@ -126,8 +162,7 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
       if (_unitLessons[i].isEmpty) emptyUnits.add(i + 1);
     }
     if (emptyUnits.isNotEmpty) {
-      return 'Unité(s) sans contenu : ${emptyUnits.join(', ')}. '
-          'Ajoutez au moins une leçon par unité.';
+      return 'Unité(s) sans contenu : ${emptyUnits.join(', ')}. Ajoutez au moins une leçon par unité.';
     }
     return null;
   }
@@ -149,7 +184,6 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
         _showError(error);
         return;
       }
-
       final count = _unitCount;
       if (count != _lastBuiltUnitCount) {
         if (count > _lastBuiltUnitCount) {
@@ -175,11 +209,10 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
       return;
     }
 
-    // Step 2 → Publish to Firestore ✅
     if (_step == 2) {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
-        _showError('Vous devez être connecté pour publier un cours.');
+        _showError('Vous devez être connecté.');
         return;
       }
 
@@ -196,7 +229,7 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
         }
 
         final course = CourseModel(
-          id: '', 
+          id: '',
           title: _nameCtrl.text.trim(),
           description: _descCtrl.text.trim(),
           instructorId: user.uid,
@@ -204,7 +237,7 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
           category: _category!,
           coursePrice: double.tryParse(_priceCtrl.text) ?? 0.0,
           certificatePrice: double.tryParse(_certificatePriceCtrl.text) ?? 0.0,
-          imageUrl: _uploadedImageUrl, // ✅ استخدام رابط الصورة المرفوع
+          imageUrl: _uploadedImageUrl,
           unitsCount: _unitLessons.length,
           totalLessons: totalLessons,
           createdAt: DateTime.now(),
@@ -212,16 +245,13 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
         );
 
         final courseId = await CoursesService().createCourse(course);
-
         if (courseId != null) {
           await _saveLessonsToFirestore(courseId);
-          Navigator.pop(context); 
-
+          Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Cours publié avec succès !'),
               backgroundColor: AppColors.green,
-              behavior: SnackBarBehavior.floating,
             ),
           );
           Navigator.pushNamedAndRemoveUntil(
@@ -236,7 +266,6 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
       } catch (e) {
         Navigator.pop(context);
         _showError('Erreur: $e');
-        debugPrint(e.toString());
       }
     }
   }
@@ -252,7 +281,7 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
           'orderInUnit': lessonIndex + 1,
           'title': lessonData['title'],
           'videoUrl': lessonData['url'],
-          'type': 'video',
+          'type': lessonData['type'] ?? 'video',
           'createdAt': FieldValue.serverTimestamp(),
         });
       }
@@ -303,7 +332,9 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
                       ),
                       shadows: [
                         BoxShadow(
-                          color: Theme.of(context).shadowColor.withOpacity(0.10),
+                          color: Theme.of(
+                            context,
+                          ).shadowColor.withOpacity(0.10),
                           blurRadius: 2,
                           offset: const Offset(0, 1),
                         ),
@@ -403,7 +434,8 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
                         borderRadius: BorderRadius.circular(14),
                         boxShadow: [
                           BoxShadow(
-                            color: Theme.of(context).brightness == Brightness.dark
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
                                 ? AppColors.green.withOpacity(0.25)
                                 : const Color(0xFFB9F8CF),
                             blurRadius: 15,
@@ -449,8 +481,8 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
                 color: isComplete
                     ? AppColors.green
                     : isActive
-                        ? AppColors.green
-                        : c.iconBg,
+                    ? AppColors.green
+                    : c.iconBg,
                 shape: BoxShape.circle,
                 border: isActive
                     ? Border.all(
@@ -461,7 +493,9 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
               ),
               child: Icon(
                 isComplete ? Icons.check_rounded : Icons.circle_outlined,
-                color: (isComplete || isActive) ? Colors.white : c.textSecondary,
+                color: (isComplete || isActive)
+                    ? Colors.white
+                    : c.textSecondary,
                 size: isActive ? 20 : 16,
               ),
             ),
@@ -487,23 +521,21 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
     children: [
       _label('Nom du cours *', c),
       const SizedBox(height: 8),
-      _field(_nameCtrl, 'Ex: Maîtriser React et TypeScript', c),
+      _field(_nameCtrl, 'Ex: Maîtriser React', c),
       const SizedBox(height: 16),
-
-      _label('Description du cours', c),
+      _label('Description', c),
       const SizedBox(height: 8),
-      _field(_descCtrl, 'Décrivez votre cours...', c, maxLines: 4),
+      _field(_descCtrl, 'Décrivez...', c, maxLines: 4),
       const SizedBox(height: 16),
-
       Row(
         children: [
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _label('Prix du cours (€)', c),
+                _label('Prix (€)', c),
                 const SizedBox(height: 8),
-                _field(_priceCtrl, '0 (Gratuit)', c, keyboardType: TextInputType.number),
+                _field(_priceCtrl, '0', c, keyboardType: TextInputType.number),
               ],
             ),
           ),
@@ -514,14 +546,19 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
               children: [
                 _label('Catégorie *', c),
                 const SizedBox(height: 8),
-                _dropdown(_category, 'Choisir', _categories, (v) => setState(() => _category = v), c),
+                _dropdown(
+                  _category,
+                  'Choisir',
+                  _categories,
+                  (v) => setState(() => _category = v),
+                  c,
+                ),
               ],
             ),
           ),
         ],
       ),
       const SizedBox(height: 16),
-
       Row(
         children: [
           Expanded(
@@ -530,29 +567,38 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
               children: [
                 _label('Prix Certificat (€)', c),
                 const SizedBox(height: 8),
-                _field(_certificatePriceCtrl, '10', c, keyboardType: TextInputType.number),
+                _field(
+                  _certificatePriceCtrl,
+                  '10',
+                  c,
+                  keyboardType: TextInputType.number,
+                ),
               ],
             ),
           ),
         ],
       ),
       const SizedBox(height: 16),
-
-      _label("Nombre d'unités (chapitres) *", c),
+      _label("Nombre d'unités *", c),
       const SizedBox(height: 8),
-      _field(_unitsCtrl, 'Ex: 5', c, keyboardType: TextInputType.number, onChanged: (_) => setState(() {})),
+      _field(
+        _unitsCtrl,
+        'Ex: 5',
+        c,
+        keyboardType: TextInputType.number,
+        onChanged: (_) => setState(() {}),
+      ),
       if (_unitsCtrl.text.isNotEmpty) ...[
         const SizedBox(height: 4),
         Padding(
           padding: const EdgeInsets.only(left: 4),
           child: Text(
             'Vous allez créer $_unitCount unité(s)',
-            style: TextStyle(color: c.textSecondary, fontSize: 13, fontFamily: 'Inter'),
+            style: TextStyle(color: c.textSecondary, fontSize: 13),
           ),
         ),
       ],
       const SizedBox(height: 16),
-
       _label('Image de couverture', c),
       const SizedBox(height: 8),
       GestureDetector(
@@ -570,47 +616,49 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
           child: _isUploadingImage
               ? const Center(child: CircularProgressIndicator())
               : _uploadedImageUrl != null
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(14),
-                      child: Image.network(_uploadedImageUrl!, fit: BoxFit.cover),
-                    )
-                  : _coverImage != null
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(14),
-                          child: Image.file(_coverImage!, fit: BoxFit.cover),
-                        )
-                      : Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.cloud_upload_outlined, size: 32, color: c.textSecondary),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Appuyez pour sélectionner une image',
-                              style: TextStyle(color: c.textSecondary, fontSize: 14, fontFamily: 'Inter', fontWeight: FontWeight.w500),
-                            ),
-                          ],
-                        ),
+              ? ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: Image.network(_uploadedImageUrl!, fit: BoxFit.cover),
+                )
+              : _coverImage != null
+              ? ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: Image.file(_coverImage!, fit: BoxFit.cover),
+                )
+              : Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.cloud_upload_outlined,
+                      size: 32,
+                      color: c.textSecondary,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Appuyez pour sélectionner',
+                      style: TextStyle(color: c.textSecondary, fontSize: 14),
+                    ),
+                  ],
+                ),
         ),
       ),
     ],
   );
 
   Widget _step2(ThemeColors c) {
-    if (_unitLessons.isEmpty) {
+    if (_unitLessons.isEmpty)
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
           child: Text(
-            "Aucune unité définie. Retournez à l'étape 1.",
+            "Aucune unité définie.",
             textAlign: TextAlign.center,
-            style: TextStyle(color: c.textSecondary, fontFamily: 'Inter', fontSize: 14),
+            style: TextStyle(color: c.textSecondary),
           ),
         ),
       );
-    }
 
     final totalUnits = _unitLessons.length;
-    final lessons = _unitLessons[_currentUnit];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -620,97 +668,202 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
           children: [
             Text(
               'Unité ${_currentUnit + 1} sur $totalUnits',
-              style: TextStyle(color: c.textPrimary, fontSize: 18, fontFamily: 'Inter', fontWeight: FontWeight.w700),
+              style: TextStyle(
+                color: c.textPrimary,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+              ),
             ),
             Row(
               children: [
                 if (_currentUnit > 0)
-                  _iconBtn(Icons.chevron_left_rounded, c, () => setState(() { _lessonTitleCtrl.clear(); _lessonUrlCtrl.clear(); _currentUnit--; })),
+                  _iconBtn(
+                    Icons.chevron_left_rounded,
+                    c,
+                    () => setState(() {
+                      _lessonTitleCtrl.clear();
+                      _lessonUrlCtrl.clear();
+                      _currentUnit--;
+                    }),
+                  ),
                 const SizedBox(width: 8),
                 if (_currentUnit < totalUnits - 1)
-                  _iconBtn(Icons.chevron_right_rounded, c, () => setState(() { _lessonTitleCtrl.clear(); _lessonUrlCtrl.clear(); _currentUnit++; })),
+                  _iconBtn(
+                    Icons.chevron_right_rounded,
+                    c,
+                    () => setState(() {
+                      _lessonTitleCtrl.clear();
+                      _lessonUrlCtrl.clear();
+                      _currentUnit++;
+                    }),
+                  ),
               ],
             ),
           ],
         ),
         const SizedBox(height: 16),
 
-        _label("Titre de la leçon", c),
-        const SizedBox(height: 8),
-        _field(_lessonTitleCtrl, 'Ex: Introduction', c),
-        const SizedBox(height: 12),
-
-        _label("Lien YouTube / Vimeo", c),
-        const SizedBox(height: 8),
         Row(
           children: [
-            Expanded(child: _field(_lessonUrlCtrl, 'https://youtube.com/...', c)),
-            const SizedBox(width: 8),
-            GestureDetector(
-              onTap: () {
-                final url = _lessonUrlCtrl.text.trim();
-                final title = _lessonTitleCtrl.text.trim();
-                if (url.isNotEmpty && title.isNotEmpty) {
+            Expanded(
+              child: RadioListTile<String>(
+                title: const Text('Video'),
+                value: 'video',
+                groupValue: _currentLessonType,
+                onChanged: (val) {
                   setState(() {
-                    _unitLessons[_currentUnit].add({'title': title, 'url': url});
-                    _lessonTitleCtrl.clear();
+                    _currentLessonType = val!;
+                    _uploadedPdfUrl = null;
+                  });
+                },
+                contentPadding: EdgeInsets.zero,
+                activeColor: AppColors.primary,
+              ),
+            ),
+            Expanded(
+              child: RadioListTile<String>(
+                title: const Text('PDF'),
+                value: 'pdf',
+                groupValue: _currentLessonType,
+                onChanged: (val) {
+                  setState(() {
+                    _currentLessonType = val!;
                     _lessonUrlCtrl.clear();
                   });
+                },
+                contentPadding: EdgeInsets.zero,
+                activeColor: AppColors.primary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        _label("Titre", c),
+        const SizedBox(height: 8),
+        _field(_lessonTitleCtrl, 'Titre...', c),
+        const SizedBox(height: 16),
+
+        if (_currentLessonType == 'video') ...[
+          _label("Lien YouTube", c),
+          const SizedBox(height: 8),
+          _field(_lessonUrlCtrl, 'https://...', c),
+        ] else ...[
+          _label("Fichier PDF", c),
+          const SizedBox(height: 8),
+          GestureDetector(
+            onTap: _isUploadingPdf ? null : _pickAndUploadPdf,
+            child: Container(
+              width: double.infinity,
+              height: 50,
+              decoration: ShapeDecoration(
+                color: c.inputBg,
+                shape: RoundedRectangleBorder(
+                  side: BorderSide(width: 1.17, color: c.border),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              child: _isUploadingPdf
+                  ? const Center(child: CircularProgressIndicator())
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.upload_file, color: AppColors.primary),
+                        const SizedBox(width: 8),
+                        Text(
+                          _uploadedPdfUrl != null
+                              ? 'PDF Prêt ✅'
+                              : 'Uploader PDF',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+            ),
+          ),
+        ],
+        const SizedBox(height: 16),
+
+        Row(
+          children: [
+            const Spacer(),
+            GestureDetector(
+              onTap: () {
+                final title = _lessonTitleCtrl.text.trim();
+                if (_currentLessonType == 'video') {
+                  final url = _lessonUrlCtrl.text.trim();
+                  if (url.isNotEmpty && title.isNotEmpty) {
+                    setState(() {
+                      _unitLessons[_currentUnit].add({
+                        'title': title,
+                        'url': url,
+                        'type': 'video',
+                      });
+                      _lessonTitleCtrl.clear();
+                      _lessonUrlCtrl.clear();
+                    });
+                  } else {
+                    _showError('Titre et URL requis');
+                  }
                 } else {
-                  _showError('Veuillez entrer un titre et un lien.');
+                  if (_uploadedPdfUrl != null && title.isNotEmpty) {
+                    setState(() {
+                      _unitLessons[_currentUnit].add({
+                        'title': title,
+                        'url': _uploadedPdfUrl!,
+                        'type': 'pdf',
+                      });
+                      _lessonTitleCtrl.clear();
+                      _uploadedPdfUrl = null;
+                    });
+                  } else {
+                    _showError('Titre et PDF requis');
+                  }
                 }
               },
               child: Container(
                 width: 52,
                 height: 50,
-                decoration: BoxDecoration(color: AppColors.green, borderRadius: BorderRadius.circular(14)),
-                child: const Icon(Icons.add_rounded, color: Colors.white),
+                decoration: BoxDecoration(
+                  color: AppColors.green,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(Icons.add, color: Colors.white),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 8),
-
-        Text(
-          '${_unitLessons[_currentUnit].length} leçon(s) ajoutée(s)',
-          style: TextStyle(color: c.textSecondary, fontSize: 14, fontFamily: 'Inter'),
-        ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 16),
 
         ...List.generate(_unitLessons[_currentUnit].length, (i) {
           final lesson = _unitLessons[_currentUnit][i];
+          final isPdf = lesson['type'] == 'pdf';
           return Container(
             margin: const EdgeInsets.only(bottom: 8),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            padding: const EdgeInsets.all(12),
             decoration: ShapeDecoration(
               color: c.surface,
               shape: RoundedRectangleBorder(
-                side: BorderSide(width: 1.17, color: c.border),
+                side: BorderSide(color: c.border),
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
             child: Row(
               children: [
-                Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(color: c.iconBg, borderRadius: BorderRadius.circular(10)),
-                  child: Icon(Icons.play_circle_outline_rounded, color: AppColors.green, size: 18),
+                Icon(
+                  isPdf ? Icons.picture_as_pdf : Icons.play_circle,
+                  color: isPdf ? Colors.red : AppColors.green,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(lesson['title']!, style: TextStyle(color: c.textPrimary, fontSize: 14, fontFamily: 'Inter', fontWeight: FontWeight.w500)),
-                      const SizedBox(height: 2),
-                      Text(lesson['url']!, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textMuted, fontSize: 12, fontFamily: 'Inter')),
-                    ],
+                  child: Text(
+                    lesson['title']!,
+                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
-                GestureDetector(
-                  onTap: () => setState(() => _unitLessons[_currentUnit].removeAt(i)),
-                  child: const Icon(Icons.delete_outline_rounded, color: AppColors.red, size: 20),
+                IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.red),
+                  onPressed: () =>
+                      setState(() => _unitLessons[_currentUnit].removeAt(i)),
                 ),
               ],
             ),
@@ -721,107 +874,57 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
   }
 
   Widget _step3(ThemeColors c) {
-    final totalVideos = _unitLessons.fold(0, (sum, v) => sum + v.length);
+    final total = _unitLessons.fold(0, (sum, v) => sum + v.length);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(25),
+          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Theme.of(context).brightness == Brightness.dark ? AppColors.green.withOpacity(0.10) : const Color(0xFFF0FDF4),
-            border: Border.all(
-              color: Theme.of(context).brightness == Brightness.dark ? AppColors.green.withOpacity(0.30) : const Color(0xFFB9F8CF),
-              width: 1.17,
-            ),
+            color: AppColors.green.withOpacity(0.1),
             borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.green),
           ),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: const BoxDecoration(color: AppColors.green, shape: BoxShape.circle),
-                    child: const Icon(Icons.check_rounded, color: Colors.white, size: 20),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Récapitulatif du cours',
-                    style: TextStyle(color: c.textPrimary, fontSize: 18, fontFamily: 'Inter', fontWeight: FontWeight.w700),
-                  ),
-                ],
+              Text(
+                'Récapitulatif',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 16),
-              _summaryCard('Nom du cours', _nameCtrl.text.isNotEmpty ? _nameCtrl.text : '—', c),
-              const SizedBox(height: 12),
-              _summaryCard('Description', _descCtrl.text.isNotEmpty ? _descCtrl.text : '—', c),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(child: _summaryCard('Prix Cours', '${_priceCtrl.text} €', c, valueColor: AppColors.green)),
-                  const SizedBox(width: 12),
-                  Expanded(child: _summaryCard('Prix Certif', '${_certificatePriceCtrl.text} €', c)),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: c.surface.withOpacity(0.6), borderRadius: BorderRadius.circular(10)),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Contenu', style: TextStyle(color: c.textSecondary, fontSize: 12, fontFamily: 'Inter')),
-                    const SizedBox(height: 4),
-                    Text('${_unitLessons.length} Unités • $totalVideos Leçons', style: TextStyle(color: c.textPrimary, fontSize: 14, fontWeight: FontWeight.bold)),
-                  ],
-                ),
+              const SizedBox(height: 10),
+              Text(
+                '${_unitLessons.length} Unités • $total Leçons',
+                style: TextStyle(fontWeight: FontWeight.bold),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 16),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(17),
-          decoration: BoxDecoration(
-            color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1447E6).withOpacity(0.12) : const Color(0xFFEFF6FF),
-            border: Border.all(
-              color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1447E6).withOpacity(0.35) : const Color(0xFFBEDBFF),
-              width: 1.17,
-            ),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Text.rich(
-            TextSpan(
-              children: [
-                const TextSpan(text: '✨ Prêt à publier ? ', style: TextStyle(color: Color(0xFF1447E6), fontSize: 14, fontFamily: 'Inter', fontWeight: FontWeight.w700)),
-                TextSpan(text: 'Appuyez sur "Publier" pour mettre en ligne.', style: TextStyle(color: c.textSecondary, fontSize: 13, fontFamily: 'Inter')),
-              ],
-            ),
+        const SizedBox(height: 20),
+        Center(
+          child: Text(
+            'Prêt à publier !',
+            style: TextStyle(color: c.textSecondary),
           ),
         ),
       ],
     );
   }
 
-  Widget _iconBtn(IconData icon, ThemeColors c, VoidCallback onTap) => GestureDetector(
+  Widget _iconBtn(IconData icon, ThemeColors c, VoidCallback onTap) =>
+      GestureDetector(
         onTap: onTap,
         child: Container(
           width: 36,
           height: 36,
-          decoration: BoxDecoration(color: c.iconBg, borderRadius: BorderRadius.circular(10)),
-          child: Icon(icon, color: c.textPrimary, size: 20),
+          decoration: BoxDecoration(
+            color: c.iconBg,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, size: 20),
         ),
       );
-
-  Widget _label(String text, ThemeColors c) => Text(
-        text,
-        style: TextStyle(color: c.textPrimary, fontSize: 14, fontFamily: 'Inter', fontWeight: FontWeight.w700),
-      );
-
+  Widget _label(String text, ThemeColors c) =>
+      Text(text, style: TextStyle(fontWeight: FontWeight.bold));
   Widget _field(
     TextEditingController ctrl,
     String hint,
@@ -829,69 +932,51 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
     int maxLines = 1,
     TextInputType? keyboardType,
     ValueChanged<String>? onChanged,
-  }) =>
-      Container(
-        decoration: ShapeDecoration(
-          color: c.inputBg,
-          shape: RoundedRectangleBorder(
-            side: BorderSide(width: 1.17, color: c.border),
-            borderRadius: BorderRadius.circular(14),
-          ),
-        ),
-        child: TextField(
-          controller: ctrl,
-          maxLines: maxLines,
-          keyboardType: keyboardType,
-          onChanged: onChanged,
-          style: TextStyle(color: c.textPrimary),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: TextStyle(color: c.textMuted, fontSize: 16, fontFamily: 'Inter'),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            border: InputBorder.none,
-          ),
-        ),
-      );
-
+  }) => Container(
+    decoration: ShapeDecoration(
+      color: c.inputBg,
+      shape: RoundedRectangleBorder(
+        side: BorderSide(color: c.border),
+        borderRadius: BorderRadius.circular(14),
+      ),
+    ),
+    child: TextField(
+      controller: ctrl,
+      maxLines: maxLines,
+      keyboardType: keyboardType,
+      onChanged: onChanged,
+      decoration: InputDecoration(
+        hintText: hint,
+        border: InputBorder.none,
+        contentPadding: const EdgeInsets.all(16),
+      ),
+    ),
+  );
   Widget _dropdown(
     String? value,
     String hint,
     List<String> items,
     ValueChanged<String?> onChange,
     ThemeColors c,
-  ) =>
-      Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: ShapeDecoration(
-          color: c.inputBg,
-          shape: RoundedRectangleBorder(
-            side: BorderSide(width: 1.17, color: c.border),
-            borderRadius: BorderRadius.circular(14),
-          ),
-        ),
-        child: DropdownButtonHideUnderline(
-          child: DropdownButton<String>(
-            value: value,
-            isExpanded: true,
-            dropdownColor: c.surface,
-            hint: Text(hint, style: TextStyle(color: c.textMuted, fontSize: 14, fontFamily: 'Inter')),
-            items: items.map((e) => DropdownMenuItem(value: e, child: Text(e, style: TextStyle(color: c.textPrimary, fontFamily: 'Inter', fontSize: 14)))).toList(),
-            onChanged: onChange,
-          ),
-        ),
-      );
-
-  Widget _summaryCard(String label, String value, ThemeColors c, {Color? valueColor}) => Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(color: c.surface.withOpacity(0.6), borderRadius: BorderRadius.circular(10)),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(label, style: TextStyle(color: c.textSecondary, fontSize: 12, fontFamily: 'Inter')),
-            const SizedBox(height: 4),
-            Text(value, style: TextStyle(color: valueColor ?? c.textPrimary, fontSize: 15, fontFamily: 'Inter', fontWeight: FontWeight.w700)),
-          ],
-        ),
-      );
+  ) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 12),
+    decoration: ShapeDecoration(
+      color: c.inputBg,
+      shape: RoundedRectangleBorder(
+        side: BorderSide(color: c.border),
+        borderRadius: BorderRadius.circular(14),
+      ),
+    ),
+    child: DropdownButtonHideUnderline(
+      child: DropdownButton<String>(
+        value: value,
+        isExpanded: true,
+        hint: Text(hint),
+        items: items
+            .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+            .toList(),
+        onChanged: onChange,
+      ),
+    ),
+  );
 }

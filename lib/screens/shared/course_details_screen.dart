@@ -441,20 +441,20 @@ class _CourseCurriculum extends StatelessWidget {
                     data['type'] == 'video' ? 'Video' : 'PDF',
                     style: TextStyle(color: c.textMuted, fontSize: 10),
                   ),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => LessonPlayerScreen(
-                          videoUrl: data['videoUrl'],
-                          lessonTitle: data['title'],
-                          courseId: courseId,
-                          lessonId: doc.id,
-                        ),
-                      ),
-                    );
-                  },
-                );
+onTap: () {
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => LessonPlayerScreen(
+        videoUrl: data['videoUrl'],
+        lessonTitle: data['title'],
+        courseId: courseId,
+        lessonId: doc.id,
+        lessonType: data['type'] ?? 'video', // ✅ تمرير النوع
+      ),
+    ),
+  );
+},                );
               }).toList(),
             );
           }).toList(),
