@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:minipr/screens/shared/lesson_player_screen.dart';
 import 'package:minipr/services/progress_service.dart';
+import 'package:minipr/services/rating_service.dart'; // ✅ استيراد خدمة التقييمات
 import '../../theme/app_colors.dart';
 import '../../models/course_model.dart';
 import '../../services/courses_service.dart';
@@ -28,6 +29,63 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
         ProgressService().updateTotalLessons(course.id, course.totalLessons);
       }
     });
+  }
+
+  // ✅ دالة إظهار نافذة التقييم
+  void _showRatingDialog(BuildContext context, String courseId) {
+    int selectedRating = 0;
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Rate this Course', style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.bold)),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('How was your experience?', style: TextStyle(color: Colors.grey)),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(5, (index) {
+                      return IconButton(
+                        icon: Icon(
+                          index < selectedRating ? Icons.star : Icons.star_border,
+                          color: Colors.amber,
+                          size: 32,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            selectedRating = index + 1;
+                          });
+                        },
+                      );
+                    }),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: selectedRating == 0
+                      ? null
+                      : () async {
+                          await RatingService().rateCourse(courseId, selectedRating);
+                          if (mounted) Navigator.pop(ctx);
+                        },
+                  child: const Text('Submit Rating'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -134,7 +192,20 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
                                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                                   children: [
                                     _StatItem(icon: Icons.play_circle_outline, label: '${course.totalLessons} Lessons', c: c),
-                                    _StatItem(icon: Icons.star_rounded, label: '5.0', c: c),
+                                    
+                                    // ✅✅✅ تعديل عرض التقييم ليصبح ديناميكياً ✅✅✅
+                                    StreamBuilder<Map<String, dynamic>>(
+                                      stream: RatingService().getCourseRatingStats(course.id),
+                                      builder: (context, ratingSnap) {
+                                        final stats = ratingSnap.data ?? {'average': 0.0, 'count': 0};
+                                        final avg = stats['average'] as double;
+                                        final count = stats['count'] as int;
+                                        
+                                        String label = count > 0 ? '${avg.toStringAsFixed(1)} ($count)' : 'No ratings';
+                                        return _StatItem(icon: Icons.star_rounded, label: label, c: c);
+                                      },
+                                    ),
+
                                     _StatItem(icon: Icons.people_alt_rounded, label: '${course.enrolledStudents} Students', c: c),
                                   ],
                                 ),
@@ -199,24 +270,60 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
               color: c.surface,
               boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))],
             ),
-            child: Row(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                Row(
                   children: [
-                    Text('Certificate Price', style: TextStyle(color: c.textMuted, fontSize: 12)),
-                    Text('${course.certificatePrice} €', style: TextStyle(color: c.textPrimary, fontSize: 20, fontWeight: FontWeight.bold)),
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Certificate Price', style: TextStyle(color: c.textMuted, fontSize: 12)),
+                        Text('${course.certificatePrice} €', style: TextStyle(color: c.textPrimary, fontSize: 20, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    const Spacer(),
+                    
+                    // ✅ زر التقييم الواضح والمميز
+                    StreamBuilder<int?>(
+                      stream: RatingService().getUserRatingStream(course.id),
+                      builder: (context, snap) {
+                        final userRating = snap.data;
+                        return OutlinedButton.icon(
+                          onPressed: () => _showRatingDialog(context, course.id),
+                          icon: Icon(
+                            userRating != null ? Icons.star : Icons.star_border_outlined,
+                            color: userRating != null ? Colors.amber : AppColors.primary,
+                            size: 20,
+                          ),
+                          label: Text(
+                            userRating != null ? 'Rated' : 'Rate Course',
+                            style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600, fontSize: 14),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(color: userRating != null ? Colors.amber.withOpacity(0.5) : AppColors.primary.withOpacity(0.3)),
+                            backgroundColor: userRating != null ? Colors.amber.withOpacity(0.1) : Colors.transparent,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          ),
+                        );
+                      },
+                    ),
                   ],
                 ),
-                const Spacer(),
-                Expanded(
+                
+                const SizedBox(height: 12),
+
+                // زر بدء التعلم يأخذ العرض الكامل في الأسفل
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
                   child: ElevatedButton(
                     onPressed: () { debugPrint('Start Learning pressed'); },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.green,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     ),
                     child: const Text('Start Learning', style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700, fontSize: 16)),
@@ -226,8 +333,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
             ),
           );
         },
-      ),
-    );
+      ),    );
   }
 }
 
@@ -273,7 +379,6 @@ class _CourseCurriculum extends StatelessWidget {
         final allLessons = lessonsSnap.data!;
         if (allLessons.isEmpty) return Text('No lessons yet', style: TextStyle(color: c.textMuted));
 
-        // ✅ إنشاء قائمة مسطحة لجميع الدروس بالترتيب الصحيح عالمياً
         List<DocumentSnapshot> flatLessons = [];
         Map<int, List<DocumentSnapshot>> units = {};
         
@@ -281,10 +386,9 @@ class _CourseCurriculum extends StatelessWidget {
           final unitNum = lesson['unitNumber'] as int;
           if (!units.containsKey(unitNum)) units[unitNum] = [];
           units[unitNum]!.add(lesson);
-          flatLessons.add(lesson); // إضافة للقائمة المسطحة
+          flatLessons.add(lesson);
         }
 
-        // إنشاء خريطة للوصول السريع لموقع كل درس في القائمة المسطحة
         Map<String, int> lessonIndexMap = {};
         for (int i = 0; i < flatLessons.length; i++) {
           lessonIndexMap[flatLessons[i].id] = i;
@@ -308,8 +412,6 @@ class _CourseCurriculum extends StatelessWidget {
                     final data = doc.data() as Map<String, dynamic>;
                     final currentGlobalIndex = lessonIndexMap[doc.id] ?? 0;
                     
-                    // ✅ منطق القفل الدقيق:
-                    // الدرس مقفل إذا لم يكن الأول (index > 0) والدرس السابق له في القائمة العالمية غير مكتمل
                     bool isLocked = false;
                     if (currentGlobalIndex > 0) {
                       final prevLessonId = flatLessons[currentGlobalIndex - 1].id;
@@ -329,22 +431,23 @@ class _CourseCurriculum extends StatelessWidget {
                       ),
                       title: Text(data['title'] ?? 'Untitled', style: TextStyle(color: isLocked ? c.textMuted : c.textPrimary, fontSize: 14, fontFamily: 'Inter')),
                       trailing: isLocked ? null : Text(data['type'] == 'video' ? 'Video' : 'PDF', style: TextStyle(color: c.textMuted, fontSize: 10)),
-onTap: () {
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (_) => LessonPlayerScreen(
-        videoUrl: data['videoUrl'],
-        lessonTitle: data['title'],
-        courseId: courseId,
-        lessonId: doc.id,
-        lessonType: data['type'] ?? 'video',
-        isLocked: isLocked, // ✅ تمرير حالة القفل
-        description: data['description'] ?? '', // ✅ تمرير الوصف
-      ),
-    ),
-  );
-},                    );
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => LessonPlayerScreen(
+                              videoUrl: data['videoUrl'],
+                              lessonTitle: data['title'],
+                              courseId: courseId,
+                              lessonId: doc.id,
+                              lessonType: data['type'] ?? 'video',
+                              isLocked: isLocked,
+                              description: data['description'] ?? '',
+                            ),
+                          ),
+                        );
+                      },
+                    );
                   }).toList(),
                 );
               }).toList(),
