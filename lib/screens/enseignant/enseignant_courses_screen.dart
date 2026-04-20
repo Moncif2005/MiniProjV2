@@ -1,7 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:minipr/screens/enseignant/edit_course_screen.dart';
 import 'package:minipr/screens/shared/course_details_screen.dart';
 import 'package:minipr/screens/shared/public_teacher_profile_screen.dart';
+import 'package:minipr/services/courses_service.dart';
 import '../../theme/app_colors.dart';
 import '../../services/courses_service.dart';
 import '../../models/course_model.dart';
@@ -70,7 +72,7 @@ class _EnseignantCoursesScreenState extends State<EnseignantCoursesScreen> with 
 }
 
 // ─────────────────────────────────────────────────────────────
-// ✅ التبويب الأول: كورساتي (كما هو)
+// ✅ التبويب الأول: كورساتي
 // ─────────────────────────────────────────────────────────────
 class _MyCoursesTab extends StatelessWidget {
   @override
@@ -117,7 +119,7 @@ class _MyCoursesTab extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────
-// ✅ التبويب الثاني: استكشاف (منظم مع بحث وفلاتر)
+// ✅ التبويب الثاني: استكشاف
 // ─────────────────────────────────────────────────────────────
 class _ExploreCoursesTab extends StatefulWidget {
   @override
@@ -229,7 +231,6 @@ class _ExploreCoursesTabState extends State<_ExploreCoursesTab> {
                 );
               }
 
-              // ✅ فلترة محلية للبحث (Search Filter)
               var courses = snapshot.data!;
               if (_searchQuery.isNotEmpty) {
                 courses = courses.where((course) => 
@@ -261,15 +262,107 @@ class _ExploreCoursesTabState extends State<_ExploreCoursesTab> {
 }
 
 // ─────────────────────────────────────────────────────────────
-// ✅ بطاقة كورساتي
+// ✅ بطاقة كورساتي (مع شارة حالة واضحة ورسالة توضيحية)
+// ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// ✅ بطاقة كورساتي (مع قائمة إدارة: تعديل وحذف)
 // ─────────────────────────────────────────────────────────────
 class _MyCourseCard extends StatelessWidget {
   final CourseModel course;
   final ThemeColors c;
   const _MyCourseCard({required this.course, required this.c});
 
+  void _showManageOptions(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Manage Course', style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.bold)),
+        content: Text('What would you like to do with "${course.title}"?'),
+        actions: [
+          // زر الإلغاء
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Cancel', style: TextStyle(color: c.textSecondary)),
+          ),
+          
+          // زر التعديل
+          TextButton.icon(
+            onPressed: () {
+              Navigator.pop(ctx); // إغلاق النافذة
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => EditCourseScreen(courseId: course.id),
+                ),
+              );
+            },
+            icon: Icon(Icons.edit, color: AppColors.primary),
+            label: Text('Edit', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600)),
+          ),
+          
+          // زر الحذف
+          TextButton.icon(
+            onPressed: () async {
+              Navigator.pop(ctx); // إغلاق نافذة الخيارات
+              
+              // تأكيد الحذف
+              bool? confirmDelete = await showDialog<bool>(
+                context: context,
+                builder: (ctx2) => AlertDialog(
+                  title: Text('Delete Course?', style: TextStyle(color: AppColors.red, fontWeight: FontWeight.bold)),
+                  content: Text('Are you sure? This action cannot be undone.'),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(ctx2, false), child: Text('Cancel')),
+                    FilledButton(onPressed: () => Navigator.pop(ctx2, true), child: Text('Delete')),
+                  ],
+                ),
+              );
+
+              if (confirmDelete == true) {
+                // تنفيذ الحذف
+                final success = await CoursesService().deleteCourse(course.id);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(success ? 'Course deleted successfully' : 'Failed to delete'),
+                      backgroundColor: success ? AppColors.green : AppColors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            icon: Icon(Icons.delete_outline, color: AppColors.red),
+            label: Text('Delete', style: TextStyle(color: AppColors.red, fontWeight: FontWeight.w600)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    // تحديد خصائص الشارة حسب الحالة
+    Color statusColor;
+    String statusText;
+    String? message;
+
+    switch (course.status) {
+      case 'approved':
+        statusColor = AppColors.green;
+        statusText = 'Published';
+        message = null;
+        break;
+      case 'rejected':
+        statusColor = AppColors.red;
+        statusText = 'Rejected';
+        message = 'Check admin feedback.';
+        break;
+      default: // pending
+        statusColor = Colors.orange;
+        statusText = 'Pending Review';
+        message = 'Waiting for approval...';
+    }
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
@@ -294,20 +387,49 @@ class _MyCourseCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(course.title, style: TextStyle(color: c.textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
-                    Text('${course.totalLessons} leçons • ${course.unitsCount} unités', style: TextStyle(color: c.textSecondary, fontSize: 12)),
+                    Text('${course.totalLessons} lessons • ${course.unitsCount} units', style: TextStyle(color: c.textSecondary, fontSize: 12)),
                   ],
+                ),
+              ),
+              // شارة الحالة
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: statusColor.withOpacity(0.3)),
+                ),
+                child: Text(
+                  statusText,
+                  style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold, fontFamily: 'Inter'),
                 ),
               ),
             ],
           ),
+          
+          if (message != null) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(Icons.info_outline, size: 14, color: statusColor),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(message, style: TextStyle(color: c.textMuted, fontSize: 12, fontStyle: FontStyle.italic)),
+                ),
+              ],
+            ),
+          ],
+
           const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('${course.certificatePrice} € / Certificat', style: TextStyle(color: AppColors.green, fontWeight: FontWeight.bold)),
+              Text('${course.certificatePrice} € / Cert', style: TextStyle(color: AppColors.green, fontWeight: FontWeight.bold)),
+              
+              // ✅✅✅ زر Manage الجديد ✅✅✅
               TextButton(
-                onPressed: () {},
-                child: Text('Gérer', style: TextStyle(color: AppColors.primary)),
+                onPressed: () => _showManageOptions(context),
+                child: Text('Manage', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600)),
               )
             ],
           )
@@ -316,9 +438,8 @@ class _MyCourseCard extends StatelessWidget {
     );
   }
 }
-
 // ─────────────────────────────────────────────────────────────
-// ✅ بطاقة الاستكشاف (مع أفاتار قابل للنقر)
+// ✅ بطاقة الاستكشاف
 // ─────────────────────────────────────────────────────────────
 class _ExploreCourseCard extends StatelessWidget {
   final CourseModel course;
@@ -340,7 +461,6 @@ class _ExploreCourseCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              // ✅✅✅ أفاتار المعلم القابل للنقر ✅✅✅
               GestureDetector(
                 onTap: () {
                   Navigator.push(
@@ -355,10 +475,8 @@ class _ExploreCourseCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: AppColors.purpleLight, 
                     borderRadius: BorderRadius.circular(12),
-                    // إذا كان لديك رابط لصورة المعلم في CourseModel، استخدمه هنا:
-                    // image: course.instructorAvatar != null ? DecorationImage(image: NetworkImage(course.instructorAvatar!), fit: BoxFit.cover) : null,
                   ),
-                  child: Icon(Icons.school, color: AppColors.purple), // أو Icons.person
+                  child: Icon(Icons.school, color: AppColors.purple),
                 ),
               ),
               const SizedBox(width: 12),
@@ -367,8 +485,6 @@ class _ExploreCourseCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(course.title, style: TextStyle(color: c.textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
-                    
-                    // جعل اسم المعلم أيضاً قابلاً للنقر لنفس الصفحة
                     GestureDetector(
                       onTap: () {
                          Navigator.push(

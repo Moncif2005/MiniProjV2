@@ -242,9 +242,9 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
           unitsCount: _unitLessons.length,
           totalLessons: totalLessons,
           createdAt: DateTime.now(),
-          isPublished: true,
+          isPublished: false, // ✅ لا ننشره فوراً
+          status: 'pending',  // ✅ نضعه قيد المراجعة
         );
-
         final courseId = await CoursesService().createCourse(course);
         if (courseId != null) {
           await _saveLessonsToFirestore(courseId);
