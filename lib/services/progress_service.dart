@@ -86,4 +86,17 @@ class ProgressService {
       return completedLessons.contains(lessonId);
     });
   }
-}
+
+  /// ✅ جلب معرفات الدروس المكتملة فقط (لتسريع عملية القفل)
+  Stream<Set<String>> getCompletedLessonsStream(String courseId) {
+    if (_uid == null || _progressRef == null) return Stream.value({});
+
+    return _progressRef!.doc(courseId).snapshots().map((snapshot) {
+      if (!snapshot.exists) return <String>{};
+      final data = snapshot.data()!;
+      // تحويل القائمة إلى Set للبحث السريع
+      final completedList = List<String>.from(data['completedLessons'] ?? []);
+      return completedList.toSet();
+    });
+  }
+} // ✅ نهاية الكلاس هنا
