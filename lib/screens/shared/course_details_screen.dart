@@ -248,7 +248,6 @@ class _StatItem extends StatelessWidget {
   }
 }
 
-// ✅✅✅ تعديل كلاس المنهج لإضافة القفل المتسلسل ✅✅✅
 class _CourseCurriculum extends StatelessWidget {
   final String courseId;
   final ThemeColors c;
@@ -256,7 +255,6 @@ class _CourseCurriculum extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 1. جلب الدروس
     final lessonsStream = FirebaseFirestore.instance
         .collection('courses')
         .doc(courseId)
@@ -265,7 +263,6 @@ class _CourseCurriculum extends StatelessWidget {
         .orderBy('orderInUnit')
         .snapshots();
 
-    // 2. جلب الدروس المكتملة لهذا الكورس
     final completedStream = ProgressService().getCompletedLessonsStream(courseId);
 
     return StreamBuilder<List<DocumentSnapshot>>(
@@ -276,15 +273,23 @@ class _CourseCurriculum extends StatelessWidget {
         final allLessons = lessonsSnap.data!;
         if (allLessons.isEmpty) return Text('No lessons yet', style: TextStyle(color: c.textMuted));
 
-        // تجميع الدروس حسب الوحدات للعرض
+        // ✅ إنشاء قائمة مسطحة لجميع الدروس بالترتيب الصحيح عالمياً
+        List<DocumentSnapshot> flatLessons = [];
         Map<int, List<DocumentSnapshot>> units = {};
+        
         for (var lesson in allLessons) {
           final unitNum = lesson['unitNumber'] as int;
           if (!units.containsKey(unitNum)) units[unitNum] = [];
           units[unitNum]!.add(lesson);
+          flatLessons.add(lesson); // إضافة للقائمة المسطحة
         }
 
-        // 3. الاستماع للتقدم لتحديد حالة القفل
+        // إنشاء خريطة للوصول السريع لموقع كل درس في القائمة المسطحة
+        Map<String, int> lessonIndexMap = {};
+        for (int i = 0; i < flatLessons.length; i++) {
+          lessonIndexMap[flatLessons[i].id] = i;
+        }
+
         return StreamBuilder<Set<String>>(
           stream: completedStream,
           builder: (context, completedSnap) {
@@ -299,37 +304,16 @@ class _CourseCurriculum extends StatelessWidget {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: c.border)),
                   title: Text('Unit ${entry.key}', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.bold, fontFamily: 'Inter')),
                   subtitle: Text('${entry.value.length} Lessons', style: TextStyle(color: c.textMuted, fontSize: 12)),
-                  children: entry.value.asMap().entries.map((indexedLesson) {
-                    final index = indexedLesson.key;
-                    final doc = indexedLesson.value;
+                  children: entry.value.map((doc) {
                     final data = doc.data() as Map<String, dynamic>;
+                    final currentGlobalIndex = lessonIndexMap[doc.id] ?? 0;
                     
-                    // ✅ منطق القفل:
-                    // الدرس مفتوح إذا كان هو الأول (index == 0 في وحدته أو الكورس كله؟ الأفضل ترتيب عالمي)
-                    // لتبسيط الأمر: الدرس مفتوح إذا كان الدرس الذي يسبقه مباشرة في القائمة العامة مكتملاً.
-                    
+                    // ✅ منطق القفل الدقيق:
+                    // الدرس مقفل إذا لم يكن الأول (index > 0) والدرس السابق له في القائمة العالمية غير مكتمل
                     bool isLocked = false;
-                    if (index > 0) {
-                      // التحقق من الدرس السابق في نفس الوحدة أو الوحدة السابقة
-                      // هنا نفترض الترتيب الخطي البسيط داخل الـ ExpansionTile
-                      // للحصول على الدرس السابق بدقة، نحتاج لمعرفة موقعه في القائمة المسطحة
-                      // لكن بما أننا داخل وحدة، فالدرس السابق هو إما السابق في نفس الوحدة أو آخر درس في الوحدة السابقة
-                      
-                      // طريقة أبسط: الدرس مقفل إذا لم يكن الدرس "السابق له في الترتيب العام" مكتملاً.
-                      // سنستخدم معرف الدرس السابق.
-                      String? prevLessonId;
-                      if (index > 0) {
-                         prevLessonId = entry.value[index - 1].id; // السابق في نفس الوحدة
-                      } else {
-                         // إذا كان أول درس في الوحدة، السابق هو آخر درس في الوحدة السابقة
-                         int prevUnitKey = entry.key - 1;
-                         if (units.containsKey(prevUnitKey) && units[prevUnitKey]!.isNotEmpty) {
-                           prevLessonId = units[prevUnitKey]!.last.id;
-                         }
-                      }
-
-                      // إذا وجدنا درساً سابقاً ولم يكن مكتملاً، فإن هذا الدرس مقفل
-                      if (prevLessonId != null && !completedIds.contains(prevLessonId)) {
+                    if (currentGlobalIndex > 0) {
+                      final prevLessonId = flatLessons[currentGlobalIndex - 1].id;
+                      if (!completedIds.contains(prevLessonId)) {
                         isLocked = true;
                       }
                     }
@@ -343,17 +327,8 @@ class _CourseCurriculum extends StatelessWidget {
                         color: isLocked ? c.textMuted : (isCompleted ? AppColors.green : AppColors.primary),
                         size: 20,
                       ),
-                      title: Text(
-                        data['title'],
-                        style: TextStyle(
-                          color: isLocked ? c.textMuted : c.textPrimary,
-                          fontSize: 14,
-                          fontFamily: 'Inter',
-                        ),
-                      ),
-                      trailing: isLocked 
-                        ? null 
-                        : Text(data['type'] == 'video' ? 'Video' : 'PDF', style: TextStyle(color: c.textMuted, fontSize: 10)),
+                      title: Text(data['title'] ?? 'Untitled', style: TextStyle(color: isLocked ? c.textMuted : c.textPrimary, fontSize: 14, fontFamily: 'Inter')),
+                      trailing: isLocked ? null : Text(data['type'] == 'video' ? 'Video' : 'PDF', style: TextStyle(color: c.textMuted, fontSize: 10)),
                       onTap: isLocked ? null : () {
                         Navigator.push(
                           context,

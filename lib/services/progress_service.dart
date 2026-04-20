@@ -87,16 +87,33 @@ class ProgressService {
     });
   }
 
-  /// ✅ جلب معرفات الدروس المكتملة فقط (لتسريع عملية القفل)
+  /// ✅ جلب معرفات الدروس المكتملة فقط (نسخة آمنة ومقاومة للأخطاء)
   Stream<Set<String>> getCompletedLessonsStream(String courseId) {
+    // إذا لم يكن هناك مستخدم، نعيد مجموعة فارغة فوراً دون محاولة الاتصال
     if (_uid == null || _progressRef == null) return Stream.value({});
 
     return _progressRef!.doc(courseId).snapshots().map((snapshot) {
-      if (!snapshot.exists) return <String>{};
-      final data = snapshot.data()!;
-      // تحويل القائمة إلى Set للبحث السريع
-      final completedList = List<String>.from(data['completedLessons'] ?? []);
-      return completedList.toSet();
+      try {
+        if (!snapshot.exists) return <String>{};
+        
+        final data = snapshot.data();
+        if (data == null || !data.containsKey('completedLessons')) {
+          return <String>{};
+        }
+
+        // محاولة آمنة لتحويل القائمة
+        final rawList = data['completedLessons'];
+        if (rawList is List) {
+          return rawList.whereType<String>().toSet();
+        }
+        return <String>{};
+      } catch (e) {
+        debugPrint('❌ Error in getCompletedLessonsStream: $e');
+        return <String>{}; // في حال حدوث خطأ، نعيد مجموعة فارغة ولا نسقط التطبيق
+      }
+    }).handleError((error) {
+      debugPrint('❌ Stream Error: $error');
+      return <String>{};
     });
   }
-} // ✅ نهاية الكلاس هنا
+  }
