@@ -30,6 +30,7 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
 
   final _lessonTitleCtrl = TextEditingController();
   final _lessonUrlCtrl = TextEditingController();
+  final _lessonDescCtrl = TextEditingController(); // ✅ متحكم وصف الدرس الجديد
 
   File? _coverImage;
   String? _uploadedImageUrl;
@@ -51,13 +52,13 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
     _unitsCtrl.dispose();
     _lessonTitleCtrl.dispose();
     _lessonUrlCtrl.dispose();
+    _lessonDescCtrl.dispose(); // ✅ التخلص من المتحكم الجديد
     super.dispose();
   }
 
   int get _unitCount => int.tryParse(_unitsCtrl.text) ?? 0;
 
   Future<void> _pickAndUploadPdf() async {
-    // ✅ التصحيح هنا: استخدام FilePicker.platform
     FilePickerResult? result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf'],
@@ -282,6 +283,7 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
           'title': lessonData['title'],
           'videoUrl': lessonData['url'],
           'type': lessonData['type'] ?? 'video',
+          'description': lessonData['description'] ?? '', // ✅ حفظ الوصف
           'createdAt': FieldValue.serverTimestamp(),
         });
       }
@@ -292,6 +294,7 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
     if (_step > 0) {
       _lessonTitleCtrl.clear();
       _lessonUrlCtrl.clear();
+      _lessonDescCtrl.clear(); // ✅ مسح الوصف عند العودة
       setState(() => _step--);
     } else {
       Navigator.pop(context);
@@ -683,6 +686,7 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
                     () => setState(() {
                       _lessonTitleCtrl.clear();
                       _lessonUrlCtrl.clear();
+                      _lessonDescCtrl.clear(); // ✅ مسح الوصف عند تغيير الوحدة
                       _currentUnit--;
                     }),
                   ),
@@ -694,6 +698,7 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
                     () => setState(() {
                       _lessonTitleCtrl.clear();
                       _lessonUrlCtrl.clear();
+                      _lessonDescCtrl.clear(); // ✅ مسح الوصف عند تغيير الوحدة
                       _currentUnit++;
                     }),
                   ),
@@ -742,6 +747,13 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
         _label("Titre", c),
         const SizedBox(height: 8),
         _field(_lessonTitleCtrl, 'Titre...', c),
+        
+        // ✅ إضافة حقل وصف الدرس
+        const SizedBox(height: 12),
+        _label("Description (Optionnel)", c),
+        const SizedBox(height: 8),
+        _field(_lessonDescCtrl, 'Brief description of this lesson...', c, maxLines: 2),
+
         const SizedBox(height: 16),
 
         if (_currentLessonType == 'video') ...[
@@ -789,6 +801,8 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
             GestureDetector(
               onTap: () {
                 final title = _lessonTitleCtrl.text.trim();
+                final desc = _lessonDescCtrl.text.trim(); // ✅ جلب الوصف
+                
                 if (_currentLessonType == 'video') {
                   final url = _lessonUrlCtrl.text.trim();
                   if (url.isNotEmpty && title.isNotEmpty) {
@@ -797,9 +811,11 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
                         'title': title,
                         'url': url,
                         'type': 'video',
+                        'description': desc, // ✅ حفظ الوصف
                       });
                       _lessonTitleCtrl.clear();
                       _lessonUrlCtrl.clear();
+                      _lessonDescCtrl.clear(); // ✅ مسح الحقول بعد الإضافة
                     });
                   } else {
                     _showError('Titre et URL requis');
@@ -811,8 +827,10 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
                         'title': title,
                         'url': _uploadedPdfUrl!,
                         'type': 'pdf',
+                        'description': desc, // ✅ حفظ الوصف
                       });
                       _lessonTitleCtrl.clear();
+                      _lessonDescCtrl.clear(); // ✅ مسح الحقول بعد الإضافة
                       _uploadedPdfUrl = null;
                     });
                   } else {
@@ -855,9 +873,21 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Text(
-                    lesson['title']!,
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        lesson['title']!,
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      if (lesson['description']?.isNotEmpty ?? false)
+                        Text(
+                          lesson['description']!,
+                          style: TextStyle(fontSize: 12, color: c.textMuted),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                    ],
                   ),
                 ),
                 IconButton(

@@ -329,21 +329,22 @@ class _CourseCurriculum extends StatelessWidget {
                       ),
                       title: Text(data['title'] ?? 'Untitled', style: TextStyle(color: isLocked ? c.textMuted : c.textPrimary, fontSize: 14, fontFamily: 'Inter')),
                       trailing: isLocked ? null : Text(data['type'] == 'video' ? 'Video' : 'PDF', style: TextStyle(color: c.textMuted, fontSize: 10)),
-                      onTap: isLocked ? null : () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => LessonPlayerScreen(
-                              videoUrl: data['videoUrl'],
-                              lessonTitle: data['title'],
-                              courseId: courseId,
-                              lessonId: doc.id,
-                              lessonType: data['type'] ?? 'video',
-                            ),
-                          ),
-                        );
-                      },
-                    );
+onTap: () {
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => LessonPlayerScreen(
+        videoUrl: data['videoUrl'],
+        lessonTitle: data['title'],
+        courseId: courseId,
+        lessonId: doc.id,
+        lessonType: data['type'] ?? 'video',
+        isLocked: isLocked, // ✅ تمرير حالة القفل
+        description: data['description'] ?? '', // ✅ تمرير الوصف
+      ),
+    ),
+  );
+},                    );
                   }).toList(),
                 );
               }).toList(),
