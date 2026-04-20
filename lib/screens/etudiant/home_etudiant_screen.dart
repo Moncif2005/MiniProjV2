@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:minipr/services/notifications_service.dart';
+import 'package:minipr/services/offers_service.dart';
+import 'package:minipr/widgets/home_job_card.dart';
 import 'package:provider/provider.dart';
 import '../../theme/app_colors.dart';
 import '../../providers/user_provider.dart';
@@ -9,9 +11,12 @@ import '../../widgets/continue_learning_card.dart';
 import '../../widgets/course_card.dart';
 import '../../widgets/job_card.dart';
 import '../../services/learning_history_service.dart';
+import '../../services/courses_service.dart'; // ✅ استيراد خدمة الكورسات
+import '../../models/course_model.dart';      // ✅ استيراد موديل الكورس
 import 'learn_etudiant_screen.dart';
 import '../shared/offers_screen.dart';
 import 'profile_etudiant_screen.dart';
+import '../shared/course_details_screen.dart'; // للانتقال لتفاصيل الكورس
 
 class HomeEtudiantScreen extends StatefulWidget {
   const HomeEtudiantScreen({super.key});
@@ -22,13 +27,18 @@ class HomeEtudiantScreen extends StatefulWidget {
 
 class _HomeEtudiantScreenState extends State<HomeEtudiantScreen> {
   int _currentIndex = 0;
+  final TextEditingController _homeSearchController = TextEditingController();
 
   final List<Widget> _pages = [
-    _HomeTabContent(),
+    _HomeTabContent(searchController: null), // سيتم التعامل مع البحث بشكل منفصل أو تمريره
     const LearnEtudiantScreen(),
     const OffersScreen(),
     const ProfileEtudiantScreen(),
   ];
+
+  void _changeTab(int index) {
+    setState(() => _currentIndex = index);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +46,7 @@ class _HomeEtudiantScreenState extends State<HomeEtudiantScreen> {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       bottomNavigationBar: BottomNavBar(
         currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
+        onTap: _changeTab,
         items: const [
           NavBarItem(icon: Icons.home_rounded,   label: 'Home'),
           NavBarItem(icon: Icons.school_rounded,  label: 'Learn'),
@@ -44,20 +54,38 @@ class _HomeEtudiantScreenState extends State<HomeEtudiantScreen> {
           NavBarItem(icon: Icons.person_rounded,  label: 'Profile'),
         ],
       ),
-      body: IndexedStack(index: _currentIndex, children: _pages),
+      body: IndexedStack(
+        index: _currentIndex, 
+        children: [
+          _HomeTabContent(
+            searchController: _homeSearchController,
+            onSearchSubmitted: (query) {
+              // عند الضغط على بحث، ننتقل لتاب Learn ونمرر النص (يتطلب تعديل بسيط في LearnEtudiantScreen لاستقبال النص)
+              // للتبسيط الآن، سننتقل لتاب Learn فقط
+              _changeTab(1);
+            },
+          ),
+          const LearnEtudiantScreen(),
+          const OffersScreen(),
+          const ProfileEtudiantScreen(),
+        ],
+      ),
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 class _HomeTabContent extends StatefulWidget {
+  final TextEditingController? searchController;
+  final Function(String)? onSearchSubmitted;
+
+  const _HomeTabContent({this.searchController, this.onSearchSubmitted});
+
   @override
   State<_HomeTabContent> createState() => _HomeTabContentState();
 }
 
 class _HomeTabContentState extends State<_HomeTabContent> {
-  final _searchController = TextEditingController();
-
   EnrollmentModel? _lastEnrollment;
   bool _enrollmentLoaded = false;
 
@@ -70,13 +98,20 @@ class _HomeTabContentState extends State<_HomeTabContent> {
     }
   }
 
+  // إعادة تحميل التقدم عند العودة للشاشة (مثلاً بعد إكمال درس)
+  @override
+  void didUpdateWidget(covariant _HomeTabContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _loadLastEnrollment();
+  }
+
   Future<void> _loadLastEnrollment() async {
     final uid = context.read<UserProvider>().uid;
     if (uid == null || uid.isEmpty) return;
 
     final enrollments = await LearningHistoryService().fetchEnrollments(uid);
 
-    // Only courses the user actually started (progress > 0) and not yet completed
+    // فقط الكورسات التي بدأها المستخدم ولم يكملها
     final inProgress = enrollments
         .where((e) => !e.isCompleted && e.progressPercent > 0)
         .toList();
@@ -89,224 +124,295 @@ class _HomeTabContentState extends State<_HomeTabContent> {
   }
 
   @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final c    = context.colors;
     final user = context.watch<UserProvider>();
-    final displayName = user.name.isNotEmpty ? user.firstName : 'there';
+    final displayName = user.firstName.isNotEmpty ? user.firstName : 'Student';
 
     return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      child: RefreshIndicator(
+        onRefresh: _loadLastEnrollment,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          physics: const AlwaysScrollableScrollPhysics(), // للسماح بالسحب للتحديث حتى لو المحتوى قليل
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
 
-            // ── Header ──
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Hello, $displayName!',
-                        style: TextStyle(color: c.textPrimary, fontSize: 24,
-                            fontFamily: 'Inter', fontWeight: FontWeight.w700)),
-                    Text('Ready to level up today?',
-                        style: TextStyle(color: c.textSecondary, fontSize: 16,
-                            fontFamily: 'Inter')),
-                  ],
-                ),
-
-// ── Bell with Dynamic Unread Badge ──
-StreamBuilder<int>(
-  // ✅ 1. الاستماع لعدد الإشعارات غير المقروءة للمستخدم الحالي
-  stream: NotificationsService().streamUnreadCount(
-    FirebaseAuth.instance.currentUser?.uid ?? '',
-  ),
-  builder: (context, snap) {
-    // ✅ 2. تحديد عدد الإشعارات غير المقروءة (0 إذا لم يكن هناك بيانات)
-    final unreadCount = snap.data ?? 0;
-    final hasUnread = unreadCount > 0;
-
-    return GestureDetector(
-      onTap: () => Navigator.pushNamed(context, '/notifications'),
-      child: Stack(
-        clipBehavior: Clip.none, // مهم لكي تظهر النقطة خارج الحدود إذا لزم الأمر
-        children: [
-          Container(
-            width: 38,
-            height: 38,
-            decoration: ShapeDecoration(
-              color: c.surface,
-              shape: RoundedRectangleBorder(
-                side: BorderSide(width: 1.24, color: c.border),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              shadows: const [
-                BoxShadow(
-                  color: Color(0x19000000),
-                  blurRadius: 2,
-                  offset: Offset(0, 1),
-                  spreadRadius: -1,
-                )
-              ],
-            ),
-            child: Icon(
-              Icons.notifications_outlined,
-              color: c.textSecondary,
-              size: 20,
-            ),
-          ),
-          
-          // ✅ 3. إظهار النقطة الحمراء فقط إذا كان hasUnread == true
-          if (hasUnread)
-            Positioned(
-              top: 6,
-              right: 6,
-              child: Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: AppColors.red,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: c.surface, width: 1.24),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  },
-),              ],
-            ),
-            const SizedBox(height: 16),
-
-            // ── Search Bar ──
-            Container(
-              decoration: ShapeDecoration(
-                color: c.surface,
-                shape: RoundedRectangleBorder(
-                  side: BorderSide(width: 1.24, color: c.border),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                shadows: const [BoxShadow(color: Color(0x19000000),
-                    blurRadius: 2, offset: Offset(0, 1), spreadRadius: -1)],
-              ),
-              child: TextField(
-                controller: _searchController,
-                style: TextStyle(color: c.textPrimary),
-                decoration: InputDecoration(
-                  hintText: 'Search courses, jobs, skills...',
-                  hintStyle: TextStyle(color: c.textMuted, fontSize: 16, fontFamily: 'Inter'),
-                  prefixIcon: Icon(Icons.search_rounded, color: c.textSecondary),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // ── Continue Learning — only shown when real progress exists ──
-            if (_lastEnrollment != null) ...[
-              ContinueLearningCard(
-                title: 'Continue Learning',
-                subtitle: '${_lastEnrollment!.courseTitle} · ${_lastEnrollment!.lessonsLabel}',
-                progress: _lastEnrollment!.progressPercent,
-              ),
-              const SizedBox(height: 32),
-            ],
-
-            // ── Recommended for You ──
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Recommended for You',
-                    style: TextStyle(color: c.textPrimary, fontSize: 20,
-                        fontFamily: 'Inter', fontWeight: FontWeight.w700)),
-                TextButton(
-                  onPressed: () {
-                    context.findAncestorStateOfType<_HomeEtudiantScreenState>()
-                        ?._changeTab(1);
-                  },
-                  child: Text('See all',
-                      style: TextStyle(color: c.primary, fontSize: 14,
-                          fontFamily: 'Inter', fontWeight: FontWeight.w500)),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
+              // ── Header ──
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  CourseCard(title: 'Arabic for Professionals',
-                      instructor: 'Ahmed Hassan', rating: '4.9',
-                      category: 'Languages', imageUrl: 'https://placehold.co/238x128'),
-                  const SizedBox(width: 16),
-                  CourseCard(title: 'UX/UI Advanced Motion',
-                      instructor: 'Sarah Jenkins', rating: '4.9',
-                      category: 'Design', imageUrl: 'https://placehold.co/238x128'),
-                  const SizedBox(width: 16),
-                  CourseCard(title: 'Flutter Development',
-                      instructor: 'John Smith', rating: '4.8',
-                      category: 'Mobile', imageUrl: 'https://placehold.co/238x128'),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Hello, $displayName!',
+                          style: TextStyle(color: c.textPrimary, fontSize: 24,
+                              fontFamily: 'Inter', fontWeight: FontWeight.w700)),
+                      Text('Ready to level up today?',
+                          style: TextStyle(color: c.textSecondary, fontSize: 16,
+                              fontFamily: 'Inter')),
+                    ],
+                  ),
+
+                  // ── Bell with Dynamic Unread Badge ──
+                  StreamBuilder<int>(
+                    stream: NotificationsService().streamUnreadCount(
+                      FirebaseAuth.instance.currentUser?.uid ?? '',
+                    ),
+                    builder: (context, snap) {
+                      final unreadCount = snap.data ?? 0;
+                      final hasUnread = unreadCount > 0;
+
+                      return GestureDetector(
+                        onTap: () => Navigator.pushNamed(context, '/notifications'),
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            Container(
+                              width: 38,
+                              height: 38,
+                              decoration: ShapeDecoration(
+                                color: c.surface,
+                                shape: RoundedRectangleBorder(
+                                  side: BorderSide(width: 1.24, color: c.border),
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                shadows: const [
+                                  BoxShadow(
+                                    color: Color(0x19000000),
+                                    blurRadius: 2,
+                                    offset: Offset(0, 1),
+                                    spreadRadius: -1,
+                                  )
+                                ],
+                              ),
+                              child: Icon(
+                                Icons.notifications_outlined,
+                                color: c.textSecondary,
+                                size: 20,
+                              ),
+                            ),
+                            if (hasUnread)
+                              Positioned(
+                                top: 6,
+                                right: 6,
+                                child: Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.red,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: c.surface, width: 1.24),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
                 ],
               ),
-            ),
-            const SizedBox(height: 32),
+              const SizedBox(height: 16),
 
-            // ── New Opportunities ──
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('New Opportunities',
-                    style: TextStyle(color: c.textPrimary, fontSize: 20,
-                        fontFamily: 'Inter', fontWeight: FontWeight.w700)),
-                TextButton(
-                  onPressed: () {
-                    context.findAncestorStateOfType<_HomeEtudiantScreenState>()
-                        ?._changeTab(2);
-                  },
-                  child: Text('See all',
-                      style: TextStyle(color: c.primary, fontSize: 14,
-                          fontFamily: 'Inter', fontWeight: FontWeight.w500)),
+              // ── Search Bar ──
+              Container(
+                decoration: ShapeDecoration(
+                  color: c.surface,
+                  shape: RoundedRectangleBorder(
+                    side: BorderSide(width: 1.24, color: c.border),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  shadows: const [BoxShadow(color: Color(0x19000000),
+                      blurRadius: 2, offset: Offset(0, 1), spreadRadius: -1)],
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
+                child: TextField(
+                  controller: widget.searchController,
+                  style: TextStyle(color: c.textPrimary),
+                  decoration: InputDecoration(
+                    hintText: 'Search courses, skills...',
+                    hintStyle: TextStyle(color: c.textMuted, fontSize: 16, fontFamily: 'Inter'),
+                    prefixIcon: Icon(Icons.search_rounded, color: c.textSecondary),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  onSubmitted: (value) {
+                    if (widget.onSearchSubmitted != null) {
+                      widget.onSearchSubmitted!(value);
+                    }
+                  },
+                ),
+              ),
+              const SizedBox(height: 24),
 
-            JobCard(
-              title: 'Senior Product Designer',
-              company: 'Techflow Inc. • Remote',
-              type: 'Full-Time',
-              salary: '\$90K - \$120K',
-              location: 'Remote',
-              onBookmark: () {},
-            ),
-            const SizedBox(height: 12),
-            JobCard(
-              title: 'Marketing Specialist',
-              company: 'Lumina Creative • New York, NY',
-              type: 'Contract',
-              salary: '\$60K - \$80K',
-              location: 'New York, NY',
-              onBookmark: () {},
-            ),
-            const SizedBox(height: 24),
-          ],
+              // ── Continue Learning (Real Data) ──
+              if (_lastEnrollment != null) ...[
+                ContinueLearningCard(
+                  title: 'Continue Learning',
+                  subtitle: '${_lastEnrollment!.courseTitle} · ${_lastEnrollment!.lessonsLabel}',
+                  progress: _lastEnrollment!.progressPercent,
+                  // courseId: _lastEnrollment!.courseId, 
+                  // ✅ أضفنا onTap هنا للانتقال للكورس
+                  onTap: () {
+                    if (_lastEnrollment!.courseId.isNotEmpty) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => CourseDetailsScreen(courseId: _lastEnrollment!.courseId),
+                        ),
+                      );
+                    }
+                  },
+                ),
+                const SizedBox(height: 32),
+              ],
+              // ── Recommended for You (Real Data from Firestore) ──
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Recommended for You',
+                      style: TextStyle(color: c.textPrimary, fontSize: 20,
+                          fontFamily: 'Inter', fontWeight: FontWeight.w700)),
+                  TextButton(
+                    onPressed: () {
+                       // الانتقال لتاب Learn
+                       (context.findAncestorStateOfType<_HomeEtudiantScreenState>())?._changeTab(1);
+                    },
+                    child: Text('See all',
+                        style: TextStyle(color: c.primary, fontSize: 14,
+                            fontFamily: 'Inter', fontWeight: FontWeight.w500)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              // ✅✅✅ جلب الكورسات الحقيقية من Firestore ✅✅✅
+              SizedBox(
+                height: 230, // ارتفاع ثابت للقائمة الأفقية
+                child: StreamBuilder<List<CourseModel>>(
+                  stream: CoursesService().getPublishedCourses(), // جلب كل الكورسات المنشورة
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+
+                    if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                      return Center(
+                        child: Text('No courses available yet.', 
+                        style: TextStyle(color: c.textMuted)),
+                      );
+                    }
+
+                    final courses = snapshot.data!;
+                    // نأخذ آخر 10 كورسات مثلاً للعرض
+                    final recentCourses = courses.take(10).toList();
+
+                    return ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: recentCourses.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 16),
+                      itemBuilder: (context, index) {
+                        final course = recentCourses[index];
+                        return SizedBox(
+                          width: 240, // عرض ثابت للبطاقة
+                          child: CourseCard(
+                            title: course.title,
+                            instructor: course.instructorName,
+                            // نعرض التقييم الحقيقي إذا توفر، أو نضع قيمة افتراضية
+                            rating: '4.5', // TODO: ربط التقييم الحقيقي هنا لاحقاً
+                            category: course.category,
+                            imageUrl: course.imageUrl ?? 'https://placehold.co/238x128',
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => CourseDetailsScreen(courseId: course.id),
+                                ),
+                              );
+                            },
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+              
+              const SizedBox(height: 32),
+
+              // ── New Opportunities (Real Data from OffersService) ──
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('New Opportunities',
+                      style: TextStyle(color: c.textPrimary, fontSize: 20,
+                          fontFamily: 'Inter', fontWeight: FontWeight.w700)),
+                  TextButton(
+                    onPressed: () {
+                      (context.findAncestorStateOfType<_HomeEtudiantScreenState>())?._changeTab(2);
+                    },
+                    child: Text('See all',
+                        style: TextStyle(color: c.primary, fontSize: 14,
+                            fontFamily: 'Inter', fontWeight: FontWeight.w500)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              // ✅✅✅ جلب الوظائف الحقيقية باستخدام StreamBuilder ✅✅✅
+              SizedBox(
+                height: 300, // ارتفاع ثابت للقائمة العمودية القصيرة
+                child: StreamBuilder<List<Map<String, dynamic>>>(
+                  stream: OffersService().getActiveOffers(), // جلب العروض النشطة والمقبولة
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+
+                    if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.work_outline_rounded, size: 48, color: c.textMuted),
+                            const SizedBox(height: 8),
+                            Text('No new jobs available.', 
+                            style: TextStyle(color: c.textMuted)),
+                          ],
+                        ),
+                      );
+                    }
+
+                    final offers = snapshot.data!;
+                    // نعرض آخر وظيفتين فقط في الصفحة الرئيسية
+                    final recentOffers = offers.take(2).toList();
+
+                    return ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: recentOffers.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final offer = recentOffers[index];
+                        
+                        return HomeJobCard( // ✅ استخدام البطاقة الجديدة الصغيرة
+                          offer: offer,
+                          onTap: () {
+                            // عند النقر، ننتقل لشاشة العروض الكاملة (OffersScreen)
+                            // يمكن لاحقاً تمرير الـ offerId لفتح تفاصيل محددة
+                            (context.findAncestorStateOfType<_HomeEtudiantScreenState>())?._changeTab(2);
+                          },
+                        );
+                      },
+                    );                  },
+                ),
+              ),
+              
+              const SizedBox(height: 24),            ],
+          ),
         ),
       ),
     );
   }
-}
-
-extension on _HomeEtudiantScreenState {
-  void _changeTab(int index) => setState(() => _currentIndex = index);
 }

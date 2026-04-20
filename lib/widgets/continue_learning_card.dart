@@ -1,159 +1,94 @@
 import 'package:flutter/material.dart';
-import '../theme/app_colors.dart';
+import '../../theme/app_colors.dart';
 
 class ContinueLearningCard extends StatelessWidget {
   final String title;
   final String subtitle;
-  final double progress;
+  final double progress; // نسبة من 0 إلى 100
+  final VoidCallback? onTap;
 
   const ContinueLearningCard({
     super.key,
     required this.title,
     required this.subtitle,
     required this.progress,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: AppColors.gradientBlue,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: c.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: c.border),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x33155DFC),
-            blurRadius: 12,
-            offset: Offset(0, 4),
-            spreadRadius: -4,
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-
-          // ── Top Row ──
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.20),
-                  borderRadius: BorderRadius.circular(100),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: c.textPrimary,
+                    fontSize: 16,
+                    fontFamily: 'Inter',
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.play_circle_rounded,
-                      color: Colors.white,
-                      size: 14,
-                    ),
-                    const SizedBox(width: 4),
-                    const Text(
-                      'En cours',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontFamily: 'Inter',
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
+                Icon(Icons.play_circle_fill_rounded, color: AppColors.primary, size: 24),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              style: TextStyle(
+                color: c.textSecondary,
+                fontSize: 14,
+                fontFamily: 'Inter',
               ),
-              Text(
-                '${(progress * 100).toInt()}%',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
+            ),
+            const SizedBox(height: 16),
+            
+            // شريط التقدم
+            ClipRRect(
+              borderRadius: BorderRadius.circular(100),
+              child: LinearProgressIndicator(
+                value: progress / 100, // تحويل النسبة المئوية إلى قيمة بين 0 و 1
+                minHeight: 8,
+                backgroundColor: c.iconBg,
+                valueColor: AlwaysStoppedAnimation(AppColors.green),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Align(
+              alignment: Alignment.centerRight,
+              child: Text(
+                '${progress.toInt()}% Complete',
+                style: TextStyle(
+                  color: c.textMuted,
+                  fontSize: 12,
                   fontFamily: 'Inter',
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // ── Title ──
-          Text(
-            title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontFamily: 'Inter',
-              fontWeight: FontWeight.w700,
             ),
-          ),
-          const SizedBox(height: 4),
-
-          // ── Subtitle ──
-          Text(
-            subtitle,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.80),
-              fontSize: 14,
-              fontFamily: 'Inter',
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // ── Progress Bar ──
-          ClipRRect(
-            borderRadius: BorderRadius.circular(100),
-            child: LinearProgressIndicator(
-              value: progress,
-              minHeight: 6,
-              backgroundColor:
-                  Colors.white.withValues(alpha: 0.25),
-              valueColor: const AlwaysStoppedAnimation<Color>(
-                  Colors.white),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // ── Button ──
-          GestureDetector(
-            onTap: () =>
-                Navigator.pushNamed(context, '/lesson'),
-            child: Container(
-              width: double.infinity,
-              height: 48,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.play_arrow_rounded,
-                    color: AppColors.primary,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Continue Learning',
-                    style: TextStyle(
-                      color: AppColors.primary,
-                      fontSize: 15,
-                      fontFamily: 'Inter',
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

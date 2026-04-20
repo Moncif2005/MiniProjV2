@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
-import '../theme/app_colors.dart';
+import '../../theme/app_colors.dart';
 
 class CourseCard extends StatelessWidget {
   final String title;
   final String instructor;
   final String rating;
   final String category;
-  final String imageUrl;
+  final String? imageUrl;
+  final VoidCallback? onTap;
 
   const CourseCard({
     super.key,
@@ -14,143 +15,109 @@ class CourseCard extends StatelessWidget {
     required this.instructor,
     required this.rating,
     required this.category,
-    required this.imageUrl,
+    this.imageUrl,
+    this.onTap,
   });
+
+  Color _getCategoryColor(String category) {
+    switch (category.toLowerCase()) {
+      case 'coding': return AppColors.primary.withOpacity(0.15);
+      case 'design': return Colors.purple.withOpacity(0.15);
+      case 'business': return Colors.orange.withOpacity(0.15);
+      default: return AppColors.primaryLight;
+    }
+  }
+
+  IconData _getCategoryIcon(String category) {
+    switch (category.toLowerCase()) {
+      case 'coding': return Icons.code_rounded;
+      case 'design': return Icons.palette_rounded;
+      case 'business': return Icons.business_center_rounded;
+      default: return Icons.menu_book_rounded;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
+    final hasImage = imageUrl != null && imageUrl!.isNotEmpty;
+    final bgColor = _getCategoryColor(category);
+    final iconData = _getCategoryIcon(category);
 
-    return Container(
-      width: 200,
-      decoration: ShapeDecoration(
-        color: c.surface,
-        shape: RoundedRectangleBorder(
-          side: BorderSide(width: 1.24, color: c.border),
-          borderRadius: BorderRadius.circular(20),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 240,
+        decoration: BoxDecoration(
+          color: c.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: c.border),
         ),
-        shadows: const [
-          BoxShadow(
-            color: Color(0x19000000),
-            blurRadius: 2,
-            offset: Offset(0, 1),
-            spreadRadius: -1,
-          ),
-          BoxShadow(
-            color: Color(0x19000000),
-            blurRadius: 3,
-            offset: Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-
-          // ── Thumbnail ──
-          ClipRRect(
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(20),
-              topRight: Radius.circular(20),
-            ),
-            child: Image.network(
-              imageUrl,
-              width: double.infinity,
-              height: 110,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                width: double.infinity,
-                height: 110,
-                color: c.border,
-                child: Icon(
-                  Icons.image_outlined,
-                  color: c.textMuted,
-                  size: 32,
-                ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // الجزء العلوي: الصورة أو الخلفية الملونة
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              child: AspectRatio(
+                aspectRatio: 16 / 9,
+                child: hasImage
+                    ? Image.network(imageUrl!, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _buildPlaceholder(bgColor, iconData, c))
+                    : _buildPlaceholder(bgColor, iconData, c),
               ),
             ),
-          ),
-
-          // ── Content ──
-          Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-
-                // ── Category Badge ──
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryLight,
-                    borderRadius:
-                        BorderRadius.circular(100),
-                  ),
-                  child: Text(
+            
+            // الجزء السفلي: النصوص (مضغوط ومرن)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8), // تقليل الهامش العمودي
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
                     category,
-                    style: const TextStyle(
-                      color: AppColors.primary,
-                      fontSize: 10,
-                      fontFamily: 'Inter',
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: TextStyle(color: AppColors.primary, fontSize: 10, fontWeight: FontWeight.bold),
+                    maxLines: 1, overflow: TextOverflow.ellipsis,
                   ),
-                ),
-                const SizedBox(height: 8),
-
-                // ── Title ──
-                Text(
-                  title,
-                  style: TextStyle(
-                    color: c.textPrimary,
-                    fontSize: 14,
-                    fontFamily: 'Inter',
-                    fontWeight: FontWeight.w700,
+                  const SizedBox(height: 2),
+                  Text(
+                    title,
+                    style: TextStyle(color: c.textPrimary, fontSize: 14, fontWeight: FontWeight.w700, height: 1.1),
+                    maxLines: 2, overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-
-                // ── Instructor ──
-                Text(
-                  instructor,
-                  style: TextStyle(
-                    color: c.textSecondary,
-                    fontSize: 12,
-                    fontFamily: 'Inter',
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 8),
-
-                // ── Rating ──
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.star_rounded,
-                      color: AppColors.yellow,
-                      size: 14,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      rating,
-                      style: TextStyle(
-                        color: c.textSecondary,
-                        fontSize: 12,
-                        fontFamily: 'Inter',
-                        fontWeight: FontWeight.w700,
+                  const SizedBox(height: 2),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'By $instructor',
+                          style: TextStyle(color: c.textSecondary, fontSize: 11),
+                          maxLines: 1, overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                      Row(
+                        children: [
+                          Icon(Icons.star_rounded, color: Colors.amber, size: 12),
+                          const SizedBox(width: 2),
+                          Text(rating, style: TextStyle(color: c.textPrimary, fontSize: 11, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildPlaceholder(Color bgColor, IconData iconData, ThemeColors c) {
+    return Container(
+      color: bgColor,
+      child: Center(child: Icon(iconData, size: 32, color: c.textPrimary.withOpacity(0.3))),
     );
   }
 }
