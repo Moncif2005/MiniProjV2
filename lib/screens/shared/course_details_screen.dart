@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:minipr/screens/shared/lesson_player_screen.dart';
+import 'package:minipr/screens/shared/public_teacher_profile_screen.dart';
 import 'package:minipr/services/progress_service.dart';
 import 'package:minipr/services/rating_service.dart'; // ✅ استيراد خدمة التقييمات
 import '../../theme/app_colors.dart';
@@ -172,8 +173,24 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
                             child: Icon(Icons.person, size: 14, color: AppColors.purple),
                           ),
                           const SizedBox(width: 8),
-                          Text('By ${course.instructorName}', style: TextStyle(color: c.textSecondary, fontSize: 14, fontFamily: 'Inter')),
-                        ],
+GestureDetector(
+  onTap: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PublicTeacherProfileScreen(teacherId: course.instructorId),
+      ),
+    );
+  },
+  child: Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Text('By ${course.instructorName}', style: TextStyle(color: AppColors.primary, fontSize: 14, fontFamily: 'Inter', fontWeight: FontWeight.w600)),
+      const SizedBox(width: 4),
+      Icon(Icons.arrow_forward_ios_rounded, size: 12, color: AppColors.primary),
+    ],
+  ),
+),                        ],
                       ),
                       const SizedBox(height: 24),
 

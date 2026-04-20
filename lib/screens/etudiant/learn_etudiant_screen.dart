@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:minipr/screens/shared/course_details_screen.dart';
+import 'package:minipr/screens/shared/public_teacher_profile_screen.dart';
 import '../../theme/app_colors.dart';
-import '../../widgets/bottom_nav_bar.dart';
-import '../../services/courses_service.dart'; // ✅ استيراد الخدمة
-import '../../models/course_model.dart'; // ✅ استيراد الموديل
+import '../../services/courses_service.dart';
+import '../../models/course_model.dart';
+import '../../services/rating_service.dart'; // ✅ استيراد خدمة التقييمات
 
 class LearnEtudiantScreen extends StatefulWidget {
   const LearnEtudiantScreen({super.key});
@@ -14,7 +15,9 @@ class LearnEtudiantScreen extends StatefulWidget {
 
 class _LearnEtudiantScreenState extends State<LearnEtudiantScreen> {
   int _currentNavIndex = 1;
-  String? _selectedCategory; // null تعني "All"
+  String? _selectedCategory; 
+  final TextEditingController _searchController = TextEditingController(); // ✅ متحكم البحث
+  String _searchQuery = ''; // ✅ نص البحث الحالي
 
   final List<String> _categories = [
     'All',
@@ -26,19 +29,24 @@ class _LearnEtudiantScreenState extends State<LearnEtudiantScreen> {
   ];
 
   @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final c = context.colors;
 
     return Scaffold(
       backgroundColor: c.bg,
-      // bottomNavigationBar: BottomNavBar(...) // يمكنك إعادة تفعيله حسب حاجتك
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Header ──
+            // ── Header & Search Bar ──
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -51,25 +59,40 @@ class _LearnEtudiantScreenState extends State<LearnEtudiantScreen> {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  Container(
-                    width: 38,
-                    height: 38,
-                    decoration: ShapeDecoration(
-                      color: c.surface,
-                      shape: RoundedRectangleBorder(
-                        side: BorderSide(width: 1.24, color: c.border),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
-                    child: Icon(
-                      Icons.search_rounded,
-                      color: c.textSecondary,
-                      size: 20,
-                    ),
-                  ),
+                  // ✅ أيقونة البحث أصبحت جزءاً من حقل البحث أدناه، يمكن إزالتها أو تركها كزر إضافي
                 ],
               ),
             ),
+
+            // ✅✅✅ حقل البحث الجديد ✅✅✅
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Container(
+                decoration: ShapeDecoration(
+                  color: c.surface,
+                  shape: RoundedRectangleBorder(
+                    side: BorderSide(width: 1.24, color: c.border),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: (value) {
+                    setState(() {
+                      _searchQuery = value.toLowerCase();
+                    });
+                  },
+                  decoration: InputDecoration(
+                    hintText: 'Search courses or teachers...',
+                    hintStyle: TextStyle(color: c.textMuted),
+                    prefixIcon: Icon(Icons.search, color: c.textSecondary),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                  ),
+                ),
+              ),
+            ),
+            
             const SizedBox(height: 16),
 
             // ── Category Filters ──
@@ -82,7 +105,6 @@ class _LearnEtudiantScreenState extends State<LearnEtudiantScreen> {
                 separatorBuilder: (_, __) => const SizedBox(width: 8),
                 itemBuilder: (context, index) {
                   final cat = _categories[index];
-                  // إذا كان المختار هو الأول (All) أو يطابق الفئة الحالية
                   final isSelected =
                       _selectedCategory == cat ||
                       (_selectedCategory == null && index == 0);
@@ -120,10 +142,9 @@ class _LearnEtudiantScreenState extends State<LearnEtudiantScreen> {
             ),
             const SizedBox(height: 16),
 
-            // ── Course List (From Firestore) ✅ ──
+            // ── Course List (From Firestore + Local Filter) ✅ ──
             Expanded(
               child: StreamBuilder<List<CourseModel>>(
-                // جلب الكورسات المنشورة، مع تطبيق الفلتر إذا تم اختيار فئة معينة
                 stream: CoursesService().getPublishedCourses(
                   category:
                       (_selectedCategory == null || _selectedCategory == 'All')
@@ -154,20 +175,27 @@ class _LearnEtudiantScreenState extends State<LearnEtudiantScreen> {
                               fontFamily: 'Inter',
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Check back later for new content!',
-                            style: TextStyle(
-                              color: c.textSecondary,
-                              fontSize: 14,
-                            ),
-                          ),
                         ],
                       ),
                     );
                   }
 
-                  final courses = snapshot.data!;
+                  var courses = snapshot.data!;
+
+                  // ✅✅✅ تطبيق فلتر البحث محلياً ✅✅✅
+                  if (_searchQuery.isNotEmpty) {
+                    courses = courses.where((course) {
+                      final titleMatch = course.title.toLowerCase().contains(_searchQuery);
+                      final instructorMatch = course.instructorName.toLowerCase().contains(_searchQuery);
+                      return titleMatch || instructorMatch;
+                    }).toList();
+                  }
+
+                  if (courses.isEmpty) {
+                     return Center(
+                      child: Text('No matches for "$_searchQuery"', style: TextStyle(color: c.textMuted)),
+                    );
+                  }
 
                   return ListView.separated(
                     padding: const EdgeInsets.symmetric(
@@ -179,28 +207,24 @@ class _LearnEtudiantScreenState extends State<LearnEtudiantScreen> {
                     itemBuilder: (context, index) {
                       final course = courses[index];
                       return _EtudiantCourseCard(
+                        courseId: course.id, // ✅ نمرر المعرف لجلب التقييم
                         title: course.title,
                         instructor: course.instructorName,
-                        rating: '5.0', // TODO: حساب التقييم الحقيقي لاحقاً
+                        instructorId: course.instructorId,
+                        // rating: '5.0', // ❌ حذفنا القيمة الثابتة
                         category: course.category,
                         duration: '${course.totalLessons} lessons',
                         lessons: course.totalLessons,
-                        enrolled:
-                            false, // TODO: التحقق مما إذا كان الطالب مسجلاً
+                        enrolled: false,
                         progress: 0.0,
-                        // onTap: () {
-                        //   // TODO: الانتقال لتفاصيل الكورس
-                        //   debugPrint('Tapped on course: ${course.id}');
-                        //   // Navigator.pushNamed(context, '/course/details', arguments: course.id);
-                        // },
-onTap: () {
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (_) => CourseDetailsScreen(courseId: course.id),
-    ),
-  );
-},
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => CourseDetailsScreen(courseId: course.id),
+                            ),
+                          );
+                        },
                       );
                     },
                   );
@@ -214,11 +238,12 @@ onTap: () {
   }
 }
 
-// ── بطاقة الكورس للطالب (نفس التصميم الأصلي) ──
+// ── بطاقة الكورس للطالب (مع تقييم ديناميكي وأفاتار قابل للنقر) ──
 class _EtudiantCourseCard extends StatelessWidget {
+  final String courseId; // ✅ إضافة المعرف
   final String title;
   final String instructor;
-  final String rating;
+  final String instructorId;
   final String category;
   final String duration;
   final int lessons;
@@ -227,9 +252,10 @@ class _EtudiantCourseCard extends StatelessWidget {
   final VoidCallback onTap;
 
   const _EtudiantCourseCard({
+    required this.courseId,
     required this.title,
     required this.instructor,
-    required this.rating,
+    required this.instructorId,
     required this.category,
     required this.duration,
     required this.lessons,
@@ -265,17 +291,27 @@ class _EtudiantCourseCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryLight,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Icon(
-                    Icons.menu_book_rounded,
-                    color: AppColors.primary,
-                    size: 28,
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => PublicTeacherProfileScreen(teacherId: instructorId),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryLight,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Icon(
+                      Icons.person_rounded,
+                      color: AppColors.primary,
+                      size: 28,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -297,36 +333,60 @@ class _EtudiantCourseCard extends StatelessWidget {
                               ),
                             ),
                           ),
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.star_rounded,
-                                color: Color(0xFFD08700),
-                                size: 14,
-                              ),
-                              const SizedBox(width: 2),
-                              Text(
-                                rating,
-                                style: TextStyle(
-                                  color: c.textSecondary,
-                                  fontSize: 12,
-                                  fontFamily: 'Inter',
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ],
+                          
+                          // ✅✅✅ عرض التقييم الحقيقي ديناميكياً ✅✅✅
+                          StreamBuilder<Map<String, dynamic>>(
+                            stream: RatingService().getCourseRatingStats(courseId),
+                            builder: (context, snap) {
+                              final stats = snap.data ?? {'average': 0.0, 'count': 0};
+                              final avg = stats['average'] as double;
+                              final count = stats['count'] as int;
+                              
+                              return Row(
+                                children: [
+                                  const Icon(
+                                    Icons.star_rounded,
+                                    color: Color(0xFFD08700),
+                                    size: 14,
+                                  ),
+                                  const SizedBox(width: 2),
+                                  Text(
+                                    count > 0 ? avg.toStringAsFixed(1) : 'New',
+                                    style: TextStyle(
+                                      color: c.textSecondary,
+                                      fontSize: 12,
+                                      fontFamily: 'Inter',
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
                           ),
                         ],
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        instructor,
-                        style: TextStyle(
-                          color: c.textSecondary,
-                          fontSize: 13,
-                          fontFamily: 'Inter',
+                      
+                      GestureDetector(
+                        onTap: () {
+                           Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => PublicTeacherProfileScreen(teacherId: instructorId),
+                              ),
+                            );
+                        },
+                        child: Text(
+                          instructor,
+                          style: TextStyle(
+                            color: AppColors.primary,
+                            fontSize: 13,
+                            fontFamily: 'Inter',
+                            decoration: TextDecoration.underline,
+                          ),
                         ),
                       ),
+                      
                       const SizedBox(height: 8),
                       Row(
                         children: [

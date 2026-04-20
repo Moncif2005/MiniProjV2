@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:minipr/screens/shared/course_details_screen.dart';
+import 'package:minipr/screens/shared/public_teacher_profile_screen.dart';
 import '../../theme/app_colors.dart';
 import '../../services/courses_service.dart';
 import '../../models/course_model.dart';
@@ -317,7 +318,7 @@ class _MyCourseCard extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────
-// ✅ بطاقة الاستكشاف
+// ✅ بطاقة الاستكشاف (مع أفاتار قابل للنقر)
 // ─────────────────────────────────────────────────────────────
 class _ExploreCourseCard extends StatelessWidget {
   final CourseModel course;
@@ -339,10 +340,26 @@ class _ExploreCourseCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Container(
-                width: 50, height: 50,
-                decoration: BoxDecoration(color: AppColors.purpleLight, borderRadius: BorderRadius.circular(12)),
-                child: Icon(Icons.school, color: AppColors.purple),
+              // ✅✅✅ أفاتار المعلم القابل للنقر ✅✅✅
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => PublicTeacherProfileScreen(teacherId: course.instructorId),
+                    ),
+                  );
+                },
+                child: Container(
+                  width: 50, height: 50,
+                  decoration: BoxDecoration(
+                    color: AppColors.purpleLight, 
+                    borderRadius: BorderRadius.circular(12),
+                    // إذا كان لديك رابط لصورة المعلم في CourseModel، استخدمه هنا:
+                    // image: course.instructorAvatar != null ? DecorationImage(image: NetworkImage(course.instructorAvatar!), fit: BoxFit.cover) : null,
+                  ),
+                  child: Icon(Icons.school, color: AppColors.purple), // أو Icons.person
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -350,7 +367,22 @@ class _ExploreCourseCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(course.title, style: TextStyle(color: c.textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
-                    Text('By ${course.instructorName}', style: TextStyle(color: c.textSecondary, fontSize: 12)),
+                    
+                    // جعل اسم المعلم أيضاً قابلاً للنقر لنفس الصفحة
+                    GestureDetector(
+                      onTap: () {
+                         Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => PublicTeacherProfileScreen(teacherId: course.instructorId),
+                          ),
+                        );
+                      },
+                      child: Text(
+                        'By ${course.instructorName}', 
+                        style: TextStyle(color: AppColors.primary, fontSize: 12, decoration: TextDecoration.underline),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -361,17 +393,18 @@ class _ExploreCourseCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('${course.certificatePrice} €', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.bold)),
-TextButton(
-  onPressed: () {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => CourseDetailsScreen(courseId: course.id),
-      ),
-    );
-  },
-  child: const Text('View', style: TextStyle(color: AppColors.purple)),
-),            ],
+              TextButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => CourseDetailsScreen(courseId: course.id),
+                    ),
+                  );
+                },
+                child: const Text('View', style: TextStyle(color: AppColors.purple)),
+              ),
+            ],
           )
         ],
       ),
