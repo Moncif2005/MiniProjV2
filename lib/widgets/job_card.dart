@@ -66,7 +66,7 @@ class JobCard extends StatelessWidget {
         decoration: ShapeDecoration(
           color: c.surface,
           shape: RoundedRectangleBorder(side: BorderSide(width: 1.24, color: c.border), borderRadius: BorderRadius.circular(20)),
-          shadows: const [BoxShadow(color: Color(0x19000000), blurRadius: 2, offset: Offset(0, 1), spreadRadius: -1)],
+          shadows: [BoxShadow(color: context.isDark ? Colors.black.withOpacity(0.3) : const Color(0x19000000), blurRadius: 6, offset: const Offset(0, 2), spreadRadius: -1)],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -80,7 +80,7 @@ class JobCard extends StatelessWidget {
                   onTap: onAvatarTap,
                   child: Container(
                     width: 48, height: 48,
-                    decoration: BoxDecoration(color: companyBg.withOpacity(0.15), borderRadius: BorderRadius.circular(14)),
+                    decoration: BoxDecoration(color: companyBg.withOpacity(context.isDark ? 0.25 : 0.15), borderRadius: BorderRadius.circular(14)),
                     child: companyLogo != null && companyLogo.isNotEmpty
                         ? ClipRRect(
                             borderRadius: BorderRadius.circular(14),

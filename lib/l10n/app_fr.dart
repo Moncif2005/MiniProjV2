@@ -338,4 +338,8 @@ const Map<String, String> frStringsV5 = {
   'add_certificate': 'Ajouter un certificat',
   'add_training': 'Ajouter une formation',
   'applied_to': 'Postulé à',
+  'learn': 'Apprendre',
+  'error_occurred': 'Une erreur est survenue',
+  'active_courses': 'Cours actifs',
+  'completed_courses': 'Cours terminés',
 };

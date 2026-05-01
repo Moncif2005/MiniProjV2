@@ -86,7 +86,7 @@ class ProfileMenuItem extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: AppColors.primaryLight,
+                      color: context.colors.primaryLight,
                       borderRadius:
                           BorderRadius.circular(100),
                     ),

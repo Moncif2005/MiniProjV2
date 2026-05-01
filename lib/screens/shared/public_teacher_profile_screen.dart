@@ -205,7 +205,7 @@ class _CourseCardWithRating extends StatelessWidget {
                   
                   // ✅✅✅ عرض السعر بشكل دقيق ✅✅✅
                   Text(
-                    price > 0 ? '${price.toStringAsFixed(2)} €' : 'Free', 
+                    price > 0 ? '${price.toStringAsFixed(2)} DZD' : 'Free', 
                     style: TextStyle(
                       color: price > 0 ? AppColors.green : AppColors.primary, 
                       fontWeight: FontWeight.bold,

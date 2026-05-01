@@ -45,7 +45,8 @@ const Map<String, String> enStrings = {
   'role_recruiter': 'Recruiter',
   'role_teacher': 'Teacher',
   'one_last_step': 'One last step 👋',
-  'personalize_experience': 'Tell us who you are so we can personalize your experience.',
+  'personalize_experience':
+      'Tell us who you are so we can personalize your experience.',
   'get_started': 'Get Started',
   'student_subtitle': 'Learn new skills & find jobs',
   'teacher_subtitle': 'Create courses & teach students',
@@ -62,7 +63,8 @@ const Map<String, String> enStrings = {
 
   // ── Forgot Password ──
   'forgot_password_title': 'Forgot Password?',
-  'forgot_password_subtitle': "No worries! Enter your email and we'll send you a reset link.",
+  'forgot_password_subtitle':
+      "No worries! Enter your email and we'll send you a reset link.",
   'send_reset_link': 'Send Reset Link',
   'back_to_sign_in': 'Back to Sign In',
   'check_inbox': 'Check your inbox!',
@@ -73,16 +75,20 @@ const Map<String, String> enStrings = {
 
   // ── New Password ──
   'set_new_password': 'Set New Password',
-  'new_password_subtitle': 'Create a strong password to keep your account secure.',
+  'new_password_subtitle':
+      'Create a strong password to keep your account secure.',
   'new_password': 'New Password',
   'confirm_new_password': 'Confirm New Password',
   'update_password': 'Update Password',
   'password_updated': 'Password Updated!',
-  'password_updated_subtitle': 'Your password has been updated successfully. You can now sign in with your new password.',
+  'password_updated_subtitle':
+      'Your password has been updated successfully. You can now sign in with your new password.',
   'go_to_sign_in': 'Go to Sign In',
-  'password_strength_hint': 'Password must be 8+ characters with uppercase, number & special character.',
+  'password_strength_hint':
+      'Password must be 8+ characters with uppercase, number & special character.',
   'passwords_not_match': 'Passwords do not match.',
-  'invalid_reset_link': 'Invalid or expired reset link. Please request a new one.',
+  'invalid_reset_link':
+      'Invalid or expired reset link. Please request a new one.',
 
   // ── Navigation ──
   'nav_home': 'Home',
@@ -232,10 +238,12 @@ const Map<String, String> enStringsExtra = {
   'company_info': 'Company Info',
   'deactivate': 'Deactivate',
   'deactivate_job': 'Deactivate Job?',
-  'deactivate_job_msg': 'This will hide the job from seekers. You can reactivate it later.',
+  'deactivate_job_msg':
+      'This will hide the job from seekers. You can reactivate it later.',
   'delete_course': 'Delete Course?',
   'delete_permanently': 'Delete Permanently?',
-  'delete_job_msg': 'This will permanently delete the job and all its applications. This action cannot be undone!',
+  'delete_job_msg':
+      'This will permanently delete the job and all its applications. This action cannot be undone!',
   'description': 'Description',
   'edit_job': 'Edit Job',
   'failed_update_status': 'Failed to update job status',
@@ -243,7 +251,8 @@ const Map<String, String> enStringsExtra = {
   'in_progress': 'In Progress',
   'job_deleted': 'Job deleted permanently ✓',
   'job_posted': 'Job posted successfully!',
-  'job_submitted': 'Job submitted for review • Will appear after admin approval',
+  'job_submitted':
+      'Job submitted for review • Will appear after admin approval',
   'job_title_required': 'Job title is required',
   'job_updated': 'Job updated!',
   'keep': 'Keep',
@@ -295,7 +304,8 @@ const Map<String, String> enStringsV5 = {
   'course_published': 'Course published successfully!',
   'course_updated': 'Course updated successfully!',
   'edit_course': 'Edit Course',
-  'edit_lessons_note': 'To edit lessons or units, please use the Create Course flow.',
+  'edit_lessons_note':
+      'To edit lessons or units, please use the Create Course flow.',
   'video': 'Video',
   'pdf': 'PDF',
   'create_new_course': 'Create New Course',
@@ -323,7 +333,8 @@ const Map<String, String> enStringsV5 = {
   'no_courses_published': 'No courses published yet.',
   'all_candidates': 'All Candidates',
   'no_applicants_yet': 'No applicants yet',
-  'candidates_will_appear': 'Candidates will appear here when they apply to your jobs',
+  'candidates_will_appear':
+      'Candidates will appear here when they apply to your jobs',
   'applied_for': 'Applied for',
   'edit_job_details': 'Edit Job Details',
   'update_job_subtitle': 'Update title, description, salary, etc.',
@@ -338,4 +349,16 @@ const Map<String, String> enStringsV5 = {
   'add_certificate': 'Add Certificate',
   'add_training': 'Add Training',
   'applied_to': 'Applied to',
+  'learn': 'Learn',
+  'error_occurred': 'An error occurred',
+  'active_courses': 'Active Courses',
+  'completed_courses': 'Completed Courses',
+  'courses': 'courses',
+  'of_learning': 'of learning',
+  'consecutive_days': 'day streak',
+  'all_courses': 'All Courses',
+  'no_enrollments_yet': 'No enrollments yet',
+  'course_progress': 'Course Progress',
+  'completed': 'Completed',
+  'lessons_label': 'Lessons',
 };

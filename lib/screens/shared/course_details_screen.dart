@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 
 import 'package:minipr/screens/shared/lesson_player_screen.dart';
 
+import 'package:minipr/screens/shared/payment_screen.dart';
+
 import 'package:minipr/screens/shared/public_teacher_profile_screen.dart';
 
 import 'package:minipr/services/progress_service.dart';
@@ -306,7 +308,7 @@ GestureDetector(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(AppLocalizations.of(context).certificatePrice, style: TextStyle(color: c.textMuted, fontSize: 12)),
-                        Text('${course.certificatePrice} €', style: TextStyle(color: c.textPrimary, fontSize: 20, fontWeight: FontWeight.bold)),
+                        Text('${course.certificatePrice} DZD', style: TextStyle(color: c.textPrimary, fontSize: 20, fontWeight: FontWeight.bold)),
                       ],
                     ),
                     const Spacer(),
@@ -341,48 +343,87 @@ GestureDetector(
                 
                 const SizedBox(height: 12),
 
-                // زر بدء التعلم يأخذ العرض الكامل في الأسفل
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      // Navigate to first available (unlocked) lesson
-                      final lessonsSnap = await FirebaseFirestore.instance
-                          .collection('courses')
-                          .doc(course.id)
-                          .collection('lessons')
-                          .orderBy('unitNumber')
-                          .orderBy('orderInUnit')
-                          .limit(1)
-                          .get();
-
-                      if (lessonsSnap.docs.isNotEmpty && context.mounted) {
-                        final firstLesson = lessonsSnap.docs.first;
-                        final data = firstLesson.data();
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => LessonPlayerScreen(
-                              videoUrl: data['videoUrl'] ?? '',
-                              lessonTitle: data['title'] ?? 'Lesson',
-                              courseId: course.id,
-                              lessonId: firstLesson.id,
-                              lessonType: data['type'] ?? 'video',
-                              isLocked: false,
-                              description: data['description'] ?? '',
+                // ── Action Buttons Row ──
+                Row(
+                  children: [
+                    // Buy / Pay certificate button
+                    Expanded(
+                      child: SizedBox(
+                        height: 50,
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => PaymentScreen(course: course),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.payment_rounded, size: 18),
+                          label: Text(
+                            'Buy  ${course.certificatePrice} DZD',
+                            style: const TextStyle(
+                              fontFamily: 'Inter',
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14,
                             ),
                           ),
-                        );
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.green,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.primary,
+                            side: const BorderSide(color: AppColors.primary, width: 1.5),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          ),
+                        ),
+                      ),
                     ),
-                    child: Text(AppLocalizations.of(context).startLearning, style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700, fontSize: 16)),
-                  ),
+                    const SizedBox(width: 12),
+
+                    // Start learning button
+                    Expanded(
+                      flex: 2,
+                      child: SizedBox(
+                        height: 50,
+                        child: ElevatedButton.icon(
+                          onPressed: () async {
+                            final lessonsSnap = await FirebaseFirestore.instance
+                                .collection('courses')
+                                .doc(course.id)
+                                .collection('lessons')
+                                .orderBy('unitNumber')
+                                .orderBy('orderInUnit')
+                                .limit(1)
+                                .get();
+
+                            if (lessonsSnap.docs.isNotEmpty && context.mounted) {
+                              final firstLesson = lessonsSnap.docs.first;
+                              final data = firstLesson.data();
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => LessonPlayerScreen(
+                                    videoUrl: data['videoUrl'] ?? '',
+                                    lessonTitle: data['title'] ?? 'Lesson',
+                                    courseId: course.id,
+                                    lessonId: firstLesson.id,
+                                    lessonType: data['type'] ?? 'video',
+                                    isLocked: false,
+                                    description: data['description'] ?? '',
+                                  ),
+                                ),
+                              );
+                            }
+                          },
+                          icon: const Icon(Icons.play_arrow_rounded, size: 20),
+                          label: Text(AppLocalizations.of(context).startLearning, style: const TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700, fontSize: 15)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.green,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

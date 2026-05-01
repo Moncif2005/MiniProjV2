@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_colors.dart';
 
 class LearnCourseCard extends StatelessWidget {
   final String title;
@@ -28,38 +29,40 @@ class LearnCourseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
+    final isDark = context.isDark;
+
+    final overlayBg = isDark
+        ? Colors.black.withOpacity(0.55)
+        : Colors.white.withOpacity(0.90);
+    final overlayIcon = isDark ? Colors.white : const Color(0xFF155DFC);
+
     return Container(
       width: double.infinity,
       decoration: ShapeDecoration(
-        color: Colors.white,
+        color: c.surface,
         shape: RoundedRectangleBorder(
-          side: const BorderSide(width: 1.24, color: Color(0xFFF5F5F5)),
+          side: BorderSide(width: 1.24, color: c.border),
           borderRadius: BorderRadius.circular(24),
         ),
-        shadows: const [
+        shadows: [
           BoxShadow(
-            color: Color(0x19000000),
-            blurRadius: 2,
-            offset: Offset(0, 1),
+            color: isDark
+                ? Colors.black.withOpacity(0.35)
+                : const Color(0x19000000),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
             spreadRadius: -1,
-          ),
-          BoxShadow(
-            color: Color(0x19000000),
-            blurRadius: 3,
-            offset: Offset(0, 1),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-
-          // ── Thumbnail ──
           Stack(
             children: [
               ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(24)),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
                 child: Image.network(
                   imageUrl,
                   width: double.infinity,
@@ -67,16 +70,13 @@ class LearnCourseCard extends StatelessWidget {
                   fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) => Container(
                     height: 192,
-                    color: const Color(0xFFF3F4F6),
-                    child: const Center(
-                      child: Icon(Icons.image_outlined,
-                          color: Color(0xFFA1A1A1), size: 48),
+                    color: c.iconBg,
+                    child: Center(
+                      child: Icon(Icons.image_outlined, color: c.textMuted, size: 48),
                     ),
                   ),
                 ),
               ),
-
-              // ── Category Badge ──
               Positioned(
                 top: 16,
                 left: 16,
@@ -84,8 +84,8 @@ class LearnCourseCard extends StatelessWidget {
                   children: [
                     _Badge(
                       label: category.toUpperCase(),
-                      bgColor: Colors.white.withValues(alpha: 0.90),
-                      textColor: const Color(0xFF155DFC),
+                      bgColor: overlayBg,
+                      textColor: AppColors.primary,
                       isRounded: true,
                     ),
                     if (hasQuizGames) ...[
@@ -100,8 +100,6 @@ class LearnCourseCard extends StatelessWidget {
                   ],
                 ),
               ),
-
-              // ── Bookmark Button ──
               Positioned(
                 bottom: 12,
                 right: 12,
@@ -111,50 +109,36 @@ class LearnCourseCard extends StatelessWidget {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.90),
+                      color: overlayBg,
                       shape: BoxShape.circle,
-                      boxShadow: const [
+                      boxShadow: [
                         BoxShadow(
-                          color: Color(0x19000000),
+                          color: Colors.black.withOpacity(isDark ? 0.4 : 0.10),
                           blurRadius: 6,
-                          offset: Offset(0, 4),
+                          offset: const Offset(0, 4),
                           spreadRadius: -4,
-                        ),
-                        BoxShadow(
-                          color: Color(0x19000000),
-                          blurRadius: 15,
-                          offset: Offset(0, 10),
-                          spreadRadius: -3,
                         ),
                       ],
                     ),
-                    child: const Icon(
-                      Icons.bookmark_border_rounded,
-                      color: Color(0xFF155DFC),
-                      size: 24,
-                    ),
+                    child: Icon(Icons.bookmark_border_rounded, color: overlayIcon, size: 24),
                   ),
                 ),
               ),
             ],
           ),
-
-          // ── Course Info ──
           Padding(
             padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-
-                // ── Title + Rating ──
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
                       child: Text(
                         title,
-                        style: const TextStyle(
-                          color: Color(0xFF171717),
+                        style: TextStyle(
+                          color: c.textPrimary,
                           fontSize: 18,
                           fontFamily: 'Inter',
                           fontWeight: FontWeight.w700,
@@ -164,13 +148,12 @@ class LearnCourseCard extends StatelessWidget {
                     const SizedBox(width: 8),
                     Row(
                       children: [
-                        const Icon(Icons.star_rounded,
-                            color: Color(0xFFFBBF24), size: 16),
+                        const Icon(Icons.star_rounded, color: Color(0xFFFBBF24), size: 16),
                         const SizedBox(width: 4),
                         Text(
                           rating,
-                          style: const TextStyle(
-                            color: Color(0xFF0A0A0A),
+                          style: TextStyle(
+                            color: c.textPrimary,
                             fontSize: 14,
                             fontFamily: 'Inter',
                             fontWeight: FontWeight.w700,
@@ -181,62 +164,32 @@ class LearnCourseCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 4),
-
-                // ── Instructor ──
                 Text(
                   'By $instructor',
-                  style: const TextStyle(
-                    color: Color(0xFF737373),
-                    fontSize: 14,
-                    fontFamily: 'Inter',
-                  ),
+                  style: TextStyle(color: c.textSecondary, fontSize: 14, fontFamily: 'Inter'),
                 ),
                 const SizedBox(height: 12),
-
-                // ── Divider ──
-                const Divider(color: Color(0xFFFAFAFA), thickness: 1.24),
-
-                // ── Meta + Enroll ──
+                Divider(color: c.border, thickness: 1.24),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-
-                    // ── Duration & Lessons ──
                     Row(
                       children: [
-                        const Icon(Icons.access_time_rounded,
-                            color: Color(0xFF737373), size: 16),
+                        Icon(Icons.access_time_rounded, color: c.textSecondary, size: 16),
                         const SizedBox(width: 4),
-                        Text(
-                          duration,
-                          style: const TextStyle(
-                            color: Color(0xFF737373),
-                            fontSize: 12,
-                            fontFamily: 'Inter',
-                          ),
-                        ),
+                        Text(duration, style: TextStyle(color: c.textSecondary, fontSize: 12, fontFamily: 'Inter')),
                         const SizedBox(width: 16),
-                        const Icon(Icons.play_circle_outline_rounded,
-                            color: Color(0xFF737373), size: 16),
+                        Icon(Icons.play_circle_outline_rounded, color: c.textSecondary, size: 16),
                         const SizedBox(width: 4),
-                        Text(
-                          lessons,
-                          style: const TextStyle(
-                            color: Color(0xFF737373),
-                            fontSize: 12,
-                            fontFamily: 'Inter',
-                          ),
-                        ),
+                        Text(lessons, style: TextStyle(color: c.textSecondary, fontSize: 12, fontFamily: 'Inter')),
                       ],
                     ),
-
-                    // ── Enroll Button ──
                     GestureDetector(
                       onTap: onEnroll,
-                      child: const Text(
+                      child: Text(
                         'Enroll Now',
                         style: TextStyle(
-                          color: Color(0xFF155DFC),
+                          color: isDark ? AppColors.darkPrimary : AppColors.primary,
                           fontSize: 14,
                           fontFamily: 'Inter',
                           fontWeight: FontWeight.w700,
@@ -254,7 +207,6 @@ class LearnCourseCard extends StatelessWidget {
   }
 }
 
-// ── Internal Badge Widget ──
 class _Badge extends StatelessWidget {
   final String label;
   final Color bgColor;

@@ -88,13 +88,13 @@ class _OfferCardState extends State<OfferCard> {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: widget.companyBg,
+                      color: widget.companyBg.withOpacity(context.isDark ? 0.25 : 1.0),
                       borderRadius: BorderRadius.circular(16),
-                      boxShadow: const [
+                      boxShadow: [
                         BoxShadow(
-                          color: Color(0x19000000),
-                          blurRadius: 2,
-                          offset: Offset(0, 1),
+                          color: Colors.black.withOpacity(context.isDark ? 0.3 : 0.10),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
                           spreadRadius: -1,
                         ),
                       ],
@@ -226,27 +226,25 @@ class _OfferCardState extends State<OfferCard> {
               width: double.infinity,
               height: 44,
               decoration: BoxDecoration(
-                color: c.bg,
+                color: AppColors.primary,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                    color: c.border, width: 1.24),
               ),
-              child: Row(
+              child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
                     'Apply Now',
                     style: TextStyle(
-                      color: c.textPrimary,
+                      color: Colors.white,
                       fontSize: 14,
                       fontFamily: 'Inter',
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const SizedBox(width: 6),
+                  SizedBox(width: 6),
                   Icon(
                     Icons.arrow_forward_rounded,
-                    color: c.textPrimary,
+                    color: Colors.white,
                     size: 16,
                   ),
                 ],

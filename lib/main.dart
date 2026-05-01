@@ -9,6 +9,7 @@ import 'package:minipr/screens/enseignant/my_courses_screen.dart';
 import 'package:minipr/screens/enseignant/enseignant_courses_screen.dart';
 import 'services/fcm_service.dart';
 import 'package:minipr/screens/auth_wrapper.dart';
+import 'package:minipr/screens/splash_screen.dart';
 import 'package:minipr/screens/enseignant/enseignant_home_screen.dart';
 import 'package:minipr/screens/recruteur/applicants_screen.dart';
 import 'package:minipr/screens/recruteur/edit_offer_screen.dart';
@@ -45,6 +46,7 @@ import 'screens/recruteur/post_job_screen.dart';
 // ── Shared ──
 import 'screens/shared/offers_screen.dart';
 import 'screens/shared/lesson_screen.dart';
+import 'screens/shared/course_details_screen.dart';
 import 'screens/shared/notification_screen.dart';
 import 'screens/shared/edit_profile_screen.dart';
 import 'screens/shared/certificates_screen.dart';
@@ -107,7 +109,7 @@ class MyApp extends StatelessWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
 
-      home: const AuthWrapper(),
+      home: const SplashScreen(),
       routes: {
         '/signup': (context) => const SignUpScreen(),
         '/create-account': (context) => const CreateAccountScreen(),
@@ -172,7 +174,20 @@ class MyApp extends StatelessWidget {
 
         // ── Shared ──
         '/offers': (context) => const OffersScreen(),
-        '/lesson': (context) => const LessonScreen(),
+        '/lesson': (context) {
+          final courseId = ModalRoute.of(context)?.settings.arguments as String?;
+          if (courseId == null) {
+            return const Scaffold(body: Center(child: Text('Invalid course')));
+          }
+          return LessonScreen(courseId: courseId);
+        },
+        '/course-details': (context) {
+          final courseId = ModalRoute.of(context)?.settings.arguments as String?;
+          if (courseId == null) {
+            return const Scaffold(body: Center(child: Text('Invalid course')));
+          }
+          return CourseDetailsScreen(courseId: courseId);
+        },
         '/notifications': (context) => const NotificationScreen(),
         '/edit-profile': (context) => const EditProfileScreen(),
         '/certificates': (context) => const CertificatesScreen(),

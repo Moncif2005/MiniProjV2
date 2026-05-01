@@ -68,27 +68,27 @@ class AppliedJobCard extends StatelessWidget {
     }
   }
 
-  Color get _statusBg {
+  Color _statusBg(bool isDark) {
     switch (status) {
       case JobStatus.pending:
-        return const Color(0xFFF5F5F5);
+        return isDark ? Colors.white.withOpacity(0.08) : const Color(0xFFF5F5F5);
       case JobStatus.reviewing:
-        return AppColors.primaryLight;
+        return AppColors.primary.withOpacity(isDark ? 0.20 : 0.12);
       case JobStatus.interview:
-        return AppColors.purpleLight;
+        return AppColors.purple.withOpacity(isDark ? 0.20 : 0.12);
       case JobStatus.accepted:
-        return AppColors.greenLight;
+        return AppColors.green.withOpacity(isDark ? 0.20 : 0.12);
       case JobStatus.rejected:
-        return AppColors.redLight;
+        return AppColors.red.withOpacity(isDark ? 0.20 : 0.12);
       case JobStatus.withdrawn:
-        return Colors.grey[200]!;
+        return isDark ? Colors.white.withOpacity(0.08) : Colors.grey[200]!;
     }
   }
 
-  Color get _statusColor {
+  Color _statusColor(ThemeColors c) {
     switch (status) {
       case JobStatus.pending:
-        return AppColors.lightTextSecondary;
+        return c.textSecondary;
       case JobStatus.reviewing:
         return AppColors.primary;
       case JobStatus.interview:
@@ -98,14 +98,14 @@ class AppliedJobCard extends StatelessWidget {
       case JobStatus.rejected:
         return AppColors.red;
       case JobStatus.withdrawn:
-        return Colors.grey[700]!;
+        return c.textMuted;
     }
   }
 
-  Color get _statusDot {
+  Color _statusDot(ThemeColors c) {
     switch (status) {
       case JobStatus.pending:
-        return AppColors.lightTextMuted;
+        return c.textMuted;
       case JobStatus.reviewing:
         return AppColors.primaryDark;
       case JobStatus.interview:
@@ -115,16 +115,16 @@ class AppliedJobCard extends StatelessWidget {
       case JobStatus.rejected:
         return AppColors.red;
       case JobStatus.withdrawn:
-        return Colors.grey[500]!;
+        return c.textMuted;
     }
   }
 
-  Color? get _messageBg {
+  Color? _messageBg(bool isDark) {
     switch (status) {
       case JobStatus.interview:
-        return const Color(0xFFFAF5FF);
+        return AppColors.purple.withOpacity(isDark ? 0.18 : 0.08);
       case JobStatus.accepted:
-        return AppColors.greenLight;
+        return AppColors.green.withOpacity(isDark ? 0.18 : 0.10);
       default:
         return null;
     }
@@ -144,6 +144,7 @@ class AppliedJobCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
+    final isDark = context.isDark;
 
     // ✅ تصميم البطاقة المغلقة: خلفية رمادية فاتحة + حدود رمادية
     final cardDecoration = isJobActive
@@ -153,11 +154,11 @@ class AppliedJobCard extends StatelessWidget {
               side: BorderSide(width: 1.24, color: c.border),
               borderRadius: BorderRadius.circular(24),
             ),
-            shadows: const [
+            shadows: [
               BoxShadow(
-                color: Color(0x19000000),
-                blurRadius: 2,
-                offset: Offset(0, 1),
+                color: isDark ? Colors.black.withOpacity(0.3) : const Color(0x19000000),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
                 spreadRadius: -1,
               ),
               BoxShadow(
@@ -199,7 +200,9 @@ class AppliedJobCard extends StatelessWidget {
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: isJobActive ? companyBg : companyBg.withOpacity(0.5),
+                    color: isJobActive
+                        ? companyBg.withOpacity(isDark ? 0.25 : 1.0)
+                        : companyBg.withOpacity(isDark ? 0.12 : 0.5),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Center(
@@ -252,7 +255,7 @@ class AppliedJobCard extends StatelessWidget {
               const SizedBox(width: 8),
 
               // ✅ Status/Closed Badge
-              _buildStatusBadge(c, textColor),
+              _buildStatusBadge(c, isDark),
             ],
           ),
           const SizedBox(height: 12),
@@ -332,7 +335,7 @@ class AppliedJobCard extends StatelessWidget {
                           vertical: 8,
                         ),
                         decoration: BoxDecoration(
-                          color: c.bg,
+                          color: c.iconBg,
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(color: c.border, width: 1),
                         ),
@@ -393,13 +396,13 @@ class AppliedJobCard extends StatelessWidget {
           ),
 
           // ── Status Message (Interview / Accepted only) ──
-          if (statusMessage != null && _messageBg != null && isJobActive) ...[
+          if (statusMessage != null && _messageBg(isDark) != null && isJobActive) ...[
             const SizedBox(height: 8),
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
-                color: _messageBg,
+                color: _messageBg(isDark),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Row(
@@ -433,7 +436,7 @@ class AppliedJobCard extends StatelessWidget {
   }
 
   // ✅ دالة شارة الحالة (بالإنجليزية + ألوان متوافقة)
-  Widget _buildStatusBadge(ThemeColors c, Color textColor) {
+  Widget _buildStatusBadge(ThemeColors c, bool isDark) {
     // if (!isJobActive) {
     //   return Container(
     //     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -464,7 +467,7 @@ class AppliedJobCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: _statusBg,
+        color: _statusBg(isDark),
         borderRadius: BorderRadius.circular(100),
       ),
       child: Row(
@@ -474,7 +477,7 @@ class AppliedJobCard extends StatelessWidget {
             width: 6,
             height: 6,
             decoration: BoxDecoration(
-              color: _statusDot,
+              color: _statusDot(c),
               shape: BoxShape.circle,
             ),
           ),
@@ -482,7 +485,7 @@ class AppliedJobCard extends StatelessWidget {
           Text(
             _statusLabel,
             style: TextStyle(
-              color: _statusColor,
+              color: _statusColor(c),
               fontSize: 10,
               fontFamily: 'Inter',
               fontWeight: FontWeight.w700,

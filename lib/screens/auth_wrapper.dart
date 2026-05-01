@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 
 import '../providers/user_provider.dart';
 import '../services/fcm_service.dart';
+import '../theme/app_colors.dart';
 import 'auth/signin_screen.dart';
 import 'auth/choose_role_screen.dart';
 import 'etudiant/home_etudiant_screen.dart';
@@ -111,7 +112,7 @@ class _AuthenticatedRouterState extends State<_AuthenticatedRouter> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const _BrandedLoadingScreen();
     }
 
     // ✅ Fix 5: AuthWrapper itself handles role=null → ChooseRoleScreen
@@ -127,6 +128,92 @@ class _AuthenticatedRouterState extends State<_AuthenticatedRouter> {
       default:
         return const HomeEtudiantScreen();
     }
+  }
+}
+
+
+// ── Branded loading screen shown while resolving user role ─────────────────
+class _BrandedLoadingScreen extends StatefulWidget {
+  const _BrandedLoadingScreen();
+
+  @override
+  State<_BrandedLoadingScreen> createState() => _BrandedLoadingScreenState();
+}
+
+class _BrandedLoadingScreenState extends State<_BrandedLoadingScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _pulse;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    )..repeat(reverse: true);
+    _pulse = Tween<double>(begin: 0.85, end: 1.0).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? AppColors.darkBg : AppColors.lightBg;
+
+    return Scaffold(
+      backgroundColor: bg,
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ScaleTransition(
+              scale: _pulse,
+              child: Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(18),
+                  gradient: const LinearGradient(
+                    colors: AppColors.gradientBlue,
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withOpacity(0.35),
+                      blurRadius: 20,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.school_rounded,
+                  color: Colors.white,
+                  size: 34,
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: 28,
+              height: 28,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.5,
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

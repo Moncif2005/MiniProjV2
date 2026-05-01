@@ -225,151 +225,165 @@ class AppLocalizations {
     return '$count ${translate('active_job_posts')}';
   }
 
-  String get jobActive   => translate('job_active');
-  String get jobClosed   => translate('job_closed');
+  String get jobActive => translate('job_active');
+  String get jobClosed => translate('job_closed');
 
   // ── Extra (remaining screens) ──
-  String get actions          => translate('actions');
-  String get apply            => translate('apply');
-  String get applyForJob      => translate('apply_for_job');
-  String get areYouSure       => translate('are_you_sure');
-  String get browseCourses    => translate('browse_courses');
-  String get changePhoto      => translate('change_photo');
-  String get deactivate       => translate('deactivate');
-  String get deactivateJob    => translate('deactivate_job');
+  String get actions => translate('actions');
+  String get apply => translate('apply');
+  String get applyForJob => translate('apply_for_job');
+  String get areYouSure => translate('are_you_sure');
+  String get browseCourses => translate('browse_courses');
+  String get changePhoto => translate('change_photo');
+  String get deactivate => translate('deactivate');
+  String get deactivateJob => translate('deactivate_job');
   String get deactivateJobMsg => translate('deactivate_job_msg');
-  String get deleteCourse     => translate('delete_course');
+  String get deleteCourse => translate('delete_course');
   String get deletePermanently => translate('delete_permanently');
-  String get deleteJobMsg     => translate('delete_job_msg');
-  String get description      => translate('description');
-  String get editJob          => translate('edit_job');
+  String get deleteJobMsg => translate('delete_job_msg');
+  String get description => translate('description');
+  String get editJob => translate('edit_job');
   String get failedUpdateStatus => translate('failed_update_status');
-  String get fillDetails      => translate('fill_details');
-  String get inProgress       => translate('in_progress');
-  String get jobDeleted       => translate('job_deleted');
-  String get jobPosted        => translate('job_posted');
-  String get jobSubmitted     => translate('job_submitted');
+  String get fillDetails => translate('fill_details');
+  String get inProgress => translate('in_progress');
+  String get jobDeleted => translate('job_deleted');
+  String get jobPosted => translate('job_posted');
+  String get jobSubmitted => translate('job_submitted');
   String get jobTitleRequired => translate('job_title_required');
-  String get jobUpdated       => translate('job_updated');
-  String get keep             => translate('keep');
-  String get manage           => translate('manage');
-  String get manageCourse     => translate('manage_course');
-  String get max200           => translate('max_200');
-  String get myJobs           => translate('my_jobs');
-  String get noApplicationsYet   => translate('no_applications_yet');
-  String get noCoursesFound      => translate('no_courses_found');
+  String get jobUpdated => translate('job_updated');
+  String get keep => translate('keep');
+  String get manage => translate('manage');
+  String get manageCourse => translate('manage_course');
+  String get max200 => translate('max_200');
+  String get myJobs => translate('my_jobs');
+  String get noApplicationsYet => translate('no_applications_yet');
+  String get noCoursesFound => translate('no_courses_found');
   String get noCoursesInProgress => translate('no_courses_in_progress');
-  String get noOffersFound    => translate('no_offers_found');
-  String get newCourse        => translate('new_course');
+  String get noOffersFound => translate('no_offers_found');
+  String get newCourse => translate('new_course');
   String get pleaseEnterJobTitle => translate('please_enter_job_title');
-  String get pleaseSignIn     => translate('please_sign_in');
+  String get pleaseSignIn => translate('please_sign_in');
   String get pleaseSignInApply => translate('please_sign_in_apply');
-  String get pleaseSignInPost  => translate('please_sign_in_post');
-  String get postJobBtn       => translate('post_job_btn');
-  String get preview          => translate('preview');
-  String get publishJob       => translate('publish_job');
-  String get statusUpdated    => translate('status_updated');
+  String get pleaseSignInPost => translate('please_sign_in_post');
+  String get postJobBtn => translate('post_job_btn');
+  String get preview => translate('preview');
+  String get publishJob => translate('publish_job');
+  String get statusUpdated => translate('status_updated');
   String get updatePersonalInfo => translate('update_personal_info');
-  String get view             => translate('view');
+  String get view => translate('view');
   String get withdrawApplication => translate('withdraw_application');
-  String get noMatches        => translate('no_matches');
-  String get complete         => translate('complete');
-  String get lessons          => translate('lessons');
-  String get units            => translate('units');
+  String get noMatches => translate('no_matches');
+  String get complete => translate('complete');
+  String get lessons => translate('lessons');
+  String get units => translate('units');
   String get startFirstCourse => translate('start_first_course');
   String get noPublishedCourses => translate('no_published_courses');
-  String get certPrice        => translate('cert_price');
+  String get certPrice => translate('cert_price');
 
-  String get statusPending    => translate('status_pending');
-  String get statusReviewing  => translate('status_reviewing');
-  String get statusInterview  => translate('status_interview');
-  String get statusAccepted   => translate('status_accepted');
-  String get statusRejected   => translate('status_rejected');
+  String get statusPending => translate('status_pending');
+  String get statusReviewing => translate('status_reviewing');
+  String get statusInterview => translate('status_interview');
+  String get statusAccepted => translate('status_accepted');
+  String get statusRejected => translate('status_rejected');
 
   // ── v5: Course details ──
-  String get rateThisCourse     => translate('rate_this_course');
-  String get howWasExperience   => translate('how_was_experience');
-  String get submitRating       => translate('submit_rating');
-  String get aboutThisCourse    => translate('about_this_course');
-  String get courseContent      => translate('course_content');
-  String get certificatePrice   => translate('certificate_price');
-  String get noLessonsYet       => translate('no_lessons_yet');
-  String get yourProgress       => translate('your_progress');
-  String get byInstructor       => translate('by_instructor');
+  String get rateThisCourse => translate('rate_this_course');
+  String get howWasExperience => translate('how_was_experience');
+  String get submitRating => translate('submit_rating');
+  String get aboutThisCourse => translate('about_this_course');
+  String get courseContent => translate('course_content');
+  String get certificatePrice => translate('certificate_price');
+  String get noLessonsYet => translate('no_lessons_yet');
+  String get yourProgress => translate('your_progress');
+  String get byInstructor => translate('by_instructor');
 
   // ── v5: Lesson player ──
-  String get lessonCompleted    => translate('lesson_completed');
-  String get aboutThisLesson    => translate('about_this_lesson');
+  String get lessonCompleted => translate('lesson_completed');
+  String get aboutThisLesson => translate('about_this_lesson');
 
   // ── v5: Course management ──
-  String get pdfUploaded        => translate('pdf_uploaded');
-  String get imageUploaded      => translate('image_uploaded');
-  String get coursePublished    => translate('course_published');
-  String get courseUpdated      => translate('course_updated');
-  String get editCourse         => translate('edit_course');
-  String get editLessonsNote    => translate('edit_lessons_note');
-  String get video              => translate('video');
-  String get pdf                => translate('pdf');
-  String get createNewCourse    => translate('create_new_course');
-  String get createFirstCourse  => translate('create_first_course');
+  String get pdfUploaded => translate('pdf_uploaded');
+  String get imageUploaded => translate('image_uploaded');
+  String get coursePublished => translate('course_published');
+  String get courseUpdated => translate('course_updated');
+  String get editCourse => translate('edit_course');
+  String get editLessonsNote => translate('edit_lessons_note');
+  String get video => translate('video');
+  String get pdf => translate('pdf');
+  String get createNewCourse => translate('create_new_course');
+  String get createFirstCourse => translate('create_first_course');
 
   // ── v5: Home student extra ──
-  String get recommendedForYou  => translate('recommended_for_you');
-  String get newOpportunities   => translate('new_opportunities');
-  String get noNewJobs          => translate('no_new_jobs');
+  String get recommendedForYou => translate('recommended_for_you');
+  String get newOpportunities => translate('new_opportunities');
+  String get noNewJobs => translate('no_new_jobs');
 
   // ── v5: Profile menus ──
-  String get myPortfolio        => translate('my_portfolio');
-  String get learningHistory    => translate('learning_history');
-  String get appliedJobs        => translate('applied_jobs');
-  String get logOutMenu         => translate('log_out_menu');
+  String get myPortfolio => translate('my_portfolio');
+  String get learningHistory => translate('learning_history');
+  String get appliedJobs => translate('applied_jobs');
+  String get logOutMenu => translate('log_out_menu');
 
   // ── v5: Portfolio ──
-  String get deleteCv           => translate('delete_cv');
-  String get deleteCvConfirm    => translate('delete_cv_confirm');
-  String get deleteItem         => translate('delete_item');
-  String get viewDocument       => translate('view_document');
-  String get previewCv          => translate('preview_cv');
-  String get projectLabel       => translate('project_label');
-  String get certificateItem    => translate('certificate_item');
-  String get failedLoadImage    => translate('failed_load_image');
+  String get deleteCv => translate('delete_cv');
+  String get deleteCvConfirm => translate('delete_cv_confirm');
+  String get deleteItem => translate('delete_item');
+  String get viewDocument => translate('view_document');
+  String get previewCv => translate('preview_cv');
+  String get projectLabel => translate('project_label');
+  String get certificateItem => translate('certificate_item');
+  String get failedLoadImage => translate('failed_load_image');
 
   // ── v5: Public profiles ──
-  String get viewCv             => translate('view_cv');
-  String get documentViewer     => translate('document_viewer');
-  String get teacherProfile     => translate('teacher_profile');
-  String get userNotFound       => translate('user_not_found');
-  String get coursesByTeacher   => translate('courses_by_teacher');
+  String get viewCv => translate('view_cv');
+  String get documentViewer => translate('document_viewer');
+  String get teacherProfile => translate('teacher_profile');
+  String get userNotFound => translate('user_not_found');
+  String get coursesByTeacher => translate('courses_by_teacher');
   String get noCoursesPublished => translate('no_courses_published');
 
   // ── v5: Recruiter applicants ──
-  String get allCandidates         => translate('all_candidates');
-  String get noApplicantsYet       => translate('no_applicants_yet');
-  String get candidatesWillAppear  => translate('candidates_will_appear');
-  String get appliedFor            => translate('applied_for');
+  String get allCandidates => translate('all_candidates');
+  String get noApplicantsYet => translate('no_applicants_yet');
+  String get candidatesWillAppear => translate('candidates_will_appear');
+  String get appliedFor => translate('applied_for');
 
   // ── v5: Manage offer ──
-  String get editJobDetails     => translate('edit_job_details');
-  String get updateJobSubtitle  => translate('update_job_subtitle');
-  String get viewApplicants     => translate('view_applicants');
-  String get hideJob            => translate('hide_job');
+  String get editJobDetails => translate('edit_job_details');
+  String get updateJobSubtitle => translate('update_job_subtitle');
+  String get viewApplicants => translate('view_applicants');
+  String get hideJob => translate('hide_job');
 
   // ── v5: Search hints ──
   String get searchCoursesTeachers => translate('search_courses_teachers');
-  String get searchJobsCompanies   => translate('search_jobs_companies');
-  String get searchJobKeyword      => translate('search_job_keyword');
-  String get searchCourse          => translate('search_course');
+  String get searchJobsCompanies => translate('search_jobs_companies');
+  String get searchJobKeyword => translate('search_job_keyword');
+  String get searchCourse => translate('search_course');
 
   // ── v5: Form labels ──
-  String get titleLabel         => translate('title_label');
-  String get categoryLabel      => translate('category_label');
+  String get titleLabel => translate('title_label');
+  String get categoryLabel => translate('category_label');
 
   // ── v5: Certificates ──
-  String get addCertificate     => translate('add_certificate');
-  String get addTraining        => translate('add_training');
+  String get addCertificate => translate('add_certificate');
+  String get addTraining => translate('add_training');
 
   // ── v5: Misc ──
-  String get appliedTo          => translate('applied_to');
+  String get appliedTo => translate('applied_to');
+
+  // ── v6: Missing getters ──
+  String get learn => translate('learn');
+  String get errorOccurred => translate('error_occurred');
+  String get activeCourses => translate('active_courses');
+  String get completedCourses => translate('completed_courses');
+  String get courses => translate('courses');
+  String get ofLearning => translate('of_learning');
+  String get consecutiveDays => translate('consecutive_days');
+  String get allCourses => translate('all_courses');
+  String get noEnrollmentsYet => translate('no_enrollments_yet');
+  String get courseProgress => translate('course_progress');
+  String get completed => translate('completed');
+  String get lessonsLabel => translate('lessons_label');
 
   bool get isRtl => locale.languageCode == 'ar';
 }

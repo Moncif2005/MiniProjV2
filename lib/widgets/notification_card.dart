@@ -101,8 +101,8 @@ class NotificationCard extends StatelessWidget {
 
   Color get _iconBg => _iconColor.withOpacity(0.12);
 
-  Color _borderColor(ThemeColors c) => notification.isUnread
-      ? AppColors.primaryLight
+  Color _borderColor(ThemeColors c, bool isDark) => notification.isUnread
+      ? AppColors.primary.withOpacity(isDark ? 0.50 : 0.30)
       : c.border;
 
   // ── Build ─────────────────────────────────────────────────
@@ -110,6 +110,7 @@ class NotificationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
+    final isDark = context.isDark;
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -118,14 +119,14 @@ class NotificationCard extends StatelessWidget {
         decoration: ShapeDecoration(
           color: c.surface,
           shape: RoundedRectangleBorder(
-            side: BorderSide(width: 1.24, color: _borderColor(c)),
+            side: BorderSide(width: 1.24, color: _borderColor(c, isDark)),
             borderRadius: BorderRadius.circular(24),
           ),
-          shadows: const [
+          shadows: [
             BoxShadow(
-              color: Color(0x14000000),
-              blurRadius: 2,
-              offset: Offset(0, 1),
+              color: isDark ? Colors.black.withOpacity(0.3) : const Color(0x14000000),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
               spreadRadius: -1,
             ),
             BoxShadow(

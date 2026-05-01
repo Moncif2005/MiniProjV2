@@ -73,12 +73,12 @@ class LearningCourseCard extends StatelessWidget {
                     height: 44,
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: AppColors.primaryLight,
+                      color: c.primaryLight,
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.menu_book_rounded,
-                      color: AppColors.primary,
+                      color: c.primary,
                       size: 20,
                     ),
                   ),
@@ -116,8 +116,8 @@ class LearningCourseCard extends StatelessWidget {
                     horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: _isCompleted
-                      ? AppColors.greenLight
-                      : AppColors.primaryLight,
+                      ? AppColors.green.withOpacity(context.isDark ? 0.20 : 0.12)
+                      : c.primaryLight,
                   borderRadius: BorderRadius.circular(100),
                 ),
                 child: Text(
@@ -125,7 +125,7 @@ class LearningCourseCard extends StatelessWidget {
                   style: TextStyle(
                     color: _isCompleted
                         ? AppColors.green
-                        : AppColors.primary,
+                        : c.primary,
                     fontSize: 10,
                     fontFamily: 'Inter',
                     fontWeight: FontWeight.w700,
@@ -243,9 +243,12 @@ class LearningCourseCard extends StatelessWidget {
               height: 44,
               decoration: BoxDecoration(
                 color: _isCompleted
-                    ? AppColors.greenLight
-                    : AppColors.primary,
+                    ? AppColors.green.withOpacity(context.isDark ? 0.20 : 0.12)
+                    : c.primary,
                 borderRadius: BorderRadius.circular(14),
+                border: _isCompleted
+                    ? Border.all(color: AppColors.green.withOpacity(0.3), width: 1)
+                    : null,
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,

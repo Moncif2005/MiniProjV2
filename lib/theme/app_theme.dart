@@ -64,19 +64,22 @@ class AppTheme {
     );
   }
 
-  // ── Dark Theme ──
+  // ── Dark Theme (admin-matched palette: deep navy-indigo) ──
   static ThemeData get dark {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
       fontFamily: 'Inter',
       colorScheme: ColorScheme.fromSeed(
-        seedColor: AppColors.primary,
+        seedColor: AppColors.darkPrimary,
         brightness: Brightness.dark,
         background: AppColors.darkBg,
         surface: AppColors.darkSurface,
         onBackground: AppColors.darkTextPrimary,
         onSurface: AppColors.darkTextPrimary,
+        primary: AppColors.darkPrimary,
+        onPrimary: Colors.white,
+        secondary: AppColors.darkTextSecondary,
       ),
       scaffoldBackgroundColor: AppColors.darkBg,
       appBarTheme: const AppBarTheme(
@@ -106,7 +109,7 @@ class AppTheme {
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(
-              color: AppColors.primary, width: 1.5),
+              color: AppColors.darkPrimary, width: 1.5),
         ),
       ),
       textTheme: const TextTheme(

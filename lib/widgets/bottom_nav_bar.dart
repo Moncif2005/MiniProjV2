@@ -1,46 +1,56 @@
 import 'package:flutter/material.dart';
-import '../../theme/app_colors.dart';
+import '../theme/app_colors.dart';
 
+/// A single item in the [BottomNavBar].
+class NavBarItem {
+  final IconData icon;
+  final String label;
+
+  const NavBarItem({required this.icon, required this.label});
+}
+
+/// Custom bottom navigation bar used across all home screens.
 class BottomNavBar extends StatelessWidget {
   final int currentIndex;
-  final Function(int) onTap;
-  final List<NavBarItem> items; // ✅ قائمة مخصصة للأيقونات
+  final ValueChanged<int> onTap;
+  final List<NavBarItem> items;
 
   const BottomNavBar({
-    super.key,
+    Key? key,
     required this.currentIndex,
     required this.onTap,
     required this.items,
-  });
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final c = context.colors;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final bgColor = isDark ? const Color(0xFF1C1C1E) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE5E7EB);
 
     return Container(
       decoration: BoxDecoration(
-        color: c.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
-          ),
-        ],
+        color: bgColor,
+        border: Border(top: BorderSide(color: borderColor, width: 1)),
       ),
       child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        top: false,
+        child: SizedBox(
+          height: 64,
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: List.generate(
-              items.length,
-              (index) => _NavItem(
-                item: items[index],
-                isSelected: currentIndex == index,
-                onTap: () => onTap(index),
-              ),
-            ),
+            children: List.generate(items.length, (index) {
+              final item = items[index];
+              final isSelected = index == currentIndex;
+              return Expanded(
+                child: _NavBarTab(
+                  icon: item.icon,
+                  label: item.label,
+                  isSelected: isSelected,
+                  onTap: () => onTap(index),
+                ),
+              );
+            }),
           ),
         ),
       ),
@@ -48,62 +58,53 @@ class BottomNavBar extends StatelessWidget {
   }
 }
 
-// ── نموذج العنصر ──
-class NavBarItem {
+class _NavBarTab extends StatelessWidget {
   final IconData icon;
   final String label;
-  
-  const NavBarItem({
-    required this.icon,
-    required this.label,
-  });
-}
-
-// ── عنصر التنقل ──
-class _NavItem extends StatelessWidget {
-  final NavBarItem item;
   final bool isSelected;
   final VoidCallback onTap;
 
-  const _NavItem({
-    required this.item,
+  const _NavBarTab({
+    required this.icon,
+    required this.label,
     required this.isSelected,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final c = context.colors;
+    final color = isSelected ? AppColors.primary : const Color(0xFF9CA3AF);
 
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primaryLight : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              item.icon,
-              color: isSelected ? AppColors.primary : c.textMuted,
-              size: 22,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? AppColors.primary.withOpacity(0.1)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(12),
             ),
-            const SizedBox(height: 4),
-            Text(
-              item.label,
-              style: TextStyle(
-                color: isSelected ? AppColors.primary : c.textMuted,
-                fontSize: 10,
-                fontFamily: 'Inter',
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-              ),
+            child: Icon(icon, color: color, size: 22),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 10,
+              fontFamily: 'Inter',
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
             ),
-          ],
-        ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
       ),
     );
   }

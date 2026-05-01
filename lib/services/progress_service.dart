@@ -11,7 +11,7 @@ class ProgressService {
   // مرجع لمجموعة التقدم الخاصة بالمستخدم الحالي
   CollectionReference<Map<String, dynamic>>? get _progressRef {
     if (_uid == null) return null;
-    return _db.collection('users').doc(_uid).collection('progress');
+    return _db.collection('users').doc(_uid).collection('lessonProgress');
   }
 
   /// ✅ إضافة درس إلى قائمة المكتملات

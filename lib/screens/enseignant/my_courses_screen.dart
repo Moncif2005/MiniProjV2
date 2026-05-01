@@ -6,6 +6,7 @@ import '../../services/courses_service.dart';
 import '../../models/course_model.dart';
 import '../../theme/app_colors.dart';
 import '../../l10n/app_localizations.dart';
+import 'edit_course_screen.dart';
 
 class MyCoursesScreen extends StatelessWidget {
   const MyCoursesScreen({super.key});
@@ -119,11 +120,15 @@ class _CourseCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('${course.certificatePrice} € / Certificat', style: TextStyle(color: AppColors.green, fontWeight: FontWeight.bold)),
+              Text('${course.certificatePrice} DZD / Certificat', style: TextStyle(color: AppColors.green, fontWeight: FontWeight.bold)),
               TextButton(
                 onPressed: () {
-                  // TODO: Navigate to Edit Course or View Lessons
-                  // Navigator.pushNamed(context, '/enseignant/edit-course', arguments: course.id);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => EditCourseScreen(courseId: course.id),
+                    ),
+                  );
                 },
                 child: Text(AppLocalizations.of(context).manage, style: TextStyle(color: AppColors.primary)),
               )

@@ -338,4 +338,8 @@ const Map<String, String> arStringsV5 = {
   'add_certificate': 'إضافة شهادة',
   'add_training': 'إضافة تدريب',
   'applied_to': 'تقدمت لـ',
+  'learn': 'تعلم',
+  'error_occurred': 'حدث خطأ',
+  'active_courses': 'الدورات النشطة',
+  'completed_courses': 'الدورات المكتملة',
 };

@@ -39,11 +39,20 @@ class CertificateCard extends StatelessWidget {
     }
   }
 
-  Color get _typeBg {
+  Color _typeBg(bool isDark) {
     switch (type) {
-      case CertificateType.certificate: return AppColors.primaryLight;
-      case CertificateType.formation:   return AppColors.greenLight;
-      case CertificateType.portfolio:   return AppColors.purpleLight;
+      case CertificateType.certificate:
+        return isDark
+            ? AppColors.primary.withOpacity(0.18)
+            : AppColors.primaryLight;
+      case CertificateType.formation:
+        return isDark
+            ? AppColors.green.withOpacity(0.18)
+            : AppColors.greenLight;
+      case CertificateType.portfolio:
+        return isDark
+            ? AppColors.purple.withOpacity(0.18)
+            : AppColors.purpleLight;
     }
   }
 
@@ -58,6 +67,7 @@ class CertificateCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
+    final isDark = context.isDark;
 
     return Container(
       width: double.infinity,
@@ -126,7 +136,7 @@ class CertificateCard extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: _typeBg,
+                        color: _typeBg(isDark),
                         borderRadius:
                             BorderRadius.circular(100),
                       ),
@@ -256,7 +266,9 @@ class CertificateCard extends StatelessWidget {
                         width: 32,
                         height: 32,
                         decoration: BoxDecoration(
-                          color: AppColors.primaryLight,
+                          color: isDark
+                              ? AppColors.primary.withOpacity(0.18)
+                              : AppColors.primaryLight,
                           borderRadius:
                               BorderRadius.circular(10),
                         ),
@@ -274,7 +286,9 @@ class CertificateCard extends StatelessWidget {
                         width: 32,
                         height: 32,
                         decoration: BoxDecoration(
-                          color: AppColors.redLight,
+                          color: isDark
+                              ? AppColors.red.withOpacity(0.18)
+                              : AppColors.redLight,
                           borderRadius:
                               BorderRadius.circular(10),
                         ),

@@ -16,6 +16,7 @@ class CourseModel {
   final DateTime createdAt;
   final bool isPublished;
   final String status; // ✅ الحقل الجديد: pending, approved, rejected
+  final double rating;
 
   CourseModel({
     required this.id,
@@ -32,7 +33,8 @@ class CourseModel {
     this.enrolledStudents = 0,
     required this.createdAt,
     this.isPublished = true,
-    this.status = 'pending', // ✅ القيمة الافتراضية: قيد المراجعة
+    this.status = 'pending',
+    this.rating = 0.0,
   });
 
   factory CourseModel.fromMap(String id, Map<String, dynamic> data) {
@@ -51,7 +53,8 @@ class CourseModel {
       enrolledStudents: data['enrolledStudents'] ?? 0,
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       isPublished: data['isPublished'] ?? true,
-      status: data['status'] ?? 'pending', // ✅ جلب الحالة
+      status: data['status'] ?? 'pending',
+      rating: (data['rating'] ?? 0).toDouble(),
     );
   }
 

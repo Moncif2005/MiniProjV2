@@ -20,17 +20,23 @@ class AppColors {
   static const lightNavBg         = Color(0xFFFFFFFF);
   static const lightIconBg        = Color(0xFFFAFAFA);
 
-  // ── Dark Mode ──
-  static const darkBg             = Color(0xFF0A0A0A);
-  static const darkSurface        = Color(0xFF171717);
-  static const darkBorder         = Color(0xFF262626);
-  static const darkTextPrimary    = Color(0xFFFAFAFA);
-  static const darkTextSecondary  = Color(0xFFA1A1A1);
-  static const darkTextMuted      = Color(0xFF737373);
-  static const darkInputBg        = Color(0xFF1C1C1C);
-  static const darkCardBg         = Color(0xFF171717);
-  static const darkNavBg          = Color(0xFF111111);
-  static const darkIconBg         = Color(0xFF262626);
+  // ── Dark Mode (matches admin dark theme) ──
+  static const darkBg             = Color(0xFF0F0F23); // admin --bg
+  static const darkSurface        = Color(0xFF1A1A2E); // admin --white (cards/header)
+  static const darkSurface2       = Color(0xFF2D2D4A); // admin sidebar end / elevated surfaces
+  static const darkBorder         = Color(0xFF334155); // admin --border
+  static const darkTextPrimary    = Color(0xFF738BAD); // admin --text
+  static const darkTextSecondary  = Color(0xFF63A0FD); // admin --muted (accent text)
+  static const darkTextMuted      = Color(0xFF475569); // softer muted
+  static const darkInputBg        = Color(0xFF0F0F23); // admin inputs use --bg
+  static const darkCardBg         = Color(0xFF1A1A2E); // admin cards
+  static const darkNavBg          = Color(0xFF1A1A2E); // admin header
+  static const darkIconBg         = Color(0xFF2D2D4A); // elevated icon bg
+
+  // ── Admin brand (dark mode primary overrides) ──
+  static const darkPrimary        = Color(0xFF4139C1); // admin --primary
+  static const darkPrimaryLight   = Color(0xFF36385F); // admin --primary-light
+  static const darkPrimaryHover   = Color(0xFF7C79B3); // admin --primary-hover
 
   // ── Semantic ──
   static const green       = Color(0xFF00A63E);
@@ -109,8 +115,8 @@ class ThemeColors {
       : AppColors.lightIconBg;
 
   // ── Always the same regardless of theme ──
-  Color get primary       => AppColors.primary;
-  Color get primaryLight  => AppColors.primaryLight;
+  Color get primary       => isDark ? AppColors.darkPrimary : AppColors.primary;
+  Color get primaryLight  => isDark ? AppColors.darkPrimaryLight : AppColors.primaryLight;
   Color get green         => AppColors.green;
   Color get greenLight    => AppColors.greenLight;
   Color get red           => AppColors.red;

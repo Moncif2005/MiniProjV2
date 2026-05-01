@@ -367,7 +367,9 @@ class _HomeTabContentState extends State<_HomeTabContent> {
                             title: course.title,
                             instructor: course.instructorName,
                             // نعرض التقييم الحقيقي إذا توفر، أو نضع قيمة افتراضية
-                            rating: '4.5', // TODO: ربط التقييم الحقيقي هنا لاحقاً
+                            rating: course.rating > 0
+                                ? course.rating.toStringAsFixed(1)
+                                : '—',
                             category: course.category,
                             imageUrl: course.imageUrl ?? 'https://placehold.co/238x128',
                             onTap: () {

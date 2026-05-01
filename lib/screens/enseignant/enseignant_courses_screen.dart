@@ -433,7 +433,7 @@ class _MyCourseCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('${course.certificatePrice} € / ${AppLocalizations.of(context).certPrice}', style: TextStyle(color: AppColors.green, fontWeight: FontWeight.bold)),
+              Text('${course.certificatePrice} DZD / ${AppLocalizations.of(context).certPrice}', style: TextStyle(color: AppColors.green, fontWeight: FontWeight.bold)),
               
               // ✅✅✅ زر Manage الجديد ✅✅✅
               TextButton(
@@ -517,7 +517,7 @@ class _ExploreCourseCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('${course.certificatePrice} €', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.bold)),
+              Text('${course.certificatePrice} DZD', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.bold)),
               TextButton(
                 onPressed: () {
                   Navigator.push(

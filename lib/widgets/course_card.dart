@@ -19,12 +19,12 @@ class CourseCard extends StatelessWidget {
     this.onTap,
   });
 
-  Color _getCategoryColor(String category) {
+  Color _getCategoryColor(String category, bool isDark) {
     switch (category.toLowerCase()) {
-      case 'coding': return AppColors.primary.withOpacity(0.15);
-      case 'design': return Colors.purple.withOpacity(0.15);
-      case 'business': return Colors.orange.withOpacity(0.15);
-      default: return AppColors.primaryLight;
+      case 'coding':   return AppColors.primary.withOpacity(isDark ? 0.20 : 0.12);
+      case 'design':   return Colors.purple.withOpacity(isDark ? 0.20 : 0.12);
+      case 'business': return Colors.orange.withOpacity(isDark ? 0.20 : 0.12);
+      default:         return AppColors.primary.withOpacity(isDark ? 0.20 : 0.12);
     }
   }
 
@@ -41,7 +41,7 @@ class CourseCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.colors;
     final hasImage = imageUrl != null && imageUrl!.isNotEmpty;
-    final bgColor = _getCategoryColor(category);
+    final bgColor = _getCategoryColor(category, context.isDark);
     final iconData = _getCategoryIcon(category);
 
     return GestureDetector(
