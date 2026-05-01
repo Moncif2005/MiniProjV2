@@ -19,10 +19,10 @@ class RecruiterApplicantsScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: c.surface,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded, color: c.textPrimary),
-          onPressed: () => Navigator.pop(context),
-        ),
+        // leading: IconButton(
+        //   icon: Icon(Icons.arrow_back_ios_new_rounded, color: c.textPrimary),
+        //   onPressed: () => Navigator.pop(context),
+        // ),
         title: Text(AppLocalizations.of(context).allCandidates, style: TextStyle(color: c.textPrimary, fontFamily: 'Inter', fontWeight: FontWeight.w700)),
         centerTitle: true,
       ),

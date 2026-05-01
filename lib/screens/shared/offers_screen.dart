@@ -354,35 +354,35 @@ _buildMenuOption(
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Container(
-                        width: 38,
-                        height: 38,
-                        decoration: ShapeDecoration(
-                          color: c.surface,
-                          shape: RoundedRectangleBorder(
-                            side: BorderSide(
-                              width: 1.24,
-                              color: c.border,
-                            ),
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          shadows: const [
-                            BoxShadow(
-                              color: Color(0x19000000),
-                              blurRadius: 2,
-                              offset: Offset(0, 1),
-                            ),
-                          ],
-                        ),
-                        child: Icon(
-                          Icons.arrow_back_ios_new_rounded,
-                          size: 16,
-                          color: c.textPrimary,
-                        ),
-                      ),
-                    ),
+                    // GestureDetector(
+                    //   onTap: () => Navigator.pop(context),
+                    //   child: Container(
+                    //     width: 38,
+                    //     height: 38,
+                    //     decoration: ShapeDecoration(
+                    //       color: c.surface,
+                    //       shape: RoundedRectangleBorder(
+                    //         side: BorderSide(
+                    //           width: 1.24,
+                    //           color: c.border,
+                    //         ),
+                    //         borderRadius: BorderRadius.circular(14),
+                    //       ),
+                    //       shadows: const [
+                    //         BoxShadow(
+                    //           color: Color(0x19000000),
+                    //           blurRadius: 2,
+                    //           offset: Offset(0, 1),
+                    //         ),
+                    //       ],
+                    //     ),
+                    //     child: Icon(
+                    //       Icons.arrow_back_ios_new_rounded,
+                    //       size: 16,
+                    //       color: c.textPrimary,
+                    //     ),
+                    //   ),
+                    // ),
 
                     Text(
                       'Job Offers',
