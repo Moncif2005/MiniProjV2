@@ -17,6 +17,8 @@ class CourseModel {
   final bool isPublished;
   final String status; // ✅ الحقل الجديد: pending, approved, rejected
   final double rating;
+    final int durationMinutes; // مدة الكورس بالدقائق
+
 
   CourseModel({
     required this.id,
@@ -35,6 +37,8 @@ class CourseModel {
     this.isPublished = true,
     this.status = 'pending',
     this.rating = 0.0,
+        this.durationMinutes = 0, // ✅ قيمة افتراضية
+
   });
 
   factory CourseModel.fromMap(String id, Map<String, dynamic> data) {
@@ -55,6 +59,8 @@ class CourseModel {
       isPublished: data['isPublished'] ?? true,
       status: data['status'] ?? 'pending',
       rating: (data['rating'] ?? 0).toDouble(),
+          durationMinutes: data['durationMinutes'] ?? data['duration_minutes'] ?? 0,
+
     );
   }
 
@@ -74,8 +80,19 @@ class CourseModel {
       'createdAt': Timestamp.fromDate(createdAt),
       'isPublished': isPublished,
       'status': status, // ✅ حفظ الحالة
+          'durationMinutes': durationMinutes,
+
     };
   }
+    String get durationFormatted {
+    if (durationMinutes <= 0) return '—';
+    final h = durationMinutes ~/ 60;
+    final m = durationMinutes % 60;
+    if (h == 0) return '$m min';
+    if (m == 0) return '${h}h';
+    return '${h}h ${m}min';
+  }
+
 }
 
 // import 'package:cloud_firestore/cloud_firestore.dart';

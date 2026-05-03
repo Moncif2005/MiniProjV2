@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:minipr/models/course_model.dart';
 import '../../theme/app_colors.dart';
 import '../../services/lessons_service.dart';
 import '../../services/learn_service.dart';
@@ -103,7 +104,7 @@ if (course != null) ...[
       const SizedBox(width: 8),
       // ✅✅✅ التصحيح هنا ✅✅✅
       Text(
-        '${course.lessonsCount} ${AppLocalizations.of(context).lessons}',
+        '${course.totalLessons} ${AppLocalizations.of(context).lessons}',
         style: TextStyle(color: c.textSecondary, fontSize: 12, fontFamily: 'Inter'),
       ),
     ],

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:minipr/models/course_model.dart';
 import 'package:provider/provider.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/bottom_nav_bar.dart';
@@ -244,22 +245,12 @@ class _LearnScreenState extends State<LearnScreen> {
 
                   final all = snapshot.data ?? [];
                   final courses = _searchQuery.isEmpty
-                      ? all
-                      : all
-                            .where(
-                              (course) =>
-                                  course.title.toLowerCase().contains(
-                                    _searchQuery,
-                                  ) ||
-                                  course.instructor.toLowerCase().contains(
-                                    _searchQuery,
-                                  ) ||
-                                  course.category.toLowerCase().contains(
-                                    _searchQuery,
-                                  ),
-                            )
-                            .toList();
-
+    ? all
+    : all.where((course) =>
+        course.title!.toLowerCase().contains(_searchQuery) ||
+        course.instructorName!.toLowerCase().contains(_searchQuery) ||
+        course.category!.toLowerCase().contains(_searchQuery)).toList();
+// ✅✅✅ الكود المصحح مع Null Safety ✅✅✅
                   if (courses.isEmpty) {
                     return Center(
                       child: Column(
@@ -316,6 +307,7 @@ class _LearnScreenState extends State<LearnScreen> {
 }
 
 // ── Course Card ──
+// ── Course Card (مصحح) ──
 class _LearnCourseCard extends StatelessWidget {
   final CourseModel course;
   final VoidCallback onTap;
@@ -354,11 +346,12 @@ class _LearnCourseCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(16),
               ),
               child:
-                  course.thumbnailUrl != null && course.thumbnailUrl!.isNotEmpty
+                  // ✅✅✅ التصحيح: imageUrl بدلاً من thumbnailUrl ✅✅✅
+                  course.imageUrl != null && course.imageUrl!.isNotEmpty
                   ? ClipRRect(
                       borderRadius: BorderRadius.circular(16),
                       child: Image.network(
-                        course.thumbnailUrl!,
+                        course.imageUrl!, // ✅✅✅ imageUrl بدلاً من thumbnailUrl
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) => const Icon(
                           Icons.menu_book_rounded,
@@ -416,8 +409,9 @@ class _LearnCourseCard extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 4),
+                  // ✅✅✅ التصحيح: instructorName بدلاً من instructor ✅✅✅
                   Text(
-                    course.instructor,
+                    course.instructorName, // ✅✅✅ instructorName بدلاً من instructor
                     style: TextStyle(
                       color: c.textSecondary,
                       fontSize: 13,
@@ -468,8 +462,9 @@ class _LearnCourseCard extends StatelessWidget {
                         size: 12,
                       ),
                       const SizedBox(width: 4),
+                      // ✅✅✅ التصحيح: totalLessons بدلاً من lessonsCount ✅✅✅
                       Text(
-                        '${course.lessonsCount} lessons',
+                        '${course.totalLessons} lessons', // ✅✅✅ totalLessons بدلاً من lessonsCount
                         style: TextStyle(
                           color: c.textMuted,
                           fontSize: 12,
