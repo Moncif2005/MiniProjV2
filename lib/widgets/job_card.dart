@@ -18,7 +18,6 @@ class JobCard extends StatelessWidget {
   final VoidCallback? onApply;
   final VoidCallback? onWithdraw;
   final VoidCallback? onManage;
-
   final VoidCallback? onAvatarTap;
 
   const JobCard({
@@ -41,146 +40,202 @@ class JobCard extends StatelessWidget {
 
   bool get _isDynamic => offer != null;
 
+  // Map job type to accent color
+  Color _typeColor(String type) {
+    switch (type.toLowerCase()) {
+      case 'remote':    return AppColors.cyan;
+      case 'part-time': return AppColors.purple;
+      case 'full-time': return AppColors.green;
+      case 'hybrid':    return AppColors.orange;
+      case 'contract':  return AppColors.pink;
+      default:          return AppColors.primary;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
+    final isDark = context.isDark;
     final displayTitle = _isDynamic ? offer!['title'] ?? 'Untitled' : title ?? 'Untitled';
     final displayCompany = _isDynamic ? offer!['company'] ?? 'Company' : company ?? 'Company';
     final displayType = _isDynamic ? offer!['jobType'] ?? type ?? 'Full-time' : type ?? 'Full-time';
     final displaySalary = _isDynamic ? offer!['salary'] ?? salary ?? 'Negotiable' : salary ?? 'Negotiable';
     final displayLocation = _isDynamic ? offer!['location'] ?? location ?? 'Remote' : location ?? 'Remote';
-    
+
     final companyBg = _isDynamic ? Color(offer!['companyBgColor'] ?? 4293848063) : AppColors.primaryLight;
     final companyColor = _isDynamic ? Color(offer!['companyColor'] ?? 4283322870) : AppColors.primary;
-    final companyInitial = _isDynamic ? (offer!['companyInitial'] ?? 'C') : (displayCompany.isNotEmpty ? displayCompany[0].toUpperCase() : 'J');
+    final companyInitial = _isDynamic
+        ? (offer!['companyInitial'] ?? 'C')
+        : (displayCompany.isNotEmpty ? displayCompany[0].toUpperCase() : 'J');
     final companyLogo = _isDynamic ? offer!['companyLogo'] as String? : null;
     final isActive = _isDynamic ? (offer!['isActive'] ?? true) : true;
     final status = _isDynamic ? offer!['status'] as String? : null;
     final applicantsCount = _isDynamic ? offer!['applicationsCount'] : null;
+    final typeColor = _typeColor(displayType);
 
     return GestureDetector(
       onTap: !_isDynamic ? onTap : null,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        padding: const EdgeInsets.all(20),
-        decoration: ShapeDecoration(
+        margin: const EdgeInsets.only(bottom: 14),
+        decoration: BoxDecoration(
           color: c.surface,
-          shape: RoundedRectangleBorder(side: BorderSide(width: 1.24, color: c.border), borderRadius: BorderRadius.circular(20)),
-          shadows: [BoxShadow(color: context.isDark ? Colors.black.withOpacity(0.3) : const Color(0x19000000), blurRadius: 6, offset: const Offset(0, 2), spreadRadius: -1)],
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: c.border, width: 1.5),
+          boxShadow: isDark
+              ? [BoxShadow(color: Colors.black.withOpacity(0.25), blurRadius: 12, offset: const Offset(0, 4))]
+              : [
+                  BoxShadow(color: AppColors.primary.withOpacity(0.04), blurRadius: 16, offset: const Offset(0, 4)),
+                  BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 4, offset: const Offset(0, 1)),
+                ],
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Header: Avatar + Title + Company + Status Badges ──
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Avatar (قابل للنقر)
-                GestureDetector(
-                  onTap: onAvatarTap,
-                  child: Container(
-                    width: 48, height: 48,
-                    decoration: BoxDecoration(color: companyBg.withOpacity(context.isDark ? 0.25 : 0.15), borderRadius: BorderRadius.circular(14)),
-                    child: companyLogo != null && companyLogo.isNotEmpty
-                        ? ClipRRect(
-                            borderRadius: BorderRadius.circular(14),
-                            child: Image.network(
-                              companyLogo,
-                              width: 48, height: 48, fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Center(child: Text(companyInitial, style: TextStyle(color: companyColor, fontSize: 20, fontFamily: 'Inter', fontWeight: FontWeight.w700))),
-                            ),
-                          )
-                        : Center(child: Text(companyInitial, style: TextStyle(color: companyColor, fontSize: 20, fontFamily: 'Inter', fontWeight: FontWeight.w700))),
-                  ),
+            // ── Colored accent bar at top ──
+            Container(
+              height: 3,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [typeColor, typeColor.withOpacity(0.4)],
                 ),
-                const SizedBox(width: 16),
-                
-                // Title + Company
-                Expanded(
-                  child: Column(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ── Header: Avatar + Title + Company ──
+                  Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(displayTitle, style: TextStyle(color: c.textPrimary, fontSize: 16, fontFamily: 'Inter', fontWeight: FontWeight.w700)),
-                      const SizedBox(height: 4),
-                      Text(displayCompany, style: TextStyle(color: c.textSecondary, fontSize: 14, fontFamily: 'Inter')),
+                      GestureDetector(
+                        onTap: onAvatarTap,
+                        child: Container(
+                          width: 50,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            color: companyBg.withOpacity(isDark ? 0.2 : 0.12),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: companyColor.withOpacity(0.2), width: 1.5),
+                          ),
+                          child: companyLogo != null && companyLogo.isNotEmpty
+                              ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(13),
+                                  child: Image.network(
+                                    companyLogo,
+                                    width: 50, height: 50, fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => Center(
+                                      child: Text(companyInitial, style: TextStyle(color: companyColor, fontSize: 20, fontFamily: 'Inter', fontWeight: FontWeight.w800)),
+                                    ),
+                                  ),
+                                )
+                              : Center(
+                                  child: Text(companyInitial, style: TextStyle(color: companyColor, fontSize: 20, fontFamily: 'Inter', fontWeight: FontWeight.w800)),
+                                ),
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              displayTitle,
+                              style: TextStyle(color: c.textPrimary, fontSize: 16, fontFamily: 'Inter', fontWeight: FontWeight.w700, height: 1.2),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              displayCompany,
+                              style: TextStyle(color: c.textSecondary, fontSize: 13, fontFamily: 'Inter', fontWeight: FontWeight.w500),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (_isDynamic) _buildStatusBadges(c, isActive, status),
                     ],
                   ),
-                ),
-                
-                // ✅ Status Badges (في الزاوية اليمنى العليا - منفصلة عن العنوان)
-                if (_isDynamic) _buildStatusBadges(c, isActive, status),
-              ],
-            ),
-            const SizedBox(height: 16),
-            
-            // ── Job Details Chips ──
-            Wrap(
-              spacing: 12, runSpacing: 8,
-              children: [
-                _DetailChip(icon: Icons.location_on_outlined, text: displayLocation, color: c.textSecondary),
-                _DetailChip(icon: Icons.attach_money_rounded, text: displaySalary, color: AppColors.green),
-                _DetailChip(icon: Icons.schedule_rounded, text: displayType, color: AppColors.purple),
-                if (_isDynamic && applicantsCount != null) _DetailChip(icon: Icons.people_outline_rounded, text: '$applicantsCount applicants', color: AppColors.primary),
-              ],
-            ),
-            const SizedBox(height: 16),
-            
-            // ── Description (مقتطف) ──
-            if (_isDynamic && offer!['description'] != null && offer!['description'].toString().isNotEmpty) ...[
-              Text(
-                offer!['description'].toString().length > 100 
-                  ? '${offer!['description'].toString().substring(0, 100)}...' 
-                  : offer!['description'], 
-                style: TextStyle(color: c.textSecondary, fontSize: 13, fontFamily: 'Inter', height: 1.4),
-              ),
-              const SizedBox(height: 16),
-            ],
-            
-            // ── Actions ──
-            Row(
-              children: [
-                if (_isDynamic) ...[
-                  // ✅ زر Manage: يظهر فقط للمسؤول المالك
-                  if (isRecruiter && isOwner && onManage != null)
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: onManage,
-                        icon: const Icon(Icons.manage_accounts_rounded, size: 18),
-                        label: const Text('Manage', style: TextStyle(fontWeight: FontWeight.w600)),
-                        style: OutlinedButton.styleFrom(foregroundColor: AppColors.purple, side: BorderSide(color: AppColors.purple), minimumSize: const Size(double.infinity, 44)),
+
+                  const SizedBox(height: 14),
+
+                  // ── Job Detail Pills ──
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _DetailPill(icon: Icons.schedule_rounded, text: displayType, color: typeColor),
+                      _DetailPill(icon: Icons.attach_money_rounded, text: displaySalary, color: AppColors.green),
+                      _DetailPill(icon: Icons.location_on_outlined, text: displayLocation, color: c.textSecondary),
+                      if (_isDynamic && applicantsCount != null)
+                        _DetailPill(icon: Icons.people_outline_rounded, text: '$applicantsCount applicants', color: AppColors.purple),
+                    ],
+                  ),
+
+                  // ── Description snippet ──
+                  if (_isDynamic && offer!['description'] != null && offer!['description'].toString().isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: c.surface2,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: c.border),
+                      ),
+                      child: Text(
+                        offer!['description'].toString().length > 90
+                            ? '${offer!['description'].toString().substring(0, 90)}...'
+                            : offer!['description'],
+                        style: TextStyle(color: c.textMuted, fontSize: 12, fontFamily: 'Inter', height: 1.5),
                       ),
                     ),
-                  // ✅ زر التقديم/السحب للطلاب والمعلمين
-                  if (!isRecruiter)
-                    Expanded(
-                      child: FutureBuilder<bool>(
-                        future: _hasApplied(context),
-                        builder: (ctx, snap) {
-                          if (snap.connectionState == ConnectionState.waiting) {
-                            return SizedBox(height: 44, child: OutlinedButton(onPressed: null, child: const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))));
-                          }
-                          bool applied = snap.data ?? false;
-                          return applied
-                              ? OutlinedButton.icon(
-                                  onPressed: onWithdraw,
-                                  icon: const Icon(Icons.cancel_rounded, size: 18),
-                                  label: const Text('Withdraw', style: TextStyle(fontWeight: FontWeight.w600)),
-                                  style: OutlinedButton.styleFrom(foregroundColor: AppColors.red, side: BorderSide(color: AppColors.red), minimumSize: const Size(double.infinity, 44)),
-                                )
-                              : FilledButton.icon(
-                                  onPressed: onApply,
-                                  icon: const Icon(Icons.send_rounded, size: 18),
-                                  label: const Text('Apply Now', style: TextStyle(fontWeight: FontWeight.w600)),
-                                  style: FilledButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white, minimumSize: const Size(double.infinity, 44)),
-                                );
-                        },
-                      ),
-                    ),
-                ] else if (onBookmark != null) ...[
-                  const Spacer(),
-                  IconButton(onPressed: onBookmark, icon: const Icon(Icons.bookmark_border_rounded), color: c.textSecondary),
+                  ],
+
+                  const SizedBox(height: 16),
+
+                  // ── Divider ──
+                  Divider(color: c.border, thickness: 1, height: 1),
+                  const SizedBox(height: 14),
+
+                  // ── Actions ──
+                  Row(
+                    children: [
+                      if (_isDynamic) ...[
+                        if (isRecruiter && isOwner && onManage != null)
+                          Expanded(
+                            child: _ActionButton(
+                              label: 'Manage',
+                              icon: Icons.manage_accounts_rounded,
+                              color: AppColors.purple,
+                              onTap: onManage,
+                              filled: false,
+                            ),
+                          ),
+                        if (!isRecruiter)
+                          Expanded(
+                            child: FutureBuilder<bool>(
+                              future: _hasApplied(context),
+                              builder: (ctx, snap) {
+                                if (snap.connectionState == ConnectionState.waiting) {
+                                  return SizedBox(
+                                    height: 44,
+                                    child: Center(child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: c.primary))),
+                                  );
+                                }
+                                final applied = snap.data ?? false;
+                                return applied
+                                    ? _ActionButton(label: 'Withdraw', icon: Icons.cancel_rounded, color: AppColors.red, onTap: onWithdraw, filled: false)
+                                    : _ActionButton(label: 'Apply Now', icon: Icons.send_rounded, color: c.primary, onTap: onApply, filled: true);
+                              },
+                            ),
+                          ),
+                      ] else if (onBookmark != null) ...[
+                        const Spacer(),
+                        IconButton(onPressed: onBookmark, icon: Icon(Icons.bookmark_border_rounded, color: c.textSecondary)),
+                      ],
+                    ],
+                  ),
                 ],
-              ],
+              ),
             ),
           ],
         ),
@@ -188,25 +243,16 @@ class JobCard extends StatelessWidget {
     );
   }
 
-// ✅ دالة مبسطة: تعرض فقط شارات الإدارة (Pending/Rejected) للمسؤول
-Widget _buildStatusBadges(ThemeColors c, bool isActive, String? status) {
-  // للطلاب/المعلمين: لا نعرض أي شارة (تجربة أنظف)
-  if (!isRecruiter) {
-    return const SizedBox.shrink();
+  Widget _buildStatusBadges(ThemeColors c, bool isActive, String? status) {
+    if (!isRecruiter) return const SizedBox.shrink();
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (status == 'pending') _StatusBadge(label: 'Pending', color: AppColors.orange, icon: Icons.pending_rounded),
+        if (status == 'rejected') _StatusBadge(label: 'Rejected', color: AppColors.red, icon: Icons.cancel_rounded),
+      ],
+    );
   }
-  
-  // للمسؤول: نعرض فقط الحالات الإدارية غير الطبيعية
-  return Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      if (status == 'pending')
-        _StatusBadge(label: 'Pending', color: Colors.orange, icon: Icons.pending_rounded),
-      if (status == 'rejected')
-        _StatusBadge(label: 'Rejected', color: Colors.red, icon: Icons.cancel_rounded),
-      // ✅ حذفنا شارة Active/Closed تماماً كما طلبت!
-    ],
-  );
-}
 
   Future<bool> _hasApplied(BuildContext context) async {
     if (!_isDynamic) return false;
@@ -220,40 +266,90 @@ Widget _buildStatusBadges(ThemeColors c, bool isActive, String? status) {
   }
 }
 
-// ── Helper: شارة حالة موحدة ──
+// ── Action button ──
+class _ActionButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final Color color;
+  final VoidCallback? onTap;
+  final bool filled;
+
+  const _ActionButton({required this.label, required this.icon, required this.color, this.onTap, required this.filled});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = context.isDark;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 44,
+        decoration: BoxDecoration(
+          color: filled ? color : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          border: filled ? null : Border.all(color: color.withOpacity(0.6), width: 1.5),
+          boxShadow: filled
+              ? [BoxShadow(color: color.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))]
+              : [],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 16, color: filled ? Colors.white : color),
+            const SizedBox(width: 6),
+            Text(label, style: TextStyle(color: filled ? Colors.white : color, fontSize: 14, fontFamily: 'Inter', fontWeight: FontWeight.w600)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Status badge ──
 class _StatusBadge extends StatelessWidget {
   final String label;
   final Color color;
   final IconData icon;
   const _StatusBadge({required this.label, required this.color, required this.icon});
-  
+
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
     margin: const EdgeInsets.only(left: 8),
     decoration: BoxDecoration(
-      color: color.withOpacity(0.15),
-      borderRadius: BorderRadius.circular(100),
+      color: color.withOpacity(0.12),
+      borderRadius: BorderRadius.circular(20),
       border: Border.all(color: color.withOpacity(0.3)),
     ),
     child: Row(mainAxisSize: MainAxisSize.min, children: [
       Icon(icon, size: 10, color: color),
       const SizedBox(width: 4),
-      Text(label, style: TextStyle(color: color, fontSize: 9, fontFamily: 'Inter', fontWeight: FontWeight.w600)),
+      Text(label, style: TextStyle(color: color, fontSize: 9, fontFamily: 'Inter', fontWeight: FontWeight.w700)),
     ]),
   );
 }
 
-// ── Helper: Chip التفاصيل ──
-class _DetailChip extends StatelessWidget {
+// ── Detail pill ──
+class _DetailPill extends StatelessWidget {
   final IconData icon;
   final String text;
   final Color color;
-  const _DetailChip({required this.icon, required this.text, required this.color});
+  const _DetailPill({required this.icon, required this.text, required this.color});
+
   @override
-  Widget build(BuildContext context) => Row(mainAxisSize: MainAxisSize.min, children: [
-    Icon(icon, size: 14, color: color),
-    const SizedBox(width: 4),
-    Text(text, style: TextStyle(color: color, fontSize: 12, fontFamily: 'Inter', fontWeight: FontWeight.w500)),
-  ]);
+  Widget build(BuildContext context) {
+    final isDark = context.isDark;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withOpacity(isDark ? 0.1 : 0.07),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, size: 12, color: color),
+        const SizedBox(width: 5),
+        Text(text, style: TextStyle(color: color, fontSize: 12, fontFamily: 'Inter', fontWeight: FontWeight.w600)),
+      ]),
+    );
+  }
 }

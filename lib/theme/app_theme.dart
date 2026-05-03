@@ -24,6 +24,7 @@ class AppTheme {
         backgroundColor: AppColors.lightSurface,
         foregroundColor: AppColors.lightTextPrimary,
         elevation: 0,
+        scrolledUnderElevation: 0,
         systemOverlayStyle: SystemUiOverlayStyle(
           statusBarBrightness: Brightness.light,
           statusBarIconBrightness: Brightness.dark,
@@ -34,37 +35,57 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.lightInputBg,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(
-              color: AppColors.lightBorder, width: 1.24),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: AppColors.lightBorder, width: 1.5),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(
-              color: AppColors.lightBorder, width: 1.24),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: AppColors.lightBorder, width: 1.5),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(
-              color: AppColors.primary, width: 1.5),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: AppColors.red, width: 1.5),
+        ),
+        hintStyle: const TextStyle(color: AppColors.lightTextMuted, fontSize: 14),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          shadowColor: Colors.transparent,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          textStyle: const TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600, fontSize: 15),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          textStyle: const TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600, fontSize: 15),
         ),
       ),
       textTheme: const TextTheme(
-        displayLarge: TextStyle(
-            color: AppColors.lightTextPrimary,
-            fontFamily: 'Inter'),
-        bodyLarge: TextStyle(
-            color: AppColors.lightTextPrimary,
-            fontFamily: 'Inter'),
-        bodyMedium: TextStyle(
-            color: AppColors.lightTextSecondary,
-            fontFamily: 'Inter'),
+        displayLarge: TextStyle(color: AppColors.lightTextPrimary, fontFamily: 'Inter', fontWeight: FontWeight.w800),
+        displayMedium: TextStyle(color: AppColors.lightTextPrimary, fontFamily: 'Inter', fontWeight: FontWeight.w700),
+        headlineLarge: TextStyle(color: AppColors.lightTextPrimary, fontFamily: 'Inter', fontWeight: FontWeight.w700),
+        headlineMedium: TextStyle(color: AppColors.lightTextPrimary, fontFamily: 'Inter', fontWeight: FontWeight.w600),
+        titleLarge: TextStyle(color: AppColors.lightTextPrimary, fontFamily: 'Inter', fontWeight: FontWeight.w600),
+        bodyLarge: TextStyle(color: AppColors.lightTextPrimary, fontFamily: 'Inter'),
+        bodyMedium: TextStyle(color: AppColors.lightTextSecondary, fontFamily: 'Inter'),
+        bodySmall: TextStyle(color: AppColors.lightTextMuted, fontFamily: 'Inter'),
       ),
     );
   }
 
-  // ── Dark Theme (admin-matched palette: deep navy-indigo) ──
+  // ── Dark Theme — deep space navy ──
   static ThemeData get dark {
     return ThemeData(
       useMaterial3: true,
@@ -86,6 +107,7 @@ class AppTheme {
         backgroundColor: AppColors.darkSurface,
         foregroundColor: AppColors.darkTextPrimary,
         elevation: 0,
+        scrolledUnderElevation: 0,
         systemOverlayStyle: SystemUiOverlayStyle(
           statusBarBrightness: Brightness.dark,
           statusBarIconBrightness: Brightness.light,
@@ -96,32 +118,52 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.darkInputBg,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(
-              color: AppColors.darkBorder, width: 1.24),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: AppColors.darkBorder, width: 1.5),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(
-              color: AppColors.darkBorder, width: 1.24),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: AppColors.darkBorder, width: 1.5),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(
-              color: AppColors.darkPrimary, width: 1.5),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: AppColors.darkPrimary, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: AppColors.red, width: 1.5),
+        ),
+        hintStyle: const TextStyle(color: AppColors.darkTextMuted, fontSize: 14),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.darkPrimary,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          shadowColor: Colors.transparent,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          textStyle: const TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600, fontSize: 15),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          textStyle: const TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600, fontSize: 15),
         ),
       ),
       textTheme: const TextTheme(
-        displayLarge: TextStyle(
-            color: AppColors.darkTextPrimary,
-            fontFamily: 'Inter'),
-        bodyLarge: TextStyle(
-            color: AppColors.darkTextPrimary,
-            fontFamily: 'Inter'),
-        bodyMedium: TextStyle(
-            color: AppColors.darkTextSecondary,
-            fontFamily: 'Inter'),
+        displayLarge: TextStyle(color: AppColors.darkTextPrimary, fontFamily: 'Inter', fontWeight: FontWeight.w800),
+        displayMedium: TextStyle(color: AppColors.darkTextPrimary, fontFamily: 'Inter', fontWeight: FontWeight.w700),
+        headlineLarge: TextStyle(color: AppColors.darkTextPrimary, fontFamily: 'Inter', fontWeight: FontWeight.w700),
+        headlineMedium: TextStyle(color: AppColors.darkTextPrimary, fontFamily: 'Inter', fontWeight: FontWeight.w600),
+        titleLarge: TextStyle(color: AppColors.darkTextPrimary, fontFamily: 'Inter', fontWeight: FontWeight.w600),
+        bodyLarge: TextStyle(color: AppColors.darkTextPrimary, fontFamily: 'Inter'),
+        bodyMedium: TextStyle(color: AppColors.darkTextSecondary, fontFamily: 'Inter'),
+        bodySmall: TextStyle(color: AppColors.darkTextMuted, fontFamily: 'Inter'),
       ),
     );
   }
