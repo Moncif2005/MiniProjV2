@@ -22,6 +22,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
   final _descCtrl     = TextEditingController();
   String? _type;
   bool _isPublishing = false;
+  String _selectedCurrency = 'USD'; // العملة الافتراضية
 
   // Image upload state
   File? _coverImage;
@@ -109,6 +110,11 @@ class _PostJobScreenState extends State<PostJobScreen> {
     setState(() => _isPublishing = true);
 
     try {
+      // ✅ احسب الراتب مع العملة
+final salaryText = _salaryCtrl.text.trim().isNotEmpty 
+    ? '${_salaryCtrl.text.trim()} ${_selectedCurrency == 'USD' ? '\$' : 'د.ج'}'
+    : 'Negotiable';
+
       // 3. استدعاء الخدمة لنشر الوظيفة في Firestore
       final offerId = await _offersService.createOffer(
         recruiterId: user.uid,
@@ -116,10 +122,14 @@ class _PostJobScreenState extends State<PostJobScreen> {
         title: _titleCtrl.text.trim(),
         company: userProvider.name,
         location: _locationCtrl.text.trim().isNotEmpty ? _locationCtrl.text.trim() : 'Remote',
-        salary: _salaryCtrl.text.trim().isNotEmpty ? _salaryCtrl.text.trim() : 'Negotiable',
+        // salary: _salaryCtrl.text.trim().isNotEmpty ? _salaryCtrl.text.trim() : 'Negotiable',
+          salary: salaryText, // ✅ استخدم الراتب مع العملة
         jobType: _type ?? 'Full-time',
         description: _descCtrl.text.trim(),
         companyLogo: _uploadedImageUrl,
+          // ✅ أضف هذا الحقل الجديد
+  currency: _selectedCurrency, // 'USD' أو 'DZD'
+
       );
 
 if (offerId != null) {
@@ -215,32 +225,63 @@ ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                   _field(_locationCtrl, 'Ex: Paris, France or Remote', c),
                   const SizedBox(height: 16),
 
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _label('Job Type', c),
-                            const SizedBox(height: 8),
-                            _dropdown(_type, 'Select type', _types, (v) => setState(() => _type = v), c),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _label('Salary Range', c),
-                            const SizedBox(height: 8),
-                            _field(_salaryCtrl, 'Ex: \$80k–\$100k', c),
-                          ],
-                        ),
-                      ),
-                    ],
+Row(
+  children: [
+    Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _label('Job Type', c),
+          const SizedBox(height: 8),
+          _dropdown(_type, 'Select type', _types, (v) => setState(() => _type = v), c),
+        ],
+      ),
+    ),
+    const SizedBox(width: 12),
+    Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _label('Salary', c),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              // حقل المبلغ
+              Expanded(
+                flex: 2,
+                child: _field(_salaryCtrl, '80,000', c,),
+              ),
+              const SizedBox(width: 8),
+              // Dropdown العملة
+              Expanded(
+                flex: 1,
+                child: Container(
+                  decoration: ShapeDecoration(
+                    color: c.inputBg,
+                    shape: RoundedRectangleBorder(
+                      side: BorderSide(width: 1.24, color: c.border),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
-                  const SizedBox(height: 16),
+                  child: DropdownButton<String>(
+                    value: _selectedCurrency,
+                    isExpanded: true,
+                    underline: const SizedBox(),
+                    items: const [
+                      DropdownMenuItem(value: 'USD', child: Text('\$ USD', style: TextStyle(fontSize: 13))),
+                      DropdownMenuItem(value: 'DZD', child: Text('د.ج DZD', style: TextStyle(fontSize: 13))),
+                    ],
+                    onChanged: (val) => setState(() => _selectedCurrency = val!),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    ),
+  ],
+),                  const SizedBox(height: 16),
 
                   _label('Job Description', c),
                   const SizedBox(height: 8),

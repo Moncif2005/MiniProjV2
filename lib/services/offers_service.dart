@@ -7,50 +7,51 @@ class OffersService {
   CollectionReference<Map<String, dynamic>> get _offersRef => _db.collection('offers');
   CollectionReference<Map<String, dynamic>> get _applicationsRef => _db.collection('applications');
 
-  // ─────────────────────────────────────────────────────────────
-  // ✅ CREATE: نشر عرض وظيفة جديد
-  // ─────────────────────────────────────────────────────────────
-  Future<String?> createOffer({
-    required String recruiterId,
-    required String recruiterName,
-    required String title,
-    required String company,
-    required String location,
-    required String salary,
-    required String jobType, // Full-time, Freelance, etc.
-    required String description,
-    String? companyLogo, // URL optional
-  }) async {
-    try {
-      final docRef = await _offersRef.add({
-        'title': title,
-        'company': company,
-        'recruiterId': recruiterId,
-        'recruiterName': recruiterName,
-        'location': location,
-        'salary': salary,
-        'jobType': jobType,
-        'description': description,
-        'companyLogo': companyLogo,
-        // UI Helpers (للألوان والرموز)
-        'companyInitial': company.isNotEmpty ? company[0].toUpperCase() : 'C',
-        'companyBgColor': 4293848063, // أزرق افتراضي (يمكن تعديله)
-        'companyColor': 4283322870,
-        // Metadata
-        'isActive': true,
-        'postedAt': FieldValue.serverTimestamp(),
-        'applicationsCount': 0,
-        'status': 'pending',  // الحالة الافتراضية: قيد المراجعة
-'submittedAt': FieldValue.serverTimestamp(),
-      });
-      debugPrint('✅ Offer created with ID: ${docRef.id}');
-      return docRef.id;
-    } catch (e) {
-      debugPrint('❌ Error creating offer: $e');
-      return null;
-    }
+// ─────────────────────────────────────────────────────────────
+// ✅ CREATE: نشر عرض وظيفة جديد
+// ─────────────────────────────────────────────────────────────
+Future<String?> createOffer({
+  required String recruiterId,
+  required String recruiterName,
+  required String title,
+  required String company,
+  required String location,
+  required String salary,
+  required String jobType,
+  required String description,
+  String? companyLogo,
+  String? currency, // ✅ أضف هذا المعامل الجديد
+}) async {
+  try {
+    final docRef = await _offersRef.add({
+      'title': title,
+      'company': company,
+      'recruiterId': recruiterId,
+      'recruiterName': recruiterName,
+      'location': location,
+      'salary': salary,
+      'jobType': jobType,
+      'description': description,
+      'companyLogo': companyLogo,
+      'currency': currency ?? 'USD', // ✅ احفظ العملة (الافتراضي: USD)
+      // UI Helpers
+      'companyInitial': company.isNotEmpty ? company[0].toUpperCase() : 'C',
+      'companyBgColor': 4293848063,
+      'companyColor': 4283322870,
+      // Metadata
+      'isActive': true,
+      'status': 'pending',
+      'postedAt': FieldValue.serverTimestamp(),
+      'submittedAt': FieldValue.serverTimestamp(),
+      'applicationsCount': 0,
+    });
+    debugPrint('✅ Offer created with ID: ${docRef.id}');
+    return docRef.id;
+  } catch (e) {
+    debugPrint('❌ Error creating offer: $e');
+    return null;
   }
-
+}
   // ─────────────────────────────────────────────────────────────
   // ✅ READ: جلب العروض النشطة (للصفحة الرئيسية/الطلاب)
   // ─────────────────────────────────────────────────────────────
@@ -107,8 +108,9 @@ Future<bool> updateOffer({
   required String salary,
   required String jobType,
   required String description,
-  String? company, // اختياري
-  String? companyLogo, // اختياري
+  String? company,
+  String? companyLogo,
+  String? currency, // ✅ أضف هذا المعامل الجديد
 }) async {
   try {
     final data = <String, dynamic>{
@@ -119,8 +121,11 @@ Future<bool> updateOffer({
       'description': description,
       'updatedAt': FieldValue.serverTimestamp(),
     };
+    
     if (company != null) data['company'] = company;
     if (companyLogo != null) data['companyLogo'] = companyLogo;
+    if (currency != null) data['currency'] = currency; // ✅ أضف العملة إذا وُجدت
+    
     await _offersRef.doc(offerId).update(data);
     debugPrint('✅ Offer updated: $offerId');
     return true;

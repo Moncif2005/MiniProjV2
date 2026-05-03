@@ -206,10 +206,7 @@ class _HomeTabContentState extends State<_HomeTabContent> {
                       if (snapshot.connectionState == ConnectionState.waiting)
                         return _LoadingBanner(c: c);
                       final jobs = snapshot.data ?? [];
-                      final activeCount = jobs
-                          .where((j) => j['isActive'] == true)
-                          .length;
-                      return Container(
+final activeCount = jobs.where((j) => j['status'] == 'approved').length;                      return Container(
                         width: double.infinity,
                         padding: const EdgeInsets.all(24),
                         decoration: BoxDecoration(
@@ -590,16 +587,71 @@ class _StatCard extends StatelessWidget {
   );
 }
 
-// ── Helper: Posted Job Card ──
+// ── Helper: Posted Job Card (مصحح) ──
 class _PostedJobCard extends StatelessWidget {
   final ThemeColors c;
   final Map<String, dynamic> job;
   const _PostedJobCard({required this.c, required this.job});
+
+  // ✅ دالة مساعدة لتحديد لون ونص الشارة حسب الحالة
+  Widget _buildStatusChip(String? status) {
+    switch (status) {
+      case 'approved':
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: AppColors.greenLight,
+            borderRadius: BorderRadius.circular(100),
+          ),
+          child: const Text(
+            'Active',
+            style: TextStyle(color: AppColors.green, fontSize: 11, fontFamily: 'Inter', fontWeight: FontWeight.w700),
+          ),
+        );
+      case 'pending':
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.orange.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(100),
+          ),
+          child: const Text(
+            'Pending',
+            style: TextStyle(color: Colors.orange, fontSize: 11, fontFamily: 'Inter', fontWeight: FontWeight.w700),
+          ),
+        );
+      case 'rejected':
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: AppColors.redLight,
+            borderRadius: BorderRadius.circular(100),
+          ),
+          child: const Text(
+            'Rejected',
+            style: TextStyle(color: AppColors.red, fontSize: 11, fontFamily: 'Inter', fontWeight: FontWeight.w700),
+          ),
+        );
+      default:
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: c.iconBg,
+            borderRadius: BorderRadius.circular(100),
+          ),
+          child: Text(
+            'Closed',
+            style: TextStyle(color: c.textSecondary, fontSize: 11, fontFamily: 'Inter', fontWeight: FontWeight.w700),
+          ),
+        );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final isActive = job['isActive'] ?? true;
+    final status = job['status'] as String? ?? 'pending';
     final applicants = (job['applicationsCount'] as num?)?.toInt() ?? 0;
-    final views = (job['views'] as num?)?.toInt() ?? 0;
+    // ✅ تم حذف متغير views تماماً
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -610,11 +662,7 @@ class _PostedJobCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(18),
         ),
         shadows: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
+          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2)),
         ],
       ),
       child: Column(
@@ -626,12 +674,16 @@ class _PostedJobCard extends StatelessWidget {
                 width: 46,
                 height: 46,
                 decoration: BoxDecoration(
-                  color: isActive ? AppColors.greenLight : c.iconBg,
+                  // ✅ تغيير لون الأيقونة حسب الحالة
+                  color: status == 'approved' ? AppColors.greenLight : 
+                         status == 'pending' ? Colors.orange.withOpacity(0.1) : c.iconBg,
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(
                   Icons.work_outline_rounded,
-                  color: isActive ? AppColors.green : c.textSecondary,
+                  // ✅ تغيير لون الأيقونة حسب الحالة
+                  color: status == 'approved' ? AppColors.green : 
+                         status == 'pending' ? Colors.orange : c.textSecondary,
                   size: 22,
                 ),
               ),
@@ -642,43 +694,20 @@ class _PostedJobCard extends StatelessWidget {
                   children: [
                     Text(
                       job['title'] as String? ?? 'Untitled',
-                      style: TextStyle(
-                        color: c.textPrimary,
-                        fontSize: 15,
-                        fontFamily: 'Inter',
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style: TextStyle(color: c.textPrimary, fontSize: 15, fontFamily: 'Inter', fontWeight: FontWeight.w700),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 2),
                     Text(
                       job['type'] ?? job['location'] ?? 'Full-time',
-                      style: TextStyle(
-                        color: c.textMuted,
-                        fontSize: 12,
-                        fontFamily: 'Inter',
-                      ),
+                      style: TextStyle(color: c.textMuted, fontSize: 12, fontFamily: 'Inter'),
                     ),
                   ],
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: isActive ? AppColors.greenLight : c.iconBg,
-                  borderRadius: BorderRadius.circular(100),
-                ),
-                child: Text(
-                  isActive ? 'Active' : 'Closed',
-                  style: TextStyle(
-                    color: isActive ? AppColors.green : c.textSecondary,
-                    fontSize: 11,
-                    fontFamily: 'Inter',
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
+              // ✅ استخدام الدالة الجديدة للشارة بدلاً من isActive
+              _buildStatusChip(status),
             ],
           ),
           const SizedBox(height: 12),
@@ -686,8 +715,7 @@ class _PostedJobCard extends StatelessWidget {
           Row(
             children: [
               _MiniStat(icon: Icons.people_outline_rounded, value: '$applicants', label: 'applicants', c: c),
-              const SizedBox(width: 16),
-              _MiniStat(icon: Icons.visibility_outlined, value: '$views', label: 'views', c: c),
+              // ✅ تم حذف سطر الـ Views تماماً كما طلبت
             ],
           ),
         ],

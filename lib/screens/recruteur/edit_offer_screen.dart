@@ -24,6 +24,7 @@ class _EditOfferScreenState extends State<EditOfferScreen> {
 
   // Image upload state
   File? _coverImage;
+  String _selectedCurrency = 'USD'; // سيتم تعيينه في initState
   String? _uploadedImageUrl;
   bool _isUploadingImage = false;
 
@@ -31,26 +32,49 @@ class _EditOfferScreenState extends State<EditOfferScreen> {
   final _offersService = OffersService();
 
   @override
+  @override
   void initState() {
     super.initState();
-    _titleCtrl    = TextEditingController(text: widget.offer['title']);
+    _titleCtrl = TextEditingController(text: widget.offer['title']);
     _locationCtrl = TextEditingController(text: widget.offer['location']);
-    _salaryCtrl   = TextEditingController(text: widget.offer['salary']);
-    _descCtrl     = TextEditingController(text: widget.offer['description']);
+    _descCtrl = TextEditingController(text: widget.offer['description']);
     _selectedType = widget.offer['jobType'];
     _uploadedImageUrl = widget.offer['companyLogo'] as String?;
+
+    // ✅ استخراج الراتب والعملة من النص المحفوظ (مثال: "80000 $" أو "120000 د.ج")
+    final salaryText = widget.offer['salary'] as String? ?? '';
+    if (salaryText.contains('د.ج')) {
+      _selectedCurrency = 'DZD';
+      _salaryCtrl = TextEditingController(
+        text: salaryText.replaceAll('د.ج', '').trim(),
+      );
+    } else if (salaryText.contains('\$') || salaryText.contains('\$')) {
+      _selectedCurrency = 'USD';
+      _salaryCtrl = TextEditingController(
+        text: salaryText.replaceAll('\$', '').replaceAll('\$', '').trim(),
+      );
+    } else {
+      // إذا لم توجد عملة، افترض USD
+      _selectedCurrency = 'USD';
+      _salaryCtrl = TextEditingController(text: salaryText);
+    }
   }
 
   @override
   void dispose() {
-    _titleCtrl.dispose(); _locationCtrl.dispose();
-    _salaryCtrl.dispose(); _descCtrl.dispose();
+    _titleCtrl.dispose();
+    _locationCtrl.dispose();
+    _salaryCtrl.dispose();
+    _descCtrl.dispose();
     super.dispose();
   }
 
   Future<void> _pickAndUploadImage() async {
     final picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+    final XFile? image = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+    );
     if (image == null) return;
 
     setState(() {
@@ -66,51 +90,78 @@ class _EditOfferScreenState extends State<EditOfferScreen> {
         resourceType: 'image',
       );
       if (url != null) {
-        setState(() { _uploadedImageUrl = url; _isUploadingImage = false; });
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: const Text('Image uploaded successfully!'),
-          backgroundColor: AppColors.green, behavior: SnackBarBehavior.floating,
-        ));
+        setState(() {
+          _uploadedImageUrl = url;
+          _isUploadingImage = false;
+        });
+        if (mounted)
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Image uploaded successfully!'),
+              backgroundColor: AppColors.green,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
       } else {
         throw Exception('Upload returned null URL.');
       }
     } catch (e) {
       setState(() => _isUploadingImage = false);
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Upload failed: $e'),
-        backgroundColor: AppColors.red, behavior: SnackBarBehavior.floating,
-      ));
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Upload failed: $e'),
+            backgroundColor: AppColors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
     }
   }
 
   Future<void> _save() async {
     if (_titleCtrl.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(AppLocalizations.of(context).jobTitleRequired), backgroundColor: AppColors.red,
-      ));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context).jobTitleRequired),
+          backgroundColor: AppColors.red,
+        ),
+      );
       return;
     }
     setState(() => _isSaving = true);
     try {
+      // ✅ احسب الراتب مع العملة
+final salaryText = '${_salaryCtrl.text.trim()} ${_selectedCurrency == 'USD' ? '\$' : 'د.ج'}';
+
       final success = await _offersService.updateOffer(
         offerId: widget.offer['id'],
         title: _titleCtrl.text.trim(),
         location: _locationCtrl.text.trim(),
-        salary: _salaryCtrl.text.trim(),
+        // salary: _salaryCtrl.text.trim(),
+          salary: salaryText, // ✅ الراتب مع رمز العملة
         jobType: _selectedType ?? 'Full-time',
         description: _descCtrl.text.trim(),
         company: widget.offer['company'],
         companyLogo: _uploadedImageUrl,
+          currency: _selectedCurrency, // ✅ أضف هذا السطر
+
       );
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(success ? 'Job updated successfully v' : 'Failed to update'),
-          backgroundColor: success ? AppColors.green : AppColors.red,
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              success ? 'Job updated successfully v' : 'Failed to update',
+            ),
+            backgroundColor: success ? AppColors.green : AppColors.red,
+          ),
+        );
         if (success) Navigator.pop(context, true);
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.red));
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.red),
+        );
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -122,16 +173,38 @@ class _EditOfferScreenState extends State<EditOfferScreen> {
     return Scaffold(
       backgroundColor: c.bg,
       appBar: AppBar(
-        backgroundColor: c.surface, elevation: 0,
-        leading: IconButton(icon: Icon(Icons.arrow_back_ios_new_rounded, color: c.textPrimary), onPressed: () => Navigator.pop(context)),
-        title: Text(AppLocalizations.of(context).editJob, style: TextStyle(color: c.textPrimary, fontFamily: 'Inter', fontWeight: FontWeight.w700)),
+        backgroundColor: c.surface,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: c.textPrimary),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          AppLocalizations.of(context).editJob,
+          style: TextStyle(
+            color: c.textPrimary,
+            fontFamily: 'Inter',
+            fontWeight: FontWeight.w700,
+          ),
+        ),
         centerTitle: true,
         actions: [
           TextButton(
             onPressed: _isSaving ? null : _save,
             child: _isSaving
-                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                : Text(AppLocalizations.of(context).save, style: TextStyle(color: AppColors.purple, fontFamily: 'Inter', fontWeight: FontWeight.w600)),
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Text(
+                    AppLocalizations.of(context).save,
+                    style: TextStyle(
+                      color: AppColors.purple,
+                      fontFamily: 'Inter',
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
           ),
         ],
       ),
@@ -148,18 +221,63 @@ class _EditOfferScreenState extends State<EditOfferScreen> {
             const SizedBox(height: 8),
             _field(_locationCtrl, 'Ex: Paris, France or Remote', c),
             const SizedBox(height: 16),
-            Row(children: [
-              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                _label('Job Type', c), const SizedBox(height: 8),
-                _dropdown(_selectedType, 'Select type', _jobTypes, (v) => setState(() => _selectedType = v), c),
-              ])),
-              const SizedBox(width: 16),
-              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                _label('Salary Range', c), const SizedBox(height: 8),
-                _field(_salaryCtrl, 'Ex: \$80k–\$100k', c),
-              ])),
-            ]),
-            const SizedBox(height: 16),
+Row(
+  children: [
+    Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _label('Job Type', c),
+          const SizedBox(height: 8),
+          _dropdown(_selectedType, 'Select type', _jobTypes, (v) => setState(() => _selectedType = v), c),
+        ],
+      ),
+    ),
+    const SizedBox(width: 12),
+    Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _label('Salary', c),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              // حقل المبلغ
+              Expanded(
+                flex: 2,
+                child: _field(_salaryCtrl, '80,000', c,),
+              ),
+              const SizedBox(width: 8),
+              // Dropdown العملة
+              Expanded(
+                flex: 1,
+                child: Container(
+                  decoration: ShapeDecoration(
+                    color: c.inputBg,
+                    shape: RoundedRectangleBorder(
+                      side: BorderSide(width: 1.24, color: c.border),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: DropdownButton<String>(
+                    value: _selectedCurrency,
+                    isExpanded: true,
+                    underline: const SizedBox(),
+                    items: const [
+                      DropdownMenuItem(value: 'USD', child: Text('\$ USD', style: TextStyle(fontSize: 13))),
+                      DropdownMenuItem(value: 'DZD', child: Text('د.ج DZD', style: TextStyle(fontSize: 13))),
+                    ],
+                    onChanged: (val) => setState(() => _selectedCurrency = val!),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    ),
+  ],
+),            const SizedBox(height: 16),
             _label('Job Description', c),
             const SizedBox(height: 8),
             _field(_descCtrl, 'Describe the role...', c, maxLines: 6),
@@ -171,62 +289,145 @@ class _EditOfferScreenState extends State<EditOfferScreen> {
             GestureDetector(
               onTap: _isUploadingImage ? null : _pickAndUploadImage,
               child: Container(
-                height: 140, width: double.infinity,
+                height: 140,
+                width: double.infinity,
                 decoration: ShapeDecoration(
                   color: c.inputBg,
                   shape: RoundedRectangleBorder(
-                    side: BorderSide(width: 1.5, color: _uploadedImageUrl != null ? AppColors.purple : c.border),
+                    side: BorderSide(
+                      width: 1.5,
+                      color: _uploadedImageUrl != null
+                          ? AppColors.purple
+                          : c.border,
+                    ),
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
                 clipBehavior: Clip.antiAlias,
                 child: _isUploadingImage
-                    ? Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                        const SizedBox(width: 28, height: 28, child: CircularProgressIndicator(strokeWidth: 2.5)),
-                        const SizedBox(height: 12),
-                        Text('Uploading...', style: TextStyle(color: c.textMuted, fontSize: 13, fontFamily: 'Inter')),
-                      ])
+                    ? Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const SizedBox(
+                            width: 28,
+                            height: 28,
+                            child: CircularProgressIndicator(strokeWidth: 2.5),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Uploading...',
+                            style: TextStyle(
+                              color: c.textMuted,
+                              fontSize: 13,
+                              fontFamily: 'Inter',
+                            ),
+                          ),
+                        ],
+                      )
                     : _uploadedImageUrl != null
-                        ? Stack(fit: StackFit.expand, children: [
-                            Image.network(_uploadedImageUrl!, fit: BoxFit.cover),
-                            Positioned(top: 8, right: 8,
-                              child: GestureDetector(
-                                onTap: () => setState(() { _coverImage = null; _uploadedImageUrl = null; }),
-                                child: Container(
-                                  padding: const EdgeInsets.all(6),
-                                  decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(20)),
-                                  child: const Icon(Icons.close, color: Colors.white, size: 16),
+                    ? Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          Image.network(_uploadedImageUrl!, fit: BoxFit.cover),
+                          Positioned(
+                            top: 8,
+                            right: 8,
+                            child: GestureDetector(
+                              onTap: () => setState(() {
+                                _coverImage = null;
+                                _uploadedImageUrl = null;
+                              }),
+                              child: Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: Colors.black54,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: const Icon(
+                                  Icons.close,
+                                  color: Colors.white,
+                                  size: 16,
                                 ),
                               ),
                             ),
-                            Positioned(bottom: 8, right: 8,
-                              child: GestureDetector(
-                                onTap: _pickAndUploadImage,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                  decoration: BoxDecoration(color: AppColors.purple, borderRadius: BorderRadius.circular(8)),
-                                  child: const Row(mainAxisSize: MainAxisSize.min, children: [
-                                    Icon(Icons.edit_rounded, color: Colors.white, size: 13),
+                          ),
+                          Positioned(
+                            bottom: 8,
+                            right: 8,
+                            child: GestureDetector(
+                              onTap: _pickAndUploadImage,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 5,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.purple,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.edit_rounded,
+                                      color: Colors.white,
+                                      size: 13,
+                                    ),
                                     SizedBox(width: 4),
-                                    Text('Change', style: TextStyle(color: Colors.white, fontSize: 12, fontFamily: 'Inter', fontWeight: FontWeight.w600)),
-                                  ]),
+                                    Text(
+                                      'Change',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontFamily: 'Inter',
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
-                          ])
-                        : _coverImage != null
-                            ? Image.file(_coverImage!, fit: BoxFit.cover)
-                            : Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                                Container(
-                                  width: 48, height: 48,
-                                  decoration: BoxDecoration(color: AppColors.purple.withOpacity(0.1), shape: BoxShape.circle),
-                                  child: const Icon(Icons.add_photo_alternate_rounded, color: AppColors.purple, size: 26),
-                                ),
-                                const SizedBox(height: 10),
-                                Text('Tap to add company logo or offer banner', style: TextStyle(color: c.textMuted, fontSize: 13, fontFamily: 'Inter')),
-                                const SizedBox(height: 4),
-                                Text('JPG, PNG · Optional', style: TextStyle(color: c.textMuted.withOpacity(0.6), fontSize: 11, fontFamily: 'Inter')),
-                              ]),
+                          ),
+                        ],
+                      )
+                    : _coverImage != null
+                    ? Image.file(_coverImage!, fit: BoxFit.cover)
+                    : Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: AppColors.purple.withOpacity(0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.add_photo_alternate_rounded,
+                              color: AppColors.purple,
+                              size: 26,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            'Tap to add company logo or offer banner',
+                            style: TextStyle(
+                              color: c.textMuted,
+                              fontSize: 13,
+                              fontFamily: 'Inter',
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'JPG, PNG · Optional',
+                            style: TextStyle(
+                              color: c.textMuted.withOpacity(0.6),
+                              fontSize: 11,
+                              fontFamily: 'Inter',
+                            ),
+                          ),
+                        ],
+                      ),
               ),
             ),
             const SizedBox(height: 24),
@@ -236,32 +437,76 @@ class _EditOfferScreenState extends State<EditOfferScreen> {
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: AppColors.purple.withOpacity(0.06),
-                border: Border.all(color: AppColors.purple.withOpacity(0.3), width: 1.24),
+                border: Border.all(
+                  color: AppColors.purple.withOpacity(0.3),
+                  width: 1.24,
+                ),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Row(children: [
-                  Container(width: 36, height: 36, decoration: const BoxDecoration(color: AppColors.purple, shape: BoxShape.circle),
-                    child: const Icon(Icons.preview_rounded, color: Colors.white, size: 18)),
-                  const SizedBox(width: 12),
-                  Text(AppLocalizations.of(context).preview, style: TextStyle(color: c.textPrimary, fontSize: 16, fontFamily: 'Inter', fontWeight: FontWeight.w700)),
-                ]),
-                const SizedBox(height: 12),
-                _row('Title:', _titleCtrl.text.isNotEmpty ? _titleCtrl.text : '—', c),
-                const SizedBox(height: 6),
-                _row('Location:', _locationCtrl.text.isNotEmpty ? _locationCtrl.text : '—', c),
-                const SizedBox(height: 6),
-                _row('Type:', _selectedType ?? '—', c),
-                const SizedBox(height: 6),
-                _row('Salary:', _salaryCtrl.text.isNotEmpty ? _salaryCtrl.text : '—', c),
-                if (_uploadedImageUrl != null) ...[
-                  const SizedBox(height: 12),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: Image.network(_uploadedImageUrl!, height: 80, width: double.infinity, fit: BoxFit.cover),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: const BoxDecoration(
+                          color: AppColors.purple,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.preview_rounded,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        AppLocalizations.of(context).preview,
+                        style: TextStyle(
+                          color: c.textPrimary,
+                          fontSize: 16,
+                          fontFamily: 'Inter',
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
                   ),
+                  const SizedBox(height: 12),
+                  _row(
+                    'Title:',
+                    _titleCtrl.text.isNotEmpty ? _titleCtrl.text : '—',
+                    c,
+                  ),
+                  const SizedBox(height: 6),
+                  _row(
+                    'Location:',
+                    _locationCtrl.text.isNotEmpty ? _locationCtrl.text : '—',
+                    c,
+                  ),
+                  const SizedBox(height: 6),
+                  _row('Type:', _selectedType ?? '—', c),
+                  const SizedBox(height: 6),
+                  _row(
+                    'Salary:',
+                    _salaryCtrl.text.isNotEmpty ? _salaryCtrl.text : '—',
+                    c,
+                  ),
+                  if (_uploadedImageUrl != null) ...[
+                    const SizedBox(height: 12),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: Image.network(
+                        _uploadedImageUrl!,
+                        height: 80,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ],
                 ],
-              ]),
+              ),
             ),
           ],
         ),
@@ -269,24 +514,115 @@ class _EditOfferScreenState extends State<EditOfferScreen> {
     );
   }
 
-  Widget _label(String text, ThemeColors c) => Text(text, style: TextStyle(color: c.textPrimary, fontSize: 14, fontFamily: 'Inter', fontWeight: FontWeight.w700));
-  Widget _row(String label, String val, ThemeColors c) => Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-    Text(label, style: TextStyle(color: c.textSecondary, fontSize: 13, fontFamily: 'Inter')),
-    Text(val, style: TextStyle(color: c.textPrimary, fontSize: 13, fontFamily: 'Inter', fontWeight: FontWeight.w600)),
-  ]);
-  Widget _field(TextEditingController ctrl, String hint, ThemeColors c, {int maxLines = 1}) => Container(
-    decoration: ShapeDecoration(color: c.inputBg, shape: RoundedRectangleBorder(side: BorderSide(width: 1.24, color: c.border), borderRadius: BorderRadius.circular(14))),
-    child: TextField(controller: ctrl, maxLines: maxLines, style: TextStyle(color: c.textPrimary), onChanged: (_) => setState(() {}),
-      decoration: InputDecoration(hintText: hint, hintStyle: TextStyle(color: c.textMuted, fontSize: 14, fontFamily: 'Inter'), border: InputBorder.none, contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12))),
+  Widget _label(String text, ThemeColors c) => Text(
+    text,
+    style: TextStyle(
+      color: c.textPrimary,
+      fontSize: 14,
+      fontFamily: 'Inter',
+      fontWeight: FontWeight.w700,
+    ),
   );
-  Widget _dropdown(String? value, String hint, List<String> items, ValueChanged<String?> onChange, ThemeColors c) => Container(
+  Widget _row(String label, String val, ThemeColors c) => Row(
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    children: [
+      Text(
+        label,
+        style: TextStyle(
+          color: c.textSecondary,
+          fontSize: 13,
+          fontFamily: 'Inter',
+        ),
+      ),
+      Text(
+        val,
+        style: TextStyle(
+          color: c.textPrimary,
+          fontSize: 13,
+          fontFamily: 'Inter',
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    ],
+  );
+  Widget _field(
+    TextEditingController ctrl,
+    String hint,
+    ThemeColors c, {
+    int maxLines = 1,
+  }) => Container(
+    decoration: ShapeDecoration(
+      color: c.inputBg,
+      shape: RoundedRectangleBorder(
+        side: BorderSide(width: 1.24, color: c.border),
+        borderRadius: BorderRadius.circular(14),
+      ),
+    ),
+    child: TextField(
+      controller: ctrl,
+      maxLines: maxLines,
+      style: TextStyle(color: c.textPrimary),
+      onChanged: (_) => setState(() {}),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: TextStyle(
+          color: c.textMuted,
+          fontSize: 14,
+          fontFamily: 'Inter',
+        ),
+        border: InputBorder.none,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
+        ),
+      ),
+    ),
+  );
+  Widget _dropdown(
+    String? value,
+    String hint,
+    List<String> items,
+    ValueChanged<String?> onChange,
+    ThemeColors c,
+  ) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 12),
-    decoration: ShapeDecoration(color: c.inputBg, shape: RoundedRectangleBorder(side: BorderSide(width: 1.24, color: c.border), borderRadius: BorderRadius.circular(14))),
-    child: DropdownButtonHideUnderline(child: DropdownButton<String>(
-      value: value, isExpanded: true, dropdownColor: c.surface,
-      hint: Text(hint, style: TextStyle(color: c.textMuted, fontSize: 14, fontFamily: 'Inter')),
-      items: items.map((e) => DropdownMenuItem(value: e, child: Text(e, style: TextStyle(color: c.textPrimary, fontFamily: 'Inter', fontSize: 14)))).toList(),
-      onChanged: onChange,
-    )),
+    decoration: ShapeDecoration(
+      color: c.inputBg,
+      shape: RoundedRectangleBorder(
+        side: BorderSide(width: 1.24, color: c.border),
+        borderRadius: BorderRadius.circular(14),
+      ),
+    ),
+    child: DropdownButtonHideUnderline(
+      child: DropdownButton<String>(
+        value: value,
+        isExpanded: true,
+        dropdownColor: c.surface,
+        hint: Text(
+          hint,
+          style: TextStyle(
+            color: c.textMuted,
+            fontSize: 14,
+            fontFamily: 'Inter',
+          ),
+        ),
+        items: items
+            .map(
+              (e) => DropdownMenuItem(
+                value: e,
+                child: Text(
+                  e,
+                  style: TextStyle(
+                    color: c.textPrimary,
+                    fontFamily: 'Inter',
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            )
+            .toList(),
+        onChanged: onChange,
+      ),
+    ),
   );
 }
