@@ -341,32 +341,32 @@ class _ProfileEnseignantScreenState extends State<ProfileEnseignantScreen> {
               const SizedBox(height: 24),
 
               // ── My Courses Section ──
-              _SectionCard(
-                title: AppLocalizations.of(context).myCourses,
-                action: '+ Create New',
-                onActionTap: () =>
-                    Navigator.pushNamed(context, '/enseignant/create-course'),
-                children: const [
-                  _CourseItem(
-                    title: 'Arabic for Professionals',
-                    students: 45,
-                    rating: '4.9',
-                    status: 'active',
-                  ),
-                  _CourseItem(
-                    title: 'French Advanced',
-                    students: 32,
-                    rating: '4.8',
-                    status: 'active',
-                  ),
-                  _CourseItem(
-                    title: 'JavaScript Basics',
-                    students: 50,
-                    rating: '4.7',
-                    status: 'active',
-                  ),
-                ],
-              ),
+              // _SectionCard(
+              //   title: AppLocalizations.of(context).myCourses,
+              //   action: '+ Create New',
+              //   onActionTap: () =>
+              //       Navigator.pushNamed(context, '/enseignant/create-course'),
+              //   children: const [
+              //     _CourseItem(
+              //       title: 'Arabic for Professionals',
+              //       students: 45,
+              //       rating: '4.9',
+              //       status: 'active',
+              //     ),
+              //     _CourseItem(
+              //       title: 'French Advanced',
+              //       students: 32,
+              //       rating: '4.8',
+              //       status: 'active',
+              //     ),
+              //     _CourseItem(
+              //       title: 'JavaScript Basics',
+              //       students: 50,
+              //       rating: '4.7',
+              //       status: 'active',
+              //     ),
+              //   ],
+              // ),
               const SizedBox(height: 16),
 
               // ── Menu Items (مصحح: _ProfileMenuItem مع شرطة سفلية) ──
