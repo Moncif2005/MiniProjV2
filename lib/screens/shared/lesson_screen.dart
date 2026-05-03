@@ -10,8 +10,20 @@ enum LessonItemStatus { completed, current, locked }
 
 class LessonScreen extends StatelessWidget {
   final String courseId;
-
   const LessonScreen({super.key, required this.courseId});
+
+  // ✅ دالة لتحديد لون التمييز حسب الكورس (يمكن تمريرها أو جلبها من البيانات)
+  Color _getAccentColor(String? category) {
+    if (category == null) return AppColors.primary;
+    switch (category.toLowerCase()) {
+      case 'coding': return AppColors.cyan;
+      case 'design': return AppColors.purple;
+      case 'langues': return AppColors.green;
+      case 'business': return AppColors.orange;
+      case 'marketing': return AppColors.pink;
+      default: return AppColors.primary;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,8 +33,14 @@ class LessonScreen extends StatelessWidget {
     if (uid == null) {
       return Scaffold(
         body: Center(
-          child: Text(AppLocalizations.of(context).pleaseSignIn,
-              style: TextStyle(color: c.textMuted)),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.lock_outline_rounded, size: 48, color: c.textMuted),
+              const SizedBox(height: 12),
+              Text(AppLocalizations.of(context).pleaseSignIn, style: TextStyle(color: c.textMuted, fontFamily: 'Inter')),
+            ],
+          ),
         ),
       );
     }
@@ -36,10 +54,11 @@ class LessonScreen extends StatelessWidget {
         future: learnService.fetchCourse(courseId),
         builder: (context, courseSnap) {
           final course = courseSnap.data;
+          final accentColor = _getAccentColor(course?.category);
 
           return Column(
             children: [
-              // ── App Bar ──
+              // ── App Bar (محسّن) ──
               Container(
                 padding: const EdgeInsets.fromLTRB(24, 48, 24, 16),
                 decoration: BoxDecoration(
@@ -52,7 +71,7 @@ class LessonScreen extends StatelessWidget {
                       onTap: () => Navigator.pop(context),
                       child: Container(
                         width: 36, height: 36,
-                        decoration: BoxDecoration(color: c.bg, borderRadius: BorderRadius.circular(14)),
+                        decoration: BoxDecoration(color: c.bg, borderRadius: BorderRadius.circular(14), border: Border.all(color: c.border)),
                         child: Icon(Icons.arrow_back_ios_new_rounded, size: 16, color: c.textPrimary),
                       ),
                     ),
@@ -66,12 +85,30 @@ class LessonScreen extends StatelessWidget {
                             style: TextStyle(color: c.textPrimary, fontSize: 18, fontFamily: 'Inter', fontWeight: FontWeight.w700),
                             maxLines: 1, overflow: TextOverflow.ellipsis,
                           ),
-                          if (course != null)
-                            Text(
-                              '${course.lessonsCount} ${AppLocalizations.of(context).lessons}',
-                              style: TextStyle(color: c.textSecondary, fontSize: 12, fontFamily: 'Inter'),
-                            ),
-                        ],
+if (course != null) ...[
+  Row(
+    children: [
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        decoration: BoxDecoration(
+          color: accentColor.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(100),
+          border: Border.all(color: accentColor.withOpacity(0.3)),
+        ),
+        child: Text(
+          course.category,
+          style: TextStyle(color: accentColor, fontSize: 10, fontWeight: FontWeight.w600, fontFamily: 'Inter'),
+        ),
+      ),
+      const SizedBox(width: 8),
+      // ✅✅✅ التصحيح هنا ✅✅✅
+      Text(
+        '${course.lessonsCount} ${AppLocalizations.of(context).lessons}',
+        style: TextStyle(color: c.textSecondary, fontSize: 12, fontFamily: 'Inter'),
+      ),
+    ],
+  ),
+],                        ],
                       ),
                     ),
                   ],
@@ -108,17 +145,14 @@ class LessonScreen extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // ── Progress Card ──
+                              // ── Progress Card (محسّن مثل CourseDetails) ──
                               Container(
                                 width: double.infinity,
                                 padding: const EdgeInsets.all(20),
-                                decoration: const BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topLeft, end: Alignment.bottomRight,
-                                    colors: AppColors.gradientBlue,
-                                  ),
-                                  borderRadius: BorderRadius.all(Radius.circular(24)),
-                                  boxShadow: [BoxShadow(color: Color(0x33155DFC), blurRadius: 12, offset: Offset(0, 4), spreadRadius: -4)],
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [accentColor, accentColor.withOpacity(0.7)]),
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [BoxShadow(color: accentColor.withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 4), spreadRadius: -4)],
                                 ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -126,49 +160,52 @@ class LessonScreen extends StatelessWidget {
                                     Row(
                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
-                                        Text(AppLocalizations.of(context).courseProgress,
-                                            style: const TextStyle(color: Colors.white, fontSize: 16, fontFamily: 'Inter', fontWeight: FontWeight.w700)),
+                                        Row(
+                                          children: [
+                                            Container(
+                                              padding: const EdgeInsets.all(8),
+                                              decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(10)),
+                                              child: Icon(Icons.trending_up_rounded, color: Colors.white, size: 16),
+                                            ),
+                                            const SizedBox(width: 10),
+                                            Text(AppLocalizations.of(context).courseProgress, style: const TextStyle(color: Colors.white, fontSize: 15, fontFamily: 'Inter', fontWeight: FontWeight.w700)),
+                                          ],
+                                        ),
                                         Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                          decoration: const BoxDecoration(color: Color(0x33FFFFFF), borderRadius: BorderRadius.all(Radius.circular(100))),
-                                          child: Text(
-                                            '$completedCount/$total ${AppLocalizations.of(context).lessons}',
-                                            style: const TextStyle(color: Colors.white, fontSize: 12, fontFamily: 'Inter', fontWeight: FontWeight.w600),
-                                          ),
+                                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                                          decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(100), border: Border.all(color: Colors.white.withOpacity(0.3))),
+                                          child: Text('$completedCount/$total', style: const TextStyle(color: Colors.white, fontSize: 12, fontFamily: 'Inter', fontWeight: FontWeight.w600)),
                                         ),
                                       ],
                                     ),
-                                    const SizedBox(height: 12),
+                                    const SizedBox(height: 14),
                                     ClipRRect(
                                       borderRadius: BorderRadius.circular(100),
                                       child: LinearProgressIndicator(
                                         value: progressPercent, minHeight: 8,
-                                        backgroundColor: const Color(0x40FFFFFF),
+                                        backgroundColor: Colors.white.withOpacity(0.3),
                                         valueColor: const AlwaysStoppedAnimation(Colors.white),
                                       ),
                                     ),
                                     const SizedBox(height: 8),
-                                    Text(
-                                      '${(progressPercent * 100).toInt()}% ${AppLocalizations.of(context).completed}',
-                                      style: const TextStyle(color: Colors.white, fontSize: 12, fontFamily: 'Inter'),
-                                    ),
+                                    Text('${(progressPercent * 100).toInt()}% ${AppLocalizations.of(context).completed}', style: const TextStyle(color: Colors.white, fontSize: 12, fontFamily: 'Inter', fontWeight: FontWeight.w500)),
                                   ],
                                 ),
                               ),
                               const SizedBox(height: 24),
 
-                              Text(AppLocalizations.of(context).lessonsLabel,
-                                  style: TextStyle(color: c.textPrimary, fontSize: 18, fontFamily: 'Inter', fontWeight: FontWeight.w700)),
+                              // ── Lessons Header ──
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(AppLocalizations.of(context).lessonsLabel, style: TextStyle(color: c.textPrimary, fontSize: 18, fontFamily: 'Inter', fontWeight: FontWeight.w700)),
+                                  _LessonStatusLegend(c: c, accentColor: accentColor),
+                                ],
+                              ),
                               const SizedBox(height: 16),
 
                               if (lessons.isEmpty)
-                                Center(
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(32),
-                                    child: Text(AppLocalizations.of(context).noLessonsYet,
-                                        style: TextStyle(color: c.textMuted, fontFamily: 'Inter')),
-                                  ),
-                                )
+                                _EmptyLessonsState(c: c)
                               else
                                 ListView.separated(
                                   shrinkWrap: true,
@@ -180,14 +217,13 @@ class LessonScreen extends StatelessWidget {
                                     final isCompleted = completedIds.contains(lesson.id);
                                     final isCurrent = lesson.id == currentLessonId && !isCompleted;
                                     final isLocked = !isCompleted && !isCurrent && !lesson.isFree;
-                                    final status = isCompleted
-                                        ? LessonItemStatus.completed
-                                        : isCurrent ? LessonItemStatus.current : LessonItemStatus.locked;
+                                    final status = isCompleted ? LessonItemStatus.completed : isCurrent ? LessonItemStatus.current : LessonItemStatus.locked;
 
                                     return _LessonItem(
                                       number: index + 1,
                                       lesson: lesson,
                                       status: status,
+                                      accentColor: accentColor, // ✅ تمرير اللون للبطاقة
                                       onTap: () => Navigator.push(context, MaterialPageRoute(
                                         builder: (_) => LessonPlayerScreen(
                                           videoUrl: lesson.videoUrl ?? '',
@@ -197,6 +233,8 @@ class LessonScreen extends StatelessWidget {
                                           lessonType: 'video',
                                           isLocked: isLocked,
                                           description: lesson.description,
+                                          // ✅ تمرير isFirstLesson للتتبع
+                                          isFirstLesson: index == 0,
                                         ),
                                       )),
                                     );
@@ -219,13 +257,87 @@ class LessonScreen extends StatelessWidget {
   }
 }
 
+// ── Legend for lesson statuses (محسّن) ──
+class _LessonStatusLegend extends StatelessWidget {
+  final ThemeColors c;
+  final Color accentColor;
+  const _LessonStatusLegend({required this.c, required this.accentColor});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _LegendDot(color: AppColors.green, label: 'Done'),
+        const SizedBox(width: 12),
+        _LegendDot(color: accentColor, label: 'Current', isBorder: true),
+        const SizedBox(width: 12),
+        _LegendDot(color: c.iconBg, label: 'Locked', isLocked: true),
+      ],
+    );
+  }
+}
+
+class _LegendDot extends StatelessWidget {
+  final Color color;
+  final String label;
+  final bool isBorder, isLocked;
+  const _LegendDot({required this.color, required this.label, this.isBorder = false, this.isLocked = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 10, height: 10,
+          decoration: BoxDecoration(
+            color: isLocked ? null : color.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(3),
+            border: isBorder ? Border.all(color: color, width: 2) : (isLocked ? Border.all(color: context.colors.textMuted, width: 1) : null),
+          ),
+          child: isLocked ? Icon(Icons.lock_rounded, size: 8, color: context.colors.textMuted) : null,
+        ),
+        const SizedBox(width: 4),
+        Text(label, style: TextStyle(color: context.colors.textMuted, fontSize: 10, fontFamily: 'Inter')),
+      ],
+    );
+  }
+}
+
+// ── Empty State (محسّن) ──
+class _EmptyLessonsState extends StatelessWidget {
+  final ThemeColors c;
+  const _EmptyLessonsState({required this.c});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(32),
+      decoration: BoxDecoration(color: c.surface2, borderRadius: BorderRadius.circular(16), border: Border.all(color: c.border)),
+      child: Column(
+        children: [
+          Icon(Icons.menu_book_outlined, size: 48, color: c.textMuted),
+          const SizedBox(height: 12),
+          Text(AppLocalizations.of(context).noLessonsYet, style: TextStyle(color: c.textPrimary, fontFamily: 'Inter', fontWeight: FontWeight.w600)),
+          const SizedBox(height: 4),
+          Text('Check back soon for new content!', style: TextStyle(color: c.textMuted, fontSize: 13, fontFamily: 'Inter')),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Lesson Item Card (محسّن جداً ليتناسق مع النظام) ──
 class _LessonItem extends StatelessWidget {
   final int number;
   final LessonModel lesson;
   final LessonItemStatus status;
+  final Color accentColor; // ✅ جديد
   final VoidCallback onTap;
 
-  const _LessonItem({required this.number, required this.lesson, required this.status, required this.onTap});
+  const _LessonItem({required this.number, required this.lesson, required this.status, required this.accentColor, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -233,34 +345,41 @@ class _LessonItem extends StatelessWidget {
     final isCompleted = status == LessonItemStatus.completed;
     final isCurrent   = status == LessonItemStatus.current;
     final isLocked    = status == LessonItemStatus.locked;
-    final currentBg   = context.isDark ? const Color(0xFF1A2A4A) : AppColors.primaryLight;
+
+    // ألوان ديناميكية حسب الحالة
+    final bgColor = isCurrent ? accentColor.withOpacity(context.isDark ? 0.15 : 0.08) : c.surface;
+    final borderColor = isCurrent ? accentColor : (isCompleted ? AppColors.green.withOpacity(0.3) : c.border);
+    final textColor = isLocked ? c.textMuted.withOpacity(0.7) : c.textPrimary;
+    final iconColor = isCompleted ? AppColors.green : (isLocked ? c.textMuted : accentColor);
 
     return GestureDetector(
-      onTap: onTap,
+      onTap: isLocked ? null : onTap,
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: ShapeDecoration(
-          color: isCurrent ? currentBg : c.surface,
+          color: bgColor,
           shape: RoundedRectangleBorder(
-            side: BorderSide(width: 1.24, color: isCurrent ? AppColors.primary : c.border),
+            side: BorderSide(width: 1.24, color: borderColor),
             borderRadius: BorderRadius.circular(16),
           ),
-          shadows: const [BoxShadow(color: Color(0x19000000), blurRadius: 2, offset: Offset(0, 1), spreadRadius: -1)],
+          shadows: isCurrent ? [BoxShadow(color: accentColor.withOpacity(0.15), blurRadius: 8, offset: const Offset(0, 2))] : [const BoxShadow(color: Color(0x19000000), blurRadius: 2, offset: Offset(0, 1), spreadRadius: -1)],
         ),
         child: Row(
           children: [
+            // ✅ رقم/أيقونة الدرس (مصمم مثل _DetailPill)
             Container(
               width: 36, height: 36,
               decoration: BoxDecoration(
-                color: isCompleted ? AppColors.greenLight : isCurrent ? AppColors.primary : c.iconBg,
+                color: isCompleted ? AppColors.green.withOpacity(0.12) : (isLocked ? c.iconBg : accentColor.withOpacity(0.12)),
                 borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: isCompleted ? AppColors.green.withOpacity(0.3) : (isLocked ? c.border : accentColor.withOpacity(0.3))),
               ),
               child: Center(
                 child: isCompleted
                     ? const Icon(Icons.check_rounded, color: AppColors.green, size: 18)
                     : isLocked
-                        ? Icon(Icons.lock_rounded, color: c.textMuted, size: 16)
-                        : Text('$number', style: const TextStyle(color: Colors.white, fontSize: 14, fontFamily: 'Inter', fontWeight: FontWeight.w700)),
+                        ? Icon(Icons.lock_rounded, color: c.textMuted, size: 14)
+                        : Text('$number', style: TextStyle(color: accentColor, fontSize: 14, fontFamily: 'Inter', fontWeight: FontWeight.w700)),
               ),
             ),
             const SizedBox(width: 12),
@@ -268,20 +387,21 @@ class _LessonItem extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(lesson.title,
-                      style: TextStyle(color: isLocked ? c.textMuted : c.textPrimary, fontSize: 14, fontFamily: 'Inter', fontWeight: FontWeight.w700)),
-                  const SizedBox(height: 2),
+                  // العنوان
+                  Text(lesson.title, style: TextStyle(color: textColor, fontSize: 14, fontFamily: 'Inter', fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 4),
+                  // التفاصيل الصغيرة
                   Row(
                     children: [
-                      Icon(Icons.access_time_rounded, size: 12, color: c.textMuted),
-                      const SizedBox(width: 4),
-                      Text(lesson.durationFormatted, style: TextStyle(color: c.textMuted, fontSize: 12, fontFamily: 'Inter')),
+                      Icon(Icons.access_time_rounded, size: 11, color: c.textMuted),
+                      const SizedBox(width: 3),
+                      Text(lesson.durationFormatted, style: TextStyle(color: c.textMuted, fontSize: 11, fontFamily: 'Inter')),
                       if (lesson.isFree) ...[
                         const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(color: AppColors.greenLight, borderRadius: BorderRadius.circular(100)),
-                          child: const Text('Free', style: TextStyle(color: AppColors.green, fontSize: 10, fontFamily: 'Inter', fontWeight: FontWeight.w700)),
+                          decoration: BoxDecoration(color: AppColors.green.withOpacity(0.12), borderRadius: BorderRadius.circular(100), border: Border.all(color: AppColors.green.withOpacity(0.3))),
+                          child: const Text('Free', style: TextStyle(color: AppColors.green, fontSize: 9, fontFamily: 'Inter', fontWeight: FontWeight.w600)),
                         ),
                       ],
                     ],
@@ -289,12 +409,13 @@ class _LessonItem extends StatelessWidget {
                 ],
               ),
             ),
+            // ✅ أيقونة الحالة (يمين)
             if (isCompleted)
-              const Icon(Icons.replay_rounded, color: AppColors.green, size: 18)
+              Container(padding: const EdgeInsets.all(6), decoration: BoxDecoration(color: AppColors.green.withOpacity(0.12), borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.check_circle_rounded, color: AppColors.green, size: 18))
             else if (isCurrent)
-              const Icon(Icons.play_arrow_rounded, color: AppColors.primary, size: 20)
+              Container(padding: const EdgeInsets.all(6), decoration: BoxDecoration(color: accentColor.withOpacity(0.12), borderRadius: BorderRadius.circular(8)), child: Icon(Icons.play_circle_rounded, color: accentColor, size: 18))
             else
-              Icon(Icons.lock_outline_rounded, color: c.textMuted, size: 18),
+              Container(padding: const EdgeInsets.all(6), decoration: BoxDecoration(color: c.iconBg, borderRadius: BorderRadius.circular(8)), child: Icon(Icons.lock_outline_rounded, color: c.textMuted, size: 16)),
           ],
         ),
       ),
