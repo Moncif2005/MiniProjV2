@@ -301,7 +301,13 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                         text: AppLocalizations.of(context).signInLink,
                         style: TextStyle(color: c.primary, fontWeight: FontWeight.w700, fontSize: 14, fontFamily: 'Inter'),
                         recognizer: TapGestureRecognizer()
-                          ..onTap = () => Navigator.pushNamedAndRemoveUntil(context, '/signup', (r) => false),
+                          ..onTap = () {
+                            if (Navigator.canPop(context)) {
+                              Navigator.pop(context);
+                            } else {
+                              Navigator.pushReplacementNamed(context, '/signup');
+                            }
+                          },
                       ),
                     ],
                   ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../theme/app_colors.dart';
 
 /// A single item in the [BottomNavBar].
@@ -47,7 +48,10 @@ class BottomNavBar extends StatelessWidget {
                   icon: item.icon,
                   label: item.label,
                   isSelected: isSelected,
-                  onTap: () => onTap(index),
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    onTap(index);
+                  },
                 ),
               );
             }),
@@ -58,7 +62,7 @@ class BottomNavBar extends StatelessWidget {
   }
 }
 
-class _NavBarTab extends StatelessWidget {
+class _NavBarTab extends StatefulWidget {
   final IconData icon;
   final String label;
   final bool isSelected;
@@ -72,37 +76,89 @@ class _NavBarTab extends StatelessWidget {
   });
 
   @override
+  State<_NavBarTab> createState() => _NavBarTabState();
+}
+
+class _NavBarTabState extends State<_NavBarTab>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+    );
+    _scale = Tween<double>(begin: 1.0, end: 1.15).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.elasticOut),
+    );
+  }
+
+  @override
+  void didUpdateWidget(_NavBarTab old) {
+    super.didUpdateWidget(old);
+    if (widget.isSelected && !old.isSelected) {
+      _ctrl.forward(from: 0);
+    } else if (!widget.isSelected && old.isSelected) {
+      _ctrl.reverse();
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final color = isSelected ? AppColors.primary : const Color(0xFF9CA3AF);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final activeColor = isDark ? AppColors.darkPrimary : AppColors.primary;
+    // Visible grey for inactive — matches original screenshots
+    final inactiveColor = isDark ? const Color(0xFF8E8E93) : const Color(0xFF9CA3AF);
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: onTap,
+      onTap: widget.onTap,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? AppColors.primary.withOpacity(0.1)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(12),
+          ScaleTransition(
+            scale: _scale,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOutCubic,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              decoration: BoxDecoration(
+                color: widget.isSelected
+                    ? activeColor.withOpacity(0.1)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                widget.icon,
+                color: widget.isSelected ? activeColor : inactiveColor,
+                size: 22,
+              ),
             ),
-            child: Icon(icon, color: color, size: 22),
           ),
           const SizedBox(height: 2),
-          Text(
-            label,
+          AnimatedDefaultTextStyle(
+            duration: const Duration(milliseconds: 200),
             style: TextStyle(
-              color: color,
+              color: widget.isSelected ? activeColor : inactiveColor,
               fontSize: 10,
               fontFamily: 'Inter',
-              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+              fontWeight:
+                  widget.isSelected ? FontWeight.w700 : FontWeight.w500,
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+            child: Text(
+              widget.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ],
       ),
