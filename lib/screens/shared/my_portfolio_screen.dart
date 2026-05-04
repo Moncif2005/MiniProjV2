@@ -397,7 +397,7 @@ class _ModernFilterBtn extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────
 class _AddItemForm extends StatefulWidget {
   final String uid;
-  final ThemeColors colors;  // ✅ جديد
+  final ThemeColors colors;
   const _AddItemForm({required this.uid, required this.colors});
   @override
   State<_AddItemForm> createState() => _AddItemFormState();
@@ -406,7 +406,8 @@ class _AddItemForm extends StatefulWidget {
 class _AddItemFormState extends State<_AddItemForm> {
   final _t = TextEditingController();
   final _d = TextEditingController();
-  String _type = 'project';
+  // القيمة الافتراضية للنوع
+  String _type = 'project'; 
   File? _f;
   bool _saving = false;
 
@@ -415,36 +416,115 @@ class _AddItemFormState extends State<_AddItemForm> {
 
   @override
   Widget build(BuildContext context) {
-    final c = widget.colors;  // ✅ استخدم الألوان الممررة
+    final c = widget.colors;
     return SafeArea(
       child: Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, top: 24, left: 24, right: 24),
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom, 
+          top: 24, left: 24, right: 24
+        ),
         child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text('Add Item', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, fontFamily: 'Inter', color: c.textPrimary)), IconButton(onPressed: _saving ? null : () => Navigator.pop(context), icon: Icon(Icons.close_rounded, color: c.textSecondary))]),
+          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+            Text('Add Item', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, fontFamily: 'Inter', color: c.textPrimary)),
+            IconButton(onPressed: _saving ? null : () => Navigator.pop(context), icon: Icon(Icons.close_rounded, color: c.textSecondary))
+          ]),
           const SizedBox(height: 20),
-          _InputField(ctrl: _t, label: 'Title', hint: 'Project or Certificate name', colors: c),  // ✅ تمرير c
+          
+          // ── اختيار النوع (Project or Certificate) ──
+          Text('Select Category', style: TextStyle(color: c.textSecondary, fontSize: 13, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 10),
+          Row(children: [
+            _buildTypeOption('project', 'Project', Icons.work_outline_rounded, AppColors.cyan),
+            const SizedBox(width: 12),
+            _buildTypeOption('external_cert', 'Certificate', Icons.verified_user_rounded, AppColors.green),
+          ]),
+          const SizedBox(height: 20),
+
+          _InputField(ctrl: _t, label: 'Title', hint: 'Enter name...', colors: c),
           const SizedBox(height: 12),
-          _InputField(ctrl: _d, label: 'Description', hint: 'Short details...', lines: 3, colors: c),  // ✅ تمرير c
+          _InputField(ctrl: _d, label: 'Description', hint: 'Short details...', lines: 3, colors: c),
           const SizedBox(height: 16),
-          GestureDetector(onTap: _saving ? null : () async { final r = await ImagePicker().pickImage(source: ImageSource.gallery); if (r != null) setState(() => _f = File(r.path)); }, child: Container(padding: const EdgeInsets.all(14), decoration: BoxDecoration(border: Border.all(color: _f == null ? c.border : AppColors.primary), borderRadius: BorderRadius.circular(14), color: _f == null ? c.inputBg : AppColors.primary.withOpacity(0.05)), child: Row(children: [Icon(_f == null ? Icons.attach_file_rounded : Icons.check_circle_rounded, color: _f == null ? c.textMuted : AppColors.primary, size: 20), const SizedBox(width: 10), Text(_f == null ? 'Attach File' : 'File Ready', style: TextStyle(color: _f == null ? c.textMuted : AppColors.primary, fontWeight: FontWeight.w600, fontFamily: 'Inter'))]))),
+          
+          // زر إرفاق الملف
+          GestureDetector(
+            onTap: _saving ? null : () async { 
+              final r = await ImagePicker().pickImage(source: ImageSource.gallery); 
+              if (r != null) setState(() => _f = File(r.path)); 
+            }, 
+            child: Container(
+              padding: const EdgeInsets.all(14), 
+              decoration: BoxDecoration(
+                border: Border.all(color: _f == null ? c.border : AppColors.primary), 
+                borderRadius: BorderRadius.circular(14), 
+                color: _f == null ? c.inputBg : AppColors.primary.withOpacity(0.05)
+              ), 
+              child: Row(children: [
+                Icon(_f == null ? Icons.attach_file_rounded : Icons.check_circle_rounded, color: _f == null ? c.textMuted : AppColors.primary, size: 20), 
+                const SizedBox(width: 10), 
+                Text(_f == null ? 'Attach File' : 'File Ready', style: TextStyle(color: _f == null ? c.textMuted : AppColors.primary, fontWeight: FontWeight.w600))
+              ])
+            )
+          ),
           const SizedBox(height: 20),
-          SizedBox(width: double.infinity, height: 52, child: FilledButton(onPressed: _saving ? null : _save, style: FilledButton.styleFrom(backgroundColor: AppColors.primary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))), child: _saving ? SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5)) : Text('Save to Portfolio', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700, fontFamily: 'Inter')))),
+          
+          // زر الحفظ
+          SizedBox(width: double.infinity, height: 52, child: FilledButton(
+            onPressed: _saving ? null : _save, 
+            style: FilledButton.styleFrom(backgroundColor: AppColors.primary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))), 
+            child: _saving ? SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5)) : Text('Save to Portfolio')
+          )),
           const SizedBox(height: 24),
         ]),
       ),
     );
   }
 
+  // ودجت صغيرة لاختيار النوع
+  Widget _buildTypeOption(String value, String label, IconData icon, Color activeColor) {
+    final isSelected = _type == value;
+    final c = widget.colors;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _type = value),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? activeColor.withOpacity(0.1) : c.inputBg,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: isSelected ? activeColor : c.border, width: 1.5),
+          ),
+          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Icon(icon, size: 18, color: isSelected ? activeColor : c.textMuted),
+            const SizedBox(width: 8),
+            Text(label, style: TextStyle(color: isSelected ? activeColor : c.textMuted, fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500, fontSize: 13)),
+          ]),
+        ),
+      ),
+    );
+  }
+
   Future<void> _save() async {
-    if (_t.text.isEmpty || _f == null) return;
+    if (_t.text.isEmpty || _f == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please fill all fields and attach a file')));
+      return;
+    }
     setState(() => _saving = true);
     try {
       final url = await MediaService.uploadPortfolioItem('${DateTime.now().millisecondsSinceEpoch}', _f!);
-      if (url != null) { await PortfolioCertService().addPortfolioItem(widget.uid, {'type': _type, 'title': _t.text.trim(), 'description': _d.text.trim(), 'fileUrl': url}); if (mounted) Navigator.pop(context); }
+      if (url != null) { 
+        await PortfolioCertService().addPortfolioItem(widget.uid, {
+          'type': _type, // يتم إرسال النوع المختار هنا
+          'title': _t.text.trim(), 
+          'description': _d.text.trim(), 
+          'fileUrl': url,
+          'createdAt': FieldValue.serverTimestamp(),
+        }); 
+        if (mounted) Navigator.pop(context); 
+      }
     } finally { if (mounted) setState(() => _saving = false); }
   }
 }
-
 // ─────────────────────────────────────────────────────────────
 // 🧩 Input Field (مصحح)
 // ─────────────────────────────────────────────────────────────
