@@ -254,17 +254,17 @@ class _ProfileEtudiantScreenState extends State<ProfileEtudiantScreen> {
                           ),
                           
                           // ── Real Stats ──
-                          Transform.translate(
-                            offset: const Offset(0, -24),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                _StatItem(value: '$_completedCoursesCount', label: 'COMPLETED', textColor: c.textPrimary, labelColor: c.textMuted),
-                                Container(width: 1, height: 32, color: c.border, margin: const EdgeInsets.symmetric(horizontal: 16)),
-                                _StatItem(value: '$_certificatesCount', label: 'CERTIFICATES', textColor: c.textPrimary, labelColor: c.textMuted),
-                              ],
-                            ),
-                          ),
+                          // Transform.translate(
+                          //   offset: const Offset(0, -24),
+                          //   child: Row(
+                          //     mainAxisAlignment: MainAxisAlignment.center,
+                          //     children: [
+                          //       _StatItem(value: '$_completedCoursesCount', label: 'COMPLETED', textColor: c.textPrimary, labelColor: c.textMuted),
+                          //       Container(width: 1, height: 32, color: c.border, margin: const EdgeInsets.symmetric(horizontal: 16)),
+                          //       _StatItem(value: '$_certificatesCount', label: 'CERTIFICATES', textColor: c.textPrimary, labelColor: c.textMuted),
+                          //     ],
+                          //   ),
+                          // ),
                         ],
                       ),
                     ),

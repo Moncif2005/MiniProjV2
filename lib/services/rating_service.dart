@@ -22,6 +22,18 @@ class RatingService {
     }
 
     try {
+          final enrollmentDoc = await _db
+        .collection('courses')
+        .doc(courseId)
+        .collection('enrollments')
+        .doc(currentUid)
+        .get();
+    
+    if (!enrollmentDoc.exists) {
+      debugPrint('❌ [RatingService] ERROR: User $currentUid is NOT enrolled in course $courseId');
+      throw Exception('You must be enrolled in this course to rate it');
+    }
+
       final courseRef = _db.collection('courses').doc(courseId);
       final ratingRef = courseRef.collection('ratings').doc(currentUid);
       

@@ -246,16 +246,50 @@ void _showRatingDialog(BuildContext context, String courseId) {
                               spacing: 12, runSpacing: 12, alignment: WrapAlignment.center,
                               children: [
                                 _CourseStatPill(icon: Icons.play_circle_outline_rounded, label: '${course.totalLessons} Lessons', color: accentColor),
-                                StreamBuilder<Map<String, dynamic>>(
-                                  stream: RatingService().getCourseRatingStats(course.id),
-                                  builder: (context, ratingSnap) {
-                                    final stats = ratingSnap.data ?? {'average': 0.0, 'count': 0};
-                                    final avg = stats['average'] as double;
-                                    final count = stats['count'] as int;
-                                    return _CourseStatPill(icon: Icons.star_rounded, label: count > 0 ? '${avg.toStringAsFixed(1)} ($count)' : 'New', color: const Color(0xFFD08700));
-                                  },
-                                ),
-                                _CourseStatPill(icon: Icons.people_alt_rounded, label: '${course.enrolledStudents} Students', color: AppColors.purple),
+StreamBuilder<int?>(
+  stream: RatingService().getUserRatingStream(course.id),
+  builder: (context, snap) {
+    final userRating = snap.data;
+    
+    // ✅ تحقق إضافي: هل المستخدم مشترك في الكورس؟
+    final isEnrolled = course.enrolledStudents > 0; // أو تحقق أدق من قائمة الاشتراكات
+    
+    return OutlinedButton.icon(
+      // ✅ تعطيل الزر إذا لم يكن مشتركاً
+      onPressed: isEnrolled && userRating == null 
+          ? () => _showRatingDialog(context, course.id) 
+          : null,
+      icon: Icon(
+        userRating != null ? Icons.star : Icons.star_border_outlined,
+        color: (isEnrolled && userRating == null) 
+            ? (userRating != null ? Colors.amber : accentColor) 
+            : c.textMuted,
+        size: 18,
+      ),
+      label: Text(
+        userRating != null ? 'Rated' : (isEnrolled ? 'Rate' : 'Enroll to Rate'),
+        style: TextStyle(
+          fontFamily: 'Inter',
+          fontWeight: FontWeight.w600,
+          fontSize: 13,
+          color: isEnrolled ? (userRating != null ? Colors.amber : accentColor) : c.textMuted,
+        ),
+      ),
+      style: OutlinedButton.styleFrom(
+        side: BorderSide(
+          color: isEnrolled 
+              ? (userRating != null ? Colors.amber.withOpacity(0.5) : accentColor.withOpacity(0.3))
+              : c.border,
+        ),
+        backgroundColor: isEnrolled 
+            ? (userRating != null ? Colors.amber.withOpacity(0.1) : Colors.transparent)
+            : c.iconBg,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      ),
+    );
+  },
+),                                _CourseStatPill(icon: Icons.people_alt_rounded, label: '${course.enrolledStudents} Students', color: AppColors.purple),
                               ],
                             ),
                             const SizedBox(height: 16),
