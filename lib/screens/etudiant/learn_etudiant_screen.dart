@@ -241,8 +241,10 @@ class _LearnEtudiantScreenState extends State<LearnEtudiantScreen> {
                         instructorId: course.instructorId,
                         // rating: '5.0', // ❌ حذفنا القيمة الثابتة
                         category: course.category,
-                        duration: '${course.totalLessons} lessons',
+                        // duration: '${course.totalLessons} lessons',
+                          duration: '${course.unitsCount} ${AppLocalizations.of(context).units}', // ← units بدلاً من lessons
                         lessons: course.totalLessons,
+                        unitsCount: course.unitsCount,
                         enrolled: false,
                         progress: 0.0,
                         onTap: () {
@@ -275,6 +277,7 @@ class _EtudiantCourseCard extends StatelessWidget {
   final String category;
   final String duration;
   final int lessons;
+    final int unitsCount;   // ✅ جديد: عدد الوحدات
   final bool enrolled;
   final double progress;
   final VoidCallback onTap;
@@ -287,6 +290,7 @@ class _EtudiantCourseCard extends StatelessWidget {
     required this.category,
     required this.duration,
     required this.lessons,
+        required this.unitsCount, // ✅ جديد
     required this.enrolled,
     required this.progress,
     required this.onTap,
@@ -438,22 +442,22 @@ class _EtudiantCourseCard extends StatelessWidget {
                   ),
 
                   // ✅ وصف مختصر للكورس (مثل بطاقة الوظيفة)
-                  if (lessons > 0) ...[
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: c.surface2,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: c.border.withOpacity(0.5)),
-                      ),
-                      child: Text(
-                        '$lessons lessons covering practical skills in $category. Start learning today!',
-                        style: TextStyle(color: c.textSecondary.withOpacity(0.9), fontSize: 12, fontFamily: 'Inter', height: 1.5),
-                      ),
-                    ),
-                  ],
-
+// ✅ وصف محسّن يستخدم كلا القيمتين
+if (lessons > 0) ...[
+  const SizedBox(height: 12),
+  Container(
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: c.surface2,
+      borderRadius: BorderRadius.circular(10),
+      border: Border.all(color: c.border.withOpacity(0.5)),
+    ),
+    child: Text(
+      'Practical ${category.toLowerCase()} course with $lessons lessons across $unitsCount units. Start learning today!',
+      style: TextStyle(color: c.textSecondary.withOpacity(0.9), fontSize: 12, fontFamily: 'Inter', height: 1.5),
+    ),
+  ),
+],
                   const SizedBox(height: 16),
 
                   // ✅ فاصل أنيق

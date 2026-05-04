@@ -34,47 +34,95 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
     });
   }
 
-  // ✅ دالة إظهار نافذة التقييم (مصممة بشكل احترافي)
-  void _showRatingDialog(BuildContext context, String courseId) {
-    int selectedRating = 0;
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
+void _showRatingDialog(BuildContext context, String courseId) {
+  int selectedRating = 0;
+  
+  showDialog(
+    context: context,
+    builder: (ctx) => StatefulBuilder(  // ✅ StatefulBuilder يغلف الكل
+      builder: (context, setDialogState) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(children: [
           Icon(Icons.star_rounded, color: Colors.amber, size: 24),
           const SizedBox(width: 8),
           Text(AppLocalizations.of(context).rateThisCourse, style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.bold)),
         ]),
-        content: StatefulBuilder(
-          builder: (context, setState) => Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(AppLocalizations.of(context).howWasExperience, style: TextStyle(color: Colors.grey[600])),
-              const SizedBox(height: 20),
-              Row(mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(5, (index) => IconButton(
-                  icon: Icon(index < selectedRating ? Icons.star : Icons.star_border, color: Colors.amber, size: 36),
-                  onPressed: () => setState(() => selectedRating = index + 1),
-                )),
-              ),
-            ],
-          ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(AppLocalizations.of(context).howWasExperience, style: TextStyle(color: Colors.grey[600])),
+            const SizedBox(height: 20),
+            Row(mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(5, (index) => IconButton(
+                icon: Icon(
+                  index < selectedRating ? Icons.star : Icons.star_border,
+                  color: Colors.amber,
+                  size: 36,
+                ),
+                onPressed: () {
+                  setDialogState(() => selectedRating = index + 1);  // ✅ استخدم setDialogState
+                  debugPrint('🔍 Rating selected: $selectedRating');
+                },
+              )),
+            ),
+          ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.of(context).cancel)),
-          FilledButton(
-            onPressed: selectedRating == 0 ? null : () async {
-              await RatingService().rateCourse(courseId, selectedRating);
-              if (mounted) Navigator.pop(ctx);
+          TextButton(
+            onPressed: () {
+              debugPrint('🔍 Dialog cancelled');
+              Navigator.pop(ctx);
             },
-            style: FilledButton.styleFrom(backgroundColor: AppColors.primary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-            child: Text(AppLocalizations.of(context).submitRating),
+            child: Text(AppLocalizations.of(context).cancel),
+          ),
+          
+          // ✅ الزر يتفعل عندما selectedRating > 0
+          FilledButton(
+            onPressed: selectedRating > 0 ? () async {
+              debugPrint('🔍 Submitting rating: $selectedRating');
+              try {
+                await RatingService().rateCourse(courseId, selectedRating);
+                debugPrint('✅ Rating submitted successfully');
+                if (mounted) Navigator.pop(ctx);
+                
+                // إظهار رسالة نجاح
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Thank you for your rating!'),
+                      backgroundColor: AppColors.green,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              } catch (e) {
+                debugPrint('❌ Error submitting rating: $e');
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error: $e'),
+                      backgroundColor: AppColors.red,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              }
+            } : null,  // ✅ null عندما selectedRating == 0
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+            child: Text(
+              AppLocalizations.of(context).submitRating,
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   // ✅ دالة لتحديد لون الشريط العلوي حسب الفئة
   Color _categoryColor(String category) {
