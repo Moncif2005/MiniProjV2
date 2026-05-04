@@ -73,19 +73,20 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen> {
     }
   }
 
-  Future<void> _handleEnrollment() async {
-    if (widget.isFirstLesson && !_hasEnrolled) {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        await _progressService.enrollStudentInCourse(
-          courseId: widget.courseId,
-          studentId: user.uid,
-        );
-        _hasEnrolled = true;
-      }
+Future<void> _handleEnrollment() async {
+  // ✅✅✅ إزالة شرط isFirstLesson ✅✅✅
+  // نسجل الطالب عند فتح أي درس، والدالة تتعامل مع التكرار تلقائياً
+  if (!_hasEnrolled) {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      await _progressService.enrollStudentInCourse(
+        courseId: widget.courseId,
+        studentId: user.uid,
+      );
+      _hasEnrolled = true; // لمنع الاستدعاء المتكرر أثناء نفس الجلسة
     }
   }
-
+}
   @override
   void dispose() {
     _videoController?.dispose();

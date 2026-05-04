@@ -58,36 +58,35 @@ class ProgressService {
       'totalLessons': count,
     }, SetOptions(merge: true));
   }
-  /// ✅✅✅ دالة جديدة: تسجيل طالب في كورس (عند مشاهدة أول درس)
-  Future<void> enrollStudentInCourse({required String courseId, required String studentId}) async {
-    try {
-      final courseRef = _db.collection('courses').doc(courseId);
-      final enrollmentRef = courseRef.collection('enrollments').doc(studentId);
-      
-      // 1. تسجيل الطالب في مجموعة فرعية (لضمان عدم التكرار)
+  /// ✅✅✅ دالة تسجيل طالب في كورس (مصححة)
+Future<void> enrollStudentInCourse({required String courseId, required String studentId}) async {
+  try {
+    final courseRef = _db.collection('courses').doc(courseId);
+    final enrollmentRef = courseRef.collection('enrollments').doc(studentId);
+    
+    // ✅ أولاً: تحقق إذا كان الطالب مسجلاً مسبقاً
+    final enrollmentDoc = await enrollmentRef.get();
+    
+    if (!enrollmentDoc.exists) {
+      // ✅ تسجيل جديد: أنشئ الوثيقة وزد العداد
       await enrollmentRef.set({
         'enrolledAt': FieldValue.serverTimestamp(),
         'studentId': studentId,
-      }, SetOptions(merge: true));
-      
-      // 2. تحديث العداد الرئيسي باستخدام Transaction (للتعامل مع التعديل المتزامن)
-      await _db.runTransaction((transaction) async {
-        final courseDoc = await transaction.get(courseRef);
-        if (courseDoc.exists) {
-          final currentCount = courseDoc.data()?['enrolledStudents'] ?? 0;
-          // نزيد العداد فقط إذا كان هذا هو التسجيل الأول (لحظة الإنشاء)
-          // ملاحظة: بما أننا نستخدم SetOptions(merge: true) في الخطوة 1،
-          // يمكننا ببساطة زيادة العداد هنا، أو التحقق من وجود الوثيقة أولاً للدقة القصوى.
-          // للحل البسيط والفعال:
-          transaction.update(courseRef, {'enrolledStudents': FieldValue.increment(1)});
-        }
       });
       
-      debugPrint('✅ Student $studentId enrolled in course $courseId');
-    } catch (e) {
-      debugPrint('❌ Error enrolling student: $e');
+      // ✅ زد العداد مرة واحدة فقط
+      await courseRef.update({
+        'enrolledStudents': FieldValue.increment(1),
+      });
+      
+      debugPrint('✅ New enrollment: $studentId in $courseId');
+    } else {
+      debugPrint('ℹ️ Student already enrolled: $studentId in $courseId');
     }
+  } catch (e) {
+    debugPrint('❌ Error enrolling student: $e');
   }
+}
   /// ✅ جلب نسبة الإنجاز لكورس معين (Stream)
   Stream<double> getCourseProgressStream(String courseId) {
     if (_uid == null || _progressRef == null) return Stream.value(0.0);

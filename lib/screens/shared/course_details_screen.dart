@@ -344,14 +344,39 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
                       flex: 2,
                       child: SizedBox(height: 52,
                         child: ElevatedButton.icon(
-                          onPressed: () async {
-                            final lessonsSnap = await FirebaseFirestore.instance.collection('courses').doc(course.id).collection('lessons').orderBy('unitNumber').orderBy('orderInUnit').limit(1).get();
-                            if (lessonsSnap.docs.isNotEmpty && context.mounted) {
-                              final firstLesson = lessonsSnap.docs.first;
-                              final data = firstLesson.data();
-                              Navigator.push(context, MaterialPageRoute(builder: (_) => LessonPlayerScreen(videoUrl: data['videoUrl'] ?? '', lessonTitle: data['title'] ?? 'Lesson', courseId: course.id, lessonId: firstLesson.id, lessonType: data['type'] ?? 'video', isLocked: false, description: data['description'] ?? '')));
-                            }
-                          },
+                  // في القسم السفلي (Bottom Action Bar) داخل ElevatedButton.icon:
+onPressed: () async {
+  final lessonsSnap = await FirebaseFirestore.instance
+      .collection('courses')
+      .doc(course.id)
+      .collection('lessons')
+      .orderBy('unitNumber')
+      .orderBy('orderInUnit')
+      .limit(1)
+      .get();
+      
+  if (lessonsSnap.docs.isNotEmpty && context.mounted) {
+    final firstLesson = lessonsSnap.docs.first;
+    final data = firstLesson.data();
+    
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => LessonPlayerScreen(
+          videoUrl: data['videoUrl'] ?? '',
+          lessonTitle: data['title'] ?? 'Lesson',
+          courseId: course.id,
+          lessonId: firstLesson.id,
+          lessonType: data['type'] ?? 'video',
+          isLocked: false,
+          description: data['description'] ?? '',
+          // ✅✅✅ أضف هذا السطر: ✅✅✅
+          isFirstLesson: true, // ← هذا ما كان ناقصاً!
+        ),
+      ),
+    );
+  }
+},
                           icon: const Icon(Icons.play_arrow_rounded, size: 20),
                           label: Text(AppLocalizations.of(context).startLearning, style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700, fontSize: 15)),
                           style: ElevatedButton.styleFrom(backgroundColor: accentColor, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)), elevation: 4, shadowColor: accentColor.withOpacity(0.4)),
