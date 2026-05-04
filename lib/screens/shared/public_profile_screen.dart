@@ -1,27 +1,15 @@
 import 'package:flutter/material.dart';
-
-import 'package:flutter/foundation.dart';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
-
 import 'package:firebase_auth/firebase_auth.dart';
-
 import 'package:minipr/services/portfolio_cert_service.dart';
-
-import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart'; // ✅ تأكد من وجود هذا الاستيراد
-
+import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import '../../theme/app_colors.dart';
 import '../../l10n/app_localizations.dart';
 
 class PublicProfileScreen extends StatefulWidget {
   final String userId;
-  final String role; // 'etudiant' | 'recruteur' | 'enseignant'
-
-  const PublicProfileScreen({
-    super.key,
-    required this.userId,
-    required this.role,
-  });
+  final String role;
+  const PublicProfileScreen({super.key, required this.userId, required this.role});
 
   @override
   State<PublicProfileScreen> createState() => _PublicProfileScreenState();
@@ -29,14 +17,9 @@ class PublicProfileScreen extends StatefulWidget {
 
 class _PublicProfileScreenState extends State<PublicProfileScreen> {
   String _displayRole = 'etudiant';
-  final _firestore = FirebaseFirestore.instance;
   Map<String, dynamic>? _userData;
   bool _loading = true;
   String? _error;
-
-  int _jobsPosted = 0;
-  int _totalApplications = 0;
-  bool _statsLoading = true;
 
   @override
   void initState() {
@@ -44,24 +27,16 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     _loadPublicProfile();
   }
 
-  // ✅ تم حذف دالة _launchURL القديمة واستبدالها بفتح داخلي
-
   Future<void> _loadPublicProfile() async {
     try {
-      final doc = await _firestore.collection('users').doc(widget.userId).get();
+      final doc = await FirebaseFirestore.instance.collection('users').doc(widget.userId).get();
       if (doc.exists && mounted) {
         final data = doc.data();
-        final role = data?['role']?.toString() ?? 'etudiant';
-
         setState(() {
           _userData = data;
-          _displayRole = role;
+          _displayRole = data?['role']?.toString() ?? 'etudiant';
           _loading = false;
         });
-
-        if (role == 'recruteur') {
-          _loadRecruiterStats();
-        }
       } else if (mounted) {
         setState(() {
           _error = 'Profile not found';
@@ -69,1086 +44,585 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
         });
       }
     } catch (e) {
-      if (mounted)
-        setState(() {
-          _error = 'Failed to load profile';
-          _loading = false;
-        });
+      if (mounted) setState(() { _error = 'Failed to load profile'; _loading = false; });
     }
   }
 
-  Future<void> _loadRecruiterStats() async {
-    try {
-      final offersSnap = await _firestore
-          .collection('offers')
-          .where('recruiterId', isEqualTo: widget.userId)
-          .get();
-
-      _jobsPosted = offersSnap.docs.where((d) => d['isActive'] == true).length;
-      for (var doc in offersSnap.docs) {
-        _totalApplications +=
-            int.tryParse(doc['applicationsCount']?.toString() ?? '0') ?? 0;
-      }
-
-      if (mounted) setState(() => _statsLoading = false);
-    } catch (e) {
-      debugPrint('❌ Stats error: $e');
-      if (mounted) setState(() => _statsLoading = false);
-    }
-  }
-
-  String _getUserName() {
-    if (_userData == null) return 'Unknown';
-    return _userData!['displayName']?.toString() ??
-        _userData!['name']?.toString() ??
-        'Unknown';
-  }
-
-  String? _getUserAvatar() {
-    if (_userData == null) return null;
-    return _userData!['photoURL']?.toString() ??
-        _userData!['avatar']?.toString();
-  }
+  String _getUserName() => _userData?['displayName']?.toString() ?? _userData?['name']?.toString() ?? 'Unknown';
+  String? _getUserAvatar() => _userData?['photoURL']?.toString() ?? _userData?['avatar']?.toString();
 
   String _getInitials(String name) {
-    if (name.isEmpty || name == 'Unknown') return '?';
+    if (name.isEmpty) return '?';
     final parts = name.trim().split(' ');
-    if (parts.length == 1) return parts[0][0].toUpperCase();
-    return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    return parts.length == 1 ? parts[0][0].toUpperCase() : '${parts[0][0]}${parts[1][0]}'.toUpperCase();
   }
 
   Color _getRoleColor(String role) {
     switch (role) {
-      case 'recruteur':
-        return AppColors.purple;
-      case 'enseignant':
-        return AppColors.primary;
-      case 'etudiant':
-        return AppColors.green;
-      default:
-        return Colors.grey;
+      case 'recruteur': return AppColors.purple;
+      case 'enseignant': return AppColors.primary;
+      case 'etudiant': return AppColors.green;
+      default: return Colors.grey;
     }
   }
 
   String _getRoleLabel(String role) {
     switch (role) {
-      case 'recruteur':
-        return 'Recruiter';
-      case 'enseignant':
-        return 'Teacher';
-      case 'etudiant':
-        return 'Student';
-      default:
-        return 'User';
+      case 'recruteur': return 'Recruiter';
+      case 'enseignant': return 'Teacher';
+      case 'etudiant': return 'Student';
+      default: return 'User';
     }
-  }
-
-  Widget _buildContactSection(ThemeColors c) {
-    final data = _userData ?? {};
-    final phone = data['phone']?.toString() ?? '';
-    final email = data['email']?.toString() ?? '';
-    final linkedin = data['linkedin']?.toString() ?? '';
-    final github = data['github']?.toString() ?? '';
-    final facebook = data['facebook']?.toString() ?? '';
-
-    if (phone.isEmpty &&
-        email.isEmpty &&
-        linkedin.isEmpty &&
-        github.isEmpty &&
-        facebook.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: ShapeDecoration(
-          color: c.surface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: BorderSide(width: 1.24, color: c.border),
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Contact & Social',
-              style: TextStyle(
-                color: c.textPrimary,
-                fontSize: 16,
-                fontFamily: 'Inter',
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 8),
-
-            if (phone.isNotEmpty)
-              _ContactRow(
-                icon: Icons.phone_rounded,
-                label: 'Phone',
-                value: phone,
-                onTap: () {
-                  /* يمكن إبقاء الهاتف يفتح التطبيق الخارجي */
-                },
-                color: AppColors.green,
-                c: c,
-              ),
-            if (email.isNotEmpty)
-              _ContactRow(
-                icon: Icons.mail_outline_rounded,
-                label: 'Email',
-                value: email,
-                onTap: () {
-                  /* يمكن إبقاء الإيميل يفتح التطبيق الخارجي */
-                },
-                color: AppColors.primary,
-                c: c,
-              ),
-            // ... بقية روابط السوشيال ميديا تبقى كما هي أو تحذف إذا أردت
-          ],
-        ),
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-    final isOwnProfile =
-        currentUserId != null && currentUserId == widget.userId;
+    final accentColor = _getRoleColor(_displayRole);
     final userName = _getUserName();
     final avatarUrl = _getUserAvatar();
+
+    if (_loading) return Scaffold(body: Center(child: CircularProgressIndicator(color: AppColors.primary)));
+    if (_error != null) return Scaffold(body: Center(child: Text(_error!, style: TextStyle(color: c.textMuted))));
 
     return Scaffold(
       backgroundColor: c.bg,
       appBar: AppBar(
         backgroundColor: c.surface,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded, color: c.textPrimary),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          userName,
-          style: TextStyle(
-            color: c.textPrimary,
-            fontFamily: 'Inter',
-            fontWeight: FontWeight.w700,
-          ),
-        ),
+        leading: IconButton(icon: Icon(Icons.arrow_back_ios_new_rounded, color: c.textPrimary), onPressed: () => Navigator.pop(context)),
+        title: Text(userName, style: TextStyle(color: c.textPrimary, fontFamily: 'Inter', fontWeight: FontWeight.w700, fontSize: 16), maxLines: 1, overflow: TextOverflow.ellipsis),
         centerTitle: true,
-        actions: isOwnProfile
-            ? [
-                IconButton(
-                  icon: const Icon(Icons.edit_rounded),
-                  onPressed: () =>
-                      Navigator.pushNamed(context, '/edit-profile'),
-                ),
-              ]
-            : null,
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-          ? Center(
-              child: Text(_error!, style: TextStyle(color: c.textMuted)),
-            )
-          : CustomScrollView(
-              slivers: [
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      children: [
-                        Container(
-                          width: 100,
-                          height: 100,
-                          decoration: BoxDecoration(
-                            color: _getRoleColor(
-                              _displayRole,
-                            ).withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(20),
-                            image: avatarUrl != null && avatarUrl.isNotEmpty
-                                ? DecorationImage(
-                                    image: NetworkImage(avatarUrl),
-                                    fit: BoxFit.cover,
-                                  )
-                                : null,
-                          ),
-                          child: (avatarUrl == null || avatarUrl.isEmpty)
-                              ? Center(
-                                  child: Text(
-                                    _getInitials(userName),
-                                    style: TextStyle(
-                                      color: _getRoleColor(_displayRole),
-                                      fontSize: 32,
-                                      fontFamily: 'Inter',
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                )
-                              : null,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          userName,
-                          style: TextStyle(
-                            color: c.textPrimary,
-                            fontSize: 22,
-                            fontFamily: 'Inter',
-                            fontWeight: FontWeight.w700,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: _getRoleColor(
-                              _displayRole,
-                            ).withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(100),
-                          ),
-                          child: Text(
-                            _getRoleLabel(_displayRole),
-                            style: TextStyle(
-                              color: _getRoleColor(_displayRole),
-                              fontSize: 13,
-                              fontFamily: 'Inter',
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                if (_displayRole == 'recruteur')
-                  _buildRecruiterProfile(c)
-                else if (_displayRole == 'etudiant')
-                  _buildStudentProfile(c)
-                else if (_displayRole == 'enseignant')
-                  _buildTeacherProfile(c),
-
-                // قسم التواصل الاجتماعي
-                SliverToBoxAdapter(child: _buildContactSection(c)),
-
-                // ✅ زر عرض البورتفوليو
-                if (_displayRole == 'etudiant' || _displayRole == 'enseignant')
-                  FutureBuilder<DocumentSnapshot>(
-                    future: FirebaseFirestore.instance
-                        .collection('users')
-                        .doc(FirebaseAuth.instance.currentUser?.uid)
-                        .get(),
-                    builder: (ctx, snapshot) {
-                      final currentUserRole = snapshot.data
-                          ?.get('role')
-                          ?.toString();
-                      if (currentUserRole == 'recruteur') {
-                        return SliverToBoxAdapter(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 24,
-                              vertical: 8,
-                            ),
-                            child: SizedBox(
-                              width: double.infinity,
-                              child: FilledButton.icon(
-                                onPressed: () {
-                                  final cvUrl = _userData?['cv_url']
-                                      ?.toString();
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => _ReadOnlyPortfolioScreen(
-                                        candidateId: widget.userId,
-                                        candidateCvUrl: cvUrl,
-                                      ),
-                                    ),
-                                  );
-                                },
-                                icon: const Icon(
-                                  Icons.folder_open_rounded,
-                                  size: 20,
-                                ),
-                                label: const Text(
-                                  'View Portfolio & CV',
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                style: FilledButton.styleFrom(
-                                  backgroundColor: AppColors.primary,
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 14,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      }
-                      return const SliverToBoxAdapter(child: SizedBox.shrink());
-                    },
-                  ),
-
-                const SliverToBoxAdapter(child: SizedBox(height: 32)),
-              ],
-            ),
-    );
-  }
-
-  Widget _buildRecruiterProfile(ThemeColors c) {
-    return SliverList(
-      delegate: SliverChildListDelegate([
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _SectionTitle(c, 'Company Information'),
-              _InfoTile(
-                icon: Icons.business_rounded,
-                label: 'Company',
-                value: _getUserName(),
-                c: c,
-              ),
-              _InfoTile(
-                icon: Icons.location_on_outlined,
-                label: 'Location',
-                value: _userData?['location']?.toString().isNotEmpty == true
-                    ? _userData!['location']
-                    : '—',
-                c: c,
-              ),
-              _InfoTile(
-                icon: Icons.language_rounded,
-                label: 'Industry',
-                value: _userData?['industry']?.toString().isNotEmpty == true
-                    ? _userData!['industry']
-                    : '—',
-                c: c,
-              ),
-              const SizedBox(height: 24),
-              _SectionTitle(c, 'Activity'),
-              _StatsRow(c, [
-                {
-                  'label': 'Jobs Posted',
-                  'value': _statsLoading ? '...' : _jobsPosted,
-                },
-                {
-                  'label': AppLocalizations.of(context).applications,
-                  'value': _statsLoading ? '...' : _totalApplications,
-                },
-              ]),
-            ],
-          ),
-        ),
-      ]),
-    );
-  }
-
-  Widget _buildStudentProfile(ThemeColors c) {
-    return SliverList(
-      delegate: SliverChildListDelegate([
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (_userData?['bio']?.isNotEmpty ?? false) ...[
-                _SectionTitle(c, 'About'),
-                Text(
-                  _userData!['bio'],
-                  style: TextStyle(
-                    color: c.textSecondary,
-                    fontSize: 14,
-                    fontFamily: 'Inter',
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 24),
-              ],
-              if (_userData?['skills'] is List &&
-                  (_userData!['skills'] as List).isNotEmpty) ...[
-                _SectionTitle(c, 'Skills'),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: (_userData!['skills'] as List)
-                      .take(5)
-                      .map(
-                        (s) => Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.primaryLight,
-                            borderRadius: BorderRadius.circular(100),
-                          ),
-                          child: Text(
-                            s.toString(),
-                            style: const TextStyle(
-                              color: AppColors.primary,
-                              fontSize: 12,
-                              fontFamily: 'Inter',
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      )
-                      .toList(),
-                ),
-                const SizedBox(height: 24),
-              ],
-            ],
-          ),
-        ),
-      ]),
-    );
-  }
-
-  Widget _buildTeacherProfile(ThemeColors c) {
-    return SliverList(
-      delegate: SliverChildListDelegate([
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (_userData?['bio']?.isNotEmpty ?? false) ...[
-                _SectionTitle(c, 'Specialization'),
-                Text(
-                  _userData!['bio'],
-                  style: TextStyle(
-                    color: c.textSecondary,
-                    fontSize: 14,
-                    fontFamily: 'Inter',
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 24),
-              ],
-            ],
-          ),
-        ),
-      ]),
-    );
-  }
-}
-
-// ── Helper Widgets ──
-class _SectionTitle extends StatelessWidget {
-  final ThemeColors c;
-  final String title;
-  const _SectionTitle(this.c, this.title);
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: 12),
-    child: Text(
-      title,
-      style: TextStyle(
-        color: c.textPrimary,
-        fontSize: 18,
-        fontFamily: 'Inter',
-        fontWeight: FontWeight.w700,
-      ),
-    ),
-  );
-}
-
-class _InfoTile extends StatelessWidget {
-  final IconData icon;
-  final String label, value;
-  final ThemeColors c;
-  const _InfoTile({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.c,
-  });
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 8),
-    child: Row(
-      children: [
-        Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: AppColors.purpleLight,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(icon, color: AppColors.purple, size: 16),
-        ),
-        const SizedBox(width: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                color: c.textSecondary,
-                fontSize: 11,
-                fontFamily: 'Inter',
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            Text(
-              value,
-              style: TextStyle(
-                color: c.textPrimary,
-                fontSize: 14,
-                fontFamily: 'Inter',
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ],
-    ),
-  );
-}
-
-class _StatsRow extends StatelessWidget {
-  final ThemeColors c;
-  final List<Map<String, dynamic>> stats;
-  const _StatsRow(this.c, this.stats);
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(16),
-    decoration: ShapeDecoration(
-      color: c.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(width: 1.24, color: c.border),
-      ),
-    ),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: stats
-          .map(
-            (s) => Column(
-              children: [
-                Text(
-                  '${s['value']}',
-                  style: TextStyle(
-                    color: c.textPrimary,
-                    fontSize: 20,
-                    fontFamily: 'Inter',
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                Text(
-                  s['label'],
-                  style: TextStyle(
-                    color: c.textMuted,
-                    fontSize: 11,
-                    fontFamily: 'Inter',
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          )
-          .toList(),
-    ),
-  );
-}
-
-class _ContactRow extends StatelessWidget {
-  final IconData icon;
-  final String label, value;
-  final VoidCallback onTap;
-  final Color color;
-  final ThemeColors c;
-  const _ContactRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.onTap,
-    required this.color,
-    required this.c,
-  });
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Row(
-          children: [
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(icon, color: color, size: 16),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
+      body: CustomScrollView(
+        slivers: [
+          // ── Profile Header ──
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    label,
-                    style: TextStyle(
-                      color: c.textSecondary,
-                      fontSize: 10,
-                      fontFamily: 'Inter',
-                      fontWeight: FontWeight.w500,
+                  Container(
+                    width: 100, height: 100,
+                    decoration: BoxDecoration(
+                      color: accentColor.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: accentColor.withOpacity(0.3), width: 2),
+                      image: avatarUrl?.isNotEmpty == true ? DecorationImage(image: NetworkImage(avatarUrl!), fit: BoxFit.cover) : null,
                     ),
+                    child: avatarUrl?.isNotEmpty != true ? Center(child: Text(_getInitials(userName), style: TextStyle(color: accentColor, fontSize: 32, fontFamily: 'Inter', fontWeight: FontWeight.w700))) : null,
                   ),
-                  Text(
-                    value,
-                    style: TextStyle(
-                      color: c.primary,
-                      fontSize: 14,
-                      fontFamily: 'Inter',
-                      fontWeight: FontWeight.w500,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  const SizedBox(height: 16),
+                  Text(userName, style: TextStyle(color: c.textPrimary, fontSize: 20, fontFamily: 'Inter', fontWeight: FontWeight.w700), textAlign: TextAlign.center),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                    decoration: BoxDecoration(color: accentColor.withOpacity(0.12), borderRadius: BorderRadius.circular(100), border: Border.all(color: accentColor.withOpacity(0.3))),
+                    child: Text(_getRoleLabel(_displayRole), style: TextStyle(color: accentColor, fontSize: 12, fontFamily: 'Inter', fontWeight: FontWeight.w700)),
                   ),
                 ],
               ),
             ),
+          ),
+
+          // ── Role Content ──
+          if (_displayRole == 'recruteur') _buildRecruiterSection(c, accentColor),
+          if (_displayRole == 'etudiant') _buildStudentSection(c, accentColor),
+          if (_displayRole == 'enseignant') _buildTeacherSection(c, accentColor),
+
+          // ── Contact Section ──
+          _buildContactSection(c, accentColor),
+
+          // ── Portfolio Button ──
+          if ((_displayRole == 'etudiant' || _displayRole == 'enseignant') && FirebaseAuth.instance.currentUser?.uid != widget.userId)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => _ReadOnlyPortfolioScreen(candidateId: widget.userId, candidateCvUrl: _userData?['cv_url']?.toString()))),
+                    icon: const Icon(Icons.folder_open_rounded, size: 18),
+                    label: Text('View Portfolio & CV', style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600)),
+                    style: ElevatedButton.styleFrom(backgroundColor: accentColor, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                  ),
+                ),
+              ),
+            ),
+
+          const SliverToBoxAdapter(child: SizedBox(height: 32)),
+        ],
+      ),
+    );
+  }
+
+  // ── Recruiter Section ──
+  Widget _buildRecruiterSection(ThemeColors c, Color accentColor) {
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _sectionTitle('Company Info', accentColor, c),
+            _infoRow(Icons.business_rounded, 'Company', _getUserName(), accentColor, c),
+            _infoRow(Icons.location_on_outlined, 'Location', _userData?['location']?.toString() ?? '—', accentColor, c),
           ],
         ),
       ),
     );
   }
+
+  // ── Student Section ──
+  Widget _buildStudentSection(ThemeColors c, Color accentColor) {
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (_userData?['bio']?.isNotEmpty == true) ...[
+              _sectionTitle('About', accentColor, c),
+              Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: c.surface2, borderRadius: BorderRadius.circular(16), border: Border.all(color: c.border.withOpacity(0.5))), child: Text(_userData!['bio'], style: TextStyle(color: c.textSecondary, fontSize: 14, fontFamily: 'Inter', height: 1.5))),
+              const SizedBox(height: 16),
+            ],
+            if (_userData?['skills'] is List && (_userData!['skills'] as List).isNotEmpty) ...[
+              _sectionTitle('Skills', accentColor, c),
+              Wrap(spacing: 8, runSpacing: 8, children: (_userData!['skills'] as List).take(5).map((s) => _skillChip(s.toString(), accentColor)).toList()),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Teacher Section ──
+  Widget _buildTeacherSection(ThemeColors c, Color accentColor) {
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (_userData?['bio']?.isNotEmpty == true) ...[
+              _sectionTitle('Specialization', accentColor, c),
+              Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: c.surface2, borderRadius: BorderRadius.circular(16), border: Border.all(color: c.border.withOpacity(0.5))), child: Text(_userData!['bio'], style: TextStyle(color: c.textSecondary, fontSize: 14, fontFamily: 'Inter', height: 1.5))),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Contact Section ──
+  Widget _buildContactSection(ThemeColors c, Color accentColor) {
+    final email = _userData?['email']?.toString() ?? '';
+    final phone = _userData?['phone']?.toString() ?? '';
+    if (email.isEmpty && phone.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
+
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(20), border: Border.all(color: c.border)),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _sectionTitle('Contact', accentColor, c),
+              if (email.isNotEmpty) _contactRow(Icons.mail_outline_rounded, 'Email', email, AppColors.primary, c),
+              if (phone.isNotEmpty) _contactRow(Icons.phone_rounded, 'Phone', phone, AppColors.green, c),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Helper Widgets ──
+  Widget _sectionTitle(String title, Color color, ThemeColors c) => Padding(
+    padding: const EdgeInsets.only(bottom: 12),
+    child: Row(children: [Icon(Icons.info_outline_rounded, size: 16, color: color), const SizedBox(width: 6), Text(title, style: TextStyle(color: c.textPrimary, fontSize: 16, fontFamily: 'Inter', fontWeight: FontWeight.w700))]),
+  );
+
+  Widget _infoRow(IconData icon, String label, String value, Color color, ThemeColors c) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 6),
+    child: Row(children: [
+      Container(width: 36, height: 36, decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(10), border: Border.all(color: color.withOpacity(0.3))), child: Icon(icon, color: color, size: 16)),
+      const SizedBox(width: 12),
+      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(label, style: TextStyle(color: c.textSecondary, fontSize: 11, fontFamily: 'Inter')), Text(value, style: TextStyle(color: c.textPrimary, fontSize: 14, fontFamily: 'Inter', fontWeight: FontWeight.w600))])),
+    ]),
+  );
+
+  Widget _skillChip(String skill, Color color) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+    decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(100), border: Border.all(color: color.withOpacity(0.3))),
+    child: Text(skill, style: TextStyle(color: color, fontSize: 12, fontFamily: 'Inter', fontWeight: FontWeight.w600)),
+  );
+
+  Widget _contactRow(IconData icon, String label, String value, Color color, ThemeColors c) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 6),
+    child: Row(children: [
+      Container(width: 32, height: 32, decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(8), border: Border.all(color: color.withOpacity(0.3))), child: Icon(icon, color: color, size: 14)),
+      const SizedBox(width: 10),
+      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(label, style: TextStyle(color: c.textSecondary, fontSize: 10, fontFamily: 'Inter')), Text(value, style: TextStyle(color: c.primary, fontSize: 14, fontFamily: 'Inter'), maxLines: 1, overflow: TextOverflow.ellipsis)])),
+    ]),
+  );
 }
 
 // ─────────────────────────────────────────────────────────────
-// 📁 شاشة عرض البورتفوليو للقراءة فقط (مصححة لفتح PDF داخلياً)
+// 📁 ReadOnly Portfolio Screen (محسّن جذرياً + الودجتات المطلوبة)
 // ─────────────────────────────────────────────────────────────
 class _ReadOnlyPortfolioScreen extends StatefulWidget {
   final String candidateId;
   final String? candidateCvUrl;
-
-  const _ReadOnlyPortfolioScreen({
-    required this.candidateId,
-    this.candidateCvUrl,
-  });
-
+  const _ReadOnlyPortfolioScreen({required this.candidateId, this.candidateCvUrl});
   @override
-  State<_ReadOnlyPortfolioScreen> createState() =>
-      _ReadOnlyPortfolioScreenState();
+  State<_ReadOnlyPortfolioScreen> createState() => _ReadOnlyPortfolioScreenState();
 }
 
-class _ReadOnlyPortfolioScreenState extends State<_ReadOnlyPortfolioScreen> {
+class _ReadOnlyPortfolioScreenState extends State<_ReadOnlyPortfolioScreen> with SingleTickerProviderStateMixin {
   final _portfolioService = PortfolioCertService();
   String _activeFilter = 'all';
+  late AnimationController _animationController;
 
-  // ✅ دالة لفتح الـ PDF داخل التطبيق
-  void _openFileInternally(String url) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => _InternalFileViewerScreen(fileUrl: url), // ✅ استخدام الشاشة الذكية
-      ),
-    );
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(vsync: this, duration: const Duration(milliseconds: 500))..forward();
   }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  void _openFile(String url) => Navigator.push(context, MaterialPageRoute(builder: (_) => _FileViewerScreen(fileUrl: url)));
+  Color _typeColor(String t) => t == 'project' ? AppColors.cyan : AppColors.green;
+
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-
+    
     return Scaffold(
       backgroundColor: c.bg,
       appBar: AppBar(
         backgroundColor: c.surface,
         elevation: 0,
-        title: const Text(
-          'Candidate Portfolio',
-          style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700),
+        leading: GestureDetector(
+          onTap: () => Navigator.pop(context),
+          child: Container(
+            margin: const EdgeInsets.all(8),
+            decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(14), border: Border.all(color: c.border)),
+            child: Icon(Icons.arrow_back_ios_new_rounded, color: c.textPrimary, size: 18),
+          ),
         ),
+        title: Text('Candidate Portfolio', style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w800, color: c.textPrimary, fontSize: 18)),
         centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          onPressed: () => Navigator.pop(context),
-        ),
       ),
-      body: Column(
-        children: [
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            child: Row(
-              children: [
-                _Chip(
-                  label: 'All',
-                  filter: 'all',
-                  active: _activeFilter,
-                  onSelect: (v) => setState(() => _activeFilter = v),
-                  c: c,
+      body: CustomScrollView(
+        slivers: [
+          // 1. CV Section (إذا وجد)
+          if (widget.candidateCvUrl?.isNotEmpty == true)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+                child: FadeTransition(
+                  opacity: CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+                  child: Container(
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [AppColors.primary.withOpacity(0.12), AppColors.primary.withOpacity(0.04)]),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)]),
+                          child: Icon(Icons.description_rounded, color: AppColors.primary, size: 28),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Curriculum Vitae', style: TextStyle(color: c.textPrimary, fontSize: 16, fontFamily: 'Inter', fontWeight: FontWeight.w700)),
+                              const SizedBox(height: 4),
+                              Text('View candidate\'s resume', style: TextStyle(color: c.textSecondary, fontSize: 12, fontFamily: 'Inter')),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.12), borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.primary.withOpacity(0.3))),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(12),
+                              onTap: () => _openFile(widget.candidateCvUrl!),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.remove_red_eye_rounded, size: 16, color: AppColors.primary),
+                                    const SizedBox(width: 6),
+                                    Text('View CV', style: TextStyle(color: AppColors.primary, fontSize: 13, fontFamily: 'Inter', fontWeight: FontWeight.w600)),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-                const SizedBox(width: 12),
-                _Chip(
-                  label: 'Projects',
-                  filter: 'project',
-                  active: _activeFilter,
-                  onSelect: (v) => setState(() => _activeFilter = v),
-                  c: c,
+              ),
+            ),
+
+          // 2. Filter Bar
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: c.border)),
+                child: Row(
+                  children: [
+                    _ModernFilterBtn(label: 'All', filter: 'all', active: _activeFilter, color: AppColors.primary, onSelect: (v) => setState(() => _activeFilter = v)),
+                    _ModernFilterBtn(label: 'Projects', filter: 'project', active: _activeFilter, color: AppColors.cyan, onSelect: (v) => setState(() => _activeFilter = v)),
+                    _ModernFilterBtn(label: 'Certificates', filter: 'external_cert', active: _activeFilter, color: AppColors.green, onSelect: (v) => setState(() => _activeFilter = v)),
+                  ],
                 ),
-                const SizedBox(width: 12),
-                _Chip(
-                  label: 'Certificates',
-                  filter: 'external_cert',
-                  active: _activeFilter,
-                  onSelect: (v) => setState(() => _activeFilter = v),
-                  c: c,
-                ),
-              ],
+              ),
             ),
           ),
+          const SliverToBoxAdapter(child: SizedBox(height: 20)),
 
-          if (widget.candidateCvUrl != null &&
-              widget.candidateCvUrl!.isNotEmpty)
-            Container(
-              margin: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-              padding: const EdgeInsets.all(16),
-              decoration: ShapeDecoration(
-                color: AppColors.primary.withOpacity(0.08),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  side: BorderSide(
-                    width: 1.5,
-                    color: AppColors.primary.withOpacity(0.3),
-                  ),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(
-                      Icons.description_rounded,
-                      color: AppColors.primary,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Curriculum Vitae',
-                          style: TextStyle(
-                            color: c.textPrimary,
-                            fontSize: 15,
-                            fontFamily: 'Inter',
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'View candidate\'s resume',
-                          style: TextStyle(
-                            color: c.textSecondary,
-                            fontSize: 12,
-                            fontFamily: 'Inter',
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: () =>
-                        _openFileInternally(widget.candidateCvUrl!),
-                    icon: const Icon(Icons.remove_red_eye_outlined, size: 16),
-                    label: Text(AppLocalizations.of(context).viewCv),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.primary,
-                      side: BorderSide(color: AppColors.primary),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 10,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-          Expanded(
-            child: StreamBuilder<List<Map<String, dynamic>>>(
+          // 3. Portfolio Items List
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            sliver: StreamBuilder<List<Map<String, dynamic>>>(
               stream: _portfolioService.getPortfolioStream(widget.candidateId),
               builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting)
-                  return Center(
-                    child: CircularProgressIndicator(color: AppColors.primary),
-                  );
-                if (snapshot.hasError ||
-                    !snapshot.hasData ||
-                    snapshot.data!.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.folder_off_rounded,
-                          size: 48,
-                          color: c.textMuted,
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'No portfolio items found',
-                          style: TextStyle(
-                            color: c.textMuted,
-                            fontFamily: 'Inter',
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return SliverToBoxAdapter(child: Center(child: Padding(padding: const EdgeInsets.all(40), child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2.5))));
+                }
+                if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+                  return SliverToBoxAdapter(child: _EmptyPortfolioState(filter: _activeFilter, c: c));
                 }
 
                 var items = snapshot.data!;
-                if (_activeFilter != 'all')
-                  items = items
-                      .where((i) => i['type'] == _activeFilter)
-                      .toList();
+                if (_activeFilter != 'all') items = items.where((i) => i['type'] == _activeFilter).toList();
+                
+                if (items.isEmpty) return SliverToBoxAdapter(child: _EmptyPortfolioState(filter: _activeFilter, c: c));
 
-                return ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-                  itemCount: items.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 14),
-                  itemBuilder: (_, index) => _ReadOnlyCard(
-                    item: items[index],
-                    c: c,
-                    onOpen: _openFileInternally,
+                return SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final item = items[index];
+                      return SlideTransition(
+                        position: Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(CurvedAnimation(parent: _animationController, curve: Interval(0.3 + (index * 0.1), 1.0, curve: Curves.easeOut))),
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: _PublicPortfolioFullCard(
+                            item: item,
+                            accentColor: _typeColor(item['type'] ?? ''),
+                            onView: item['fileUrl'] != null ? () => _openFile(item['fileUrl']) : null,
+                          ),
+                        ),
+                      );
+                    },
+                    childCount: items.length,
                   ),
                 );
               },
             ),
           ),
+          const SliverToBoxAdapter(child: SizedBox(height: 40)),
         ],
       ),
     );
   }
 }
 
-// ── شاشة عرض ذكية (PDF أو Image) ──
-class _InternalFileViewerScreen extends StatelessWidget {
-  final String fileUrl;
-  const _InternalFileViewerScreen({required this.fileUrl});
-
-  // دالة بسيطة للتأكد مما إذا كان الرابط PDF
-  bool get _isPdf => fileUrl.toLowerCase().contains('.pdf') || 
-                    fileUrl.contains('/raw/upload/') || // Cloudinary Raw type
-                    fileUrl.contains('application/pdf');
+// ─────────────────────────────────────────────────────────────
+// 🎨 Public Portfolio Full-Width Card (مطلوب هنا)
+// ─────────────────────────────────────────────────────────────
+class _PublicPortfolioFullCard extends StatelessWidget {
+  final Map<String, dynamic> item;
+  final Color accentColor;
+  final VoidCallback? onView;
+  const _PublicPortfolioFullCard({required this.item, required this.accentColor, this.onView});
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(AppLocalizations.of(context).documentViewer, style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.bold)),
-        backgroundColor: c.surface,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new, color: c.textPrimary),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-      body: _isPdf 
-        ? SfPdfViewer.network(
-            fileUrl,
-            canShowScrollHead: false,
-          )
-        : InteractiveViewer( // للسماح بالتقريب والتحريك للصور
-            child: Center(
-              child: Image.network(
-                fileUrl,
-                fit: BoxFit.contain,
-                loadingBuilder: (context, child, loadingProgress) {
-                  if (loadingProgress == null) return child;
-                  return Center(
-                    child: CircularProgressIndicator(
-                      value: loadingProgress.expectedTotalBytes != null
-                          ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                          : null,
-                    ),
-                  );
-                },
-                errorBuilder: (context, error, stackTrace) {
-                  return Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.broken_image, size: 64, color: c.textMuted),
-                      const SizedBox(height: 10),
-                      Text(AppLocalizations.of(context).failedLoadImage, style: TextStyle(color: c.textMuted)),
-                    ],
-                  );
-                },
-              ),
-            ),
-          ),
-    );
-  }
-}
-// ── Chip صغير للفلترة ──
-class _Chip extends StatelessWidget {
-  final String label, filter, active;
-  final Function(String) onSelect;
-  final ThemeColors c;
-  const _Chip({
-    required this.label,
-    required this.filter,
-    required this.active,
-    required this.onSelect,
-    required this.c,
-  });
-  @override
-  Widget build(BuildContext context) {
-    final isSelected = active == filter;
-    return ChoiceChip(
-      label: Text(
-        label,
-        style: TextStyle(
-          color: isSelected ? Colors.white : c.textSecondary,
-          fontWeight: FontWeight.bold,
-          fontFamily: 'Inter',
-        ),
-      ),
-      selected: isSelected,
-      onSelected: (_) => onSelect(filter),
-      selectedColor: AppColors.primary,
-      backgroundColor: c.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-    );
-  }
-}
-
-// ── بطاقة عنصر بورتفوليو ──
-class _ReadOnlyCard extends StatelessWidget {
-  final Map<String, dynamic> item;
-  final ThemeColors c;
-  final Function(String) onOpen; // ✅ دالة لفتح الملف
-
-  const _ReadOnlyCard({
-    required this.item,
-    required this.c,
-    required this.onOpen,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isProject = item['type'] == 'project';
-    final fileUrl = item['fileUrl'] as String?;
-
+    final isProj = item['type'] == 'project';
+    final title = item['title'] ?? 'Untitled';
+    final description = item['description'] ?? '';
+    
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: ShapeDecoration(
+      decoration: BoxDecoration(
         color: c.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(width: 1.24, color: c.border),
-        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: c.border, width: 1.2),
+        boxShadow: [BoxShadow(color: accentColor.withOpacity(0.08), blurRadius: 12, offset: const Offset(0, 4))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Header: Icon Area with accent gradient
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            height: 100,
             decoration: BoxDecoration(
-              color: (isProject ? AppColors.primary : AppColors.green)
-                  .withOpacity(0.1),
-              borderRadius: BorderRadius.circular(6),
+              gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [accentColor.withOpacity(0.15), accentColor.withOpacity(0.05)]),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
+            child: Center(
+              child: Icon(
+                isProj ? Icons.work_outline_rounded : Icons.verified_user_rounded,
+                color: accentColor,
+                size: 40,
+              ),
+            ),
+          ),
+          
+          Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  isProject
-                      ? Icons.work_outline_rounded
-                      : Icons.verified_user_rounded,
-                  size: 12,
-                  color: isProject ? AppColors.primary : AppColors.green,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  isProject ? 'Project' : 'Certificate',
-                  style: TextStyle(
-                    color: isProject ? AppColors.primary : AppColors.green,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    fontFamily: 'Inter',
+                // Type Badge
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(color: accentColor.withOpacity(0.12), borderRadius: BorderRadius.circular(100), border: Border.all(color: accentColor.withOpacity(0.3))),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(isProj ? Icons.work_outline_rounded : Icons.verified_user_rounded, size: 10, color: accentColor),
+                      const SizedBox(width: 4),
+                      Text(isProj ? 'Project' : 'Certificate', style: TextStyle(color: accentColor, fontSize: 10, fontFamily: 'Inter', fontWeight: FontWeight.w700, letterSpacing: 0.5)),
+                    ],
                   ),
                 ),
+                const SizedBox(height: 12),
+                
+                // Title
+                Text(title, style: TextStyle(color: c.textPrimary, fontSize: 18, fontFamily: 'Inter', fontWeight: FontWeight.w700), maxLines: 2, overflow: TextOverflow.ellipsis),
+                
+                // Description
+                if (description.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(description, style: TextStyle(color: c.textSecondary, fontSize: 14, fontFamily: 'Inter', height: 1.5), maxLines: 3, overflow: TextOverflow.ellipsis),
+                  ),
+                
+                // View Button
+                if (onView != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 16),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton(
+                        onPressed: onView,
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: accentColor.withOpacity(0.4)),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.visibility_rounded, size: 18, color: accentColor),
+                            const SizedBox(width: 8),
+                            Text(AppLocalizations.of(context).viewDocument, style: TextStyle(color: accentColor, fontSize: 14, fontFamily: 'Inter', fontWeight: FontWeight.w600)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
-          const SizedBox(height: 10),
-          Text(
-            item['title'] ?? 'Untitled',
-            style: TextStyle(
-              color: c.textPrimary,
-              fontSize: 15,
-              fontFamily: 'Inter',
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          if (item['description']?.isNotEmpty ?? false) ...[
-            const SizedBox(height: 6),
-            Text(
-              item['description'],
-              style: TextStyle(
-                color: c.textSecondary,
-                fontSize: 13,
-                fontFamily: 'Inter',
-                height: 1.4,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-          if (fileUrl != null) ...[
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () => onOpen(fileUrl), // ✅ استخدام الدالة الجديدة
-                icon: const Icon(Icons.remove_red_eye_outlined, size: 16),
-                label: Text(AppLocalizations.of(context).viewDocument),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.primary,
-                  side: BorderSide(color: AppColors.primary.withOpacity(0.3)),
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-              ),
-            ),
-          ],
         ],
       ),
+    );
+  }
+}
+
+// ── ✅ Modern Filter Button ──
+class _ModernFilterBtn extends StatelessWidget {
+  final String label, filter, active;
+  final Color color;
+  final Function(String) onSelect;
+  const _ModernFilterBtn({required this.label, required this.filter, required this.active, required this.color, required this.onSelect});
+  
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final sel = active == filter;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => onSelect(filter),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOut,
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: sel ? color : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: sel ? [BoxShadow(color: color.withOpacity(0.25), blurRadius: 12, offset: const Offset(0, 3))] : [],
+          ),
+          child: Text(label, textAlign: TextAlign.center, style: TextStyle(color: sel ? Colors.white : c.textMuted, fontSize: 13, fontFamily: 'Inter', fontWeight: sel ? FontWeight.w700 : FontWeight.w500)),
+        ),
+      ),
+    );
+  }
+}
+
+// ── ✅ Empty State Widget ──
+class _EmptyPortfolioState extends StatelessWidget {
+  final String filter;
+  final ThemeColors c;
+  const _EmptyPortfolioState({required this.filter, required this.c});
+  
+  @override
+  Widget build(BuildContext context) {
+    final message = filter == 'project' ? 'No projects shared yet' : (filter == 'external_cert' ? 'No certificates added yet' : 'Portfolio is empty');
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(padding: const EdgeInsets.all(24), decoration: BoxDecoration(color: c.iconBg, borderRadius: BorderRadius.circular(24)), child: Icon(Icons.auto_awesome_motion_rounded, size: 56, color: c.textMuted)),
+          const SizedBox(height: 16),
+          Text(message, style: TextStyle(color: c.textPrimary, fontSize: 16, fontFamily: 'Inter', fontWeight: FontWeight.w700)),
+          const SizedBox(height: 6),
+          Text('Check back later for new content', style: TextStyle(color: c.textMuted, fontSize: 13, fontFamily: 'Inter'), textAlign: TextAlign.center),
+        ],
+      ),
+    );
+  }
+}
+
+// ── ✅ File Viewer Screen (نفس السابق) ──
+class _FileViewerScreen extends StatelessWidget {
+  final String fileUrl;
+  const _FileViewerScreen({required this.fileUrl});
+  
+  bool get _isPdf => fileUrl.toLowerCase().endsWith('.pdf') || fileUrl.contains('/raw/');
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Scaffold(
+      appBar: AppBar(backgroundColor: c.surface, title: Text(_isPdf ? 'PDF Viewer' : 'Image Viewer', style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700)), leading: IconButton(icon: Icon(Icons.arrow_back_ios_new_rounded), onPressed: () => Navigator.pop(context))),
+      body: _isPdf 
+          ? SfPdfViewer.network(fileUrl)
+          : InteractiveViewer(child: Center(child: Image.network(fileUrl, fit: BoxFit.contain, errorBuilder: (_, __, ___) => Center(child: Text('Failed to load image', style: TextStyle(color: c.textMuted)))))),
     );
   }
 }

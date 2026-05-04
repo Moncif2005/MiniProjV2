@@ -304,34 +304,34 @@ class _ProfileEnseignantScreenState extends State<ProfileEnseignantScreen> {
                           ),
 
                           // ── Stats ──
-                          Transform.translate(
-                            offset: const Offset(0, -24),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                _StatItem(
-                                  value: '12',
-                                  label: 'COURSES',
-                                  textColor: c.textPrimary,
-                                  labelColor: c.textMuted,
-                                ),
-                                Container(
-                                  width: 1,
-                                  height: 32,
-                                  color: c.border,
-                                  margin: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                  ),
-                                ),
-                                _StatItem(
-                                  value: '8',
-                                  label: 'PROJECTS',
-                                  textColor: c.textPrimary,
-                                  labelColor: c.textMuted,
-                                ),
-                              ],
-                            ),
-                          ),
+                          // Transform.translate(
+                          //   offset: const Offset(0, -24),
+                          //   child: Row(
+                          //     mainAxisAlignment: MainAxisAlignment.center,
+                          //     children: [
+                          //       _StatItem(
+                          //         value: '12',
+                          //         label: 'COURSES',
+                          //         textColor: c.textPrimary,
+                          //         labelColor: c.textMuted,
+                          //       ),
+                          //       Container(
+                          //         width: 1,
+                          //         height: 32,
+                          //         color: c.border,
+                          //         margin: const EdgeInsets.symmetric(
+                          //           horizontal: 16,
+                          //         ),
+                          //       ),
+                          //       _StatItem(
+                          //         value: '8',
+                          //         label: 'PROJECTS',
+                          //         textColor: c.textPrimary,
+                          //         labelColor: c.textMuted,
+                          //       ),
+                          //     ],
+                          //   ),
+                          // ),
                         ],
                       ),
                     ),

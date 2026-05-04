@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart'; // ✅ استيراد مكتبة PDF
+import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import '../../services/portfolio_cert_service.dart';
 import '../../theme/app_colors.dart';
 import '../../l10n/app_localizations.dart';
@@ -13,19 +13,28 @@ class PublicPortfolioScreen extends StatefulWidget {
   State<PublicPortfolioScreen> createState() => _PublicPortfolioScreenState();
 }
 
-class _PublicPortfolioScreenState extends State<PublicPortfolioScreen> {
+class _PublicPortfolioScreenState extends State<PublicPortfolioScreen> with SingleTickerProviderStateMixin {
   final _portfolioService = PortfolioCertService();
   String _activeFilter = 'all';
+  late AnimationController _headerController;
 
-  // ✅ دالة لفتح الملف داخلياً (PDF أو Image)
-  void _openFileInternally(String url) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => _InternalFileViewerScreen(fileUrl: url),
-      ),
-    );
+  @override
+  void initState() {
+    super.initState();
+    _headerController = AnimationController(vsync: this, duration: const Duration(milliseconds: 600))..forward();
   }
+
+  @override
+  void dispose() {
+    _headerController.dispose();
+    super.dispose();
+  }
+
+  void _openFileInternally(String url) {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => _InternalFileViewerScreen(fileUrl: url)));
+  }
+
+  Color _typeColor(String t) => t == 'project' ? AppColors.cyan : AppColors.green;
 
   @override
   Widget build(BuildContext context) {
@@ -33,342 +42,412 @@ class _PublicPortfolioScreenState extends State<PublicPortfolioScreen> {
 
     return Scaffold(
       backgroundColor: c.bg,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        backgroundColor: c.surface,
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded, color: c.textPrimary),
-          onPressed: () => Navigator.pop(context),
+        leading: GestureDetector(
+          onTap: () => Navigator.pop(context),
+          child: Container(
+            margin: const EdgeInsets.all(8),
+            decoration: BoxDecoration(color: c.surface.withOpacity(0.95), borderRadius: BorderRadius.circular(12), border: Border.all(color: c.border)),
+            child: Icon(Icons.arrow_back_ios_new_rounded, color: c.textPrimary, size: 18),
+          ),
         ),
-        title: FutureBuilder<DocumentSnapshot>(
-          future: FirebaseFirestore.instance
-              .collection('users')
-              .doc(widget.userId)
-              .get(),
-          builder: (ctx, snapshot) {
-            if (snapshot.hasData) {
-              final data = snapshot.data!.data() as Map<String, dynamic>?;
-              return Text(
-                "${data?['firstName'] ?? 'Portfolio'} ${data?['lastName'] ?? ''}",
-                style: TextStyle(
-                  color: c.textPrimary,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Inter',
-                ),
-              );
-            }
-            return const Text(
-              'Portfolio',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            );
-          },
-        ),
+        title: _UserNameHeader(userId: widget.userId, c: c),
         centerTitle: true,
       ),
-      body: Column(
-        children: [
-          // ── 1. Filter Chips ──
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            child: Row(
-              children: [
-                _PublicFilterChip(
-                  label: 'All',
-                  filter: 'all',
-                  active: _activeFilter,
-                  onSelect: (v) => setState(() => _activeFilter = v),
-                ),
-                const SizedBox(width: 12),
-                _PublicFilterChip(
-                  label: 'Projects',
-                  filter: 'project',
-                  active: _activeFilter,
-                  onSelect: (v) => setState(() => _activeFilter = v),
-                ),
-                const SizedBox(width: 12),
-                _PublicFilterChip(
-                  label: 'Certificates',
-                  filter: 'external_cert',
-                  active: _activeFilter,
-                  onSelect: (v) => setState(() => _activeFilter = v),
-                ),
-              ],
+      body: CustomScrollView(
+        slivers: [
+          // ── Hero Header with User Info ──
+          SliverToBoxAdapter(
+            child: FadeTransition(
+              opacity: CurvedAnimation(parent: _headerController, curve: Curves.easeOut),
+              child: _PublicProfileHeader(userId: widget.userId, c: c),
             ),
           ),
+          const SliverToBoxAdapter(child: SizedBox(height: 16)),
+          
+          // ── Filter Bar (محسّن) ──
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: c.border), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))]),
+                child: Row(
+                  children: [
+                    _ModernFilterBtn(label: 'All', filter: 'all', active: _activeFilter, color: AppColors.primary, onSelect: (v) => setState(() => _activeFilter = v)),
+                    _ModernFilterBtn(label: 'Projects', filter: 'project', active: _activeFilter, color: AppColors.cyan, onSelect: (v) => setState(() => _activeFilter = v)),
+                    _ModernFilterBtn(label: 'Certificates', filter: 'external_cert', active: _activeFilter, color: AppColors.green, onSelect: (v) => setState(() => _activeFilter = v)),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 20)),
 
-          // ── 2. Stream of Public Portfolio Items ──
-          Expanded(
-            child: StreamBuilder<List<Map<String, dynamic>>>(
+          // ── Portfolio List (Full Width) ──
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            sliver: StreamBuilder<List<Map<String, dynamic>>>(
               stream: _portfolioService.getPortfolioStream(widget.userId),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(
-                    child: CircularProgressIndicator(color: AppColors.primary),
-                  );
+                  return SliverToBoxAdapter(child: Center(child: Padding(padding: const EdgeInsets.all(40), child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2.5))));
                 }
-
                 if (snapshot.hasError) {
-                  return Center(
-                    child: Text(
-                      'Failed to load portfolio',
-                      style: TextStyle(color: AppColors.red),
-                    ),
-                  );
+                  return SliverToBoxAdapter(child: _ErrorState(error: snapshot.error.toString(), c: c));
                 }
 
                 var items = snapshot.data ?? [];
+                if (_activeFilter != 'all') items = items.where((i) => i['type'] == _activeFilter).toList();
+                if (items.isEmpty) return SliverToBoxAdapter(child: _EmptyPortfolioState(filter: _activeFilter, c: c));
 
-                // Apply filter
-                if (_activeFilter != 'all') {
-                  items = items
-                      .where((i) => i['type'] == _activeFilter)
-                      .toList();
-                }
-
-                if (items.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.folder_open_outlined,
-                          size: 48,
-                          color: c.textMuted,
+                return SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final item = items[index];
+                      return SlideTransition(
+                        position: Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(CurvedAnimation(parent: _headerController, curve: Interval(0.3 + (index * 0.1), 1.0, curve: Curves.easeOut))),
+                        child: _PublicPortfolioFullCard(
+                          item: item,
+                          accentColor: _typeColor(item['type'] ?? ''),
+                          onView: item['fileUrl'] != null ? () => _openFileInternally(item['fileUrl']) : null,
                         ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'No items found in this section',
-                          style: TextStyle(
-                            color: c.textMuted,
-                            fontFamily: 'Inter',
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                return ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-                  itemCount: items.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 14),
-                  itemBuilder: (_, index) {
-                    final item = items[index];
-                    final fileUrl = item['fileUrl'] as String?;
-
-                    return _PublicPortfolioCard(
-                      item: item,
-                      onView: fileUrl != null
-                          ? () => _openFileInternally(fileUrl)
-                          : null, // ✅ فتح داخلي
-                    );
-                  },
+                      );
+                    },
+                    childCount: items.length,
+                  ),
                 );
               },
             ),
           ),
+          const SliverToBoxAdapter(child: SizedBox(height: 40)),
         ],
       ),
     );
   }
 }
 
-// ─────────────────────────────────────────────────────────────
-// 🎨 Filter Chip
-// ─────────────────────────────────────────────────────────────
-class _PublicFilterChip extends StatelessWidget {
-  final String label, filter, active;
-  final Function(String) onSelect;
-  const _PublicFilterChip({
-    required this.label,
-    required this.filter,
-    required this.active,
-    required this.onSelect,
-  });
+// ── ✅ User Name Header Widget ──
+class _UserNameHeader extends StatelessWidget {
+  final String userId;
+  final ThemeColors c;
+  const _UserNameHeader({required this.userId, required this.c});
 
   @override
   Widget build(BuildContext context) {
-    final c = context.colors;
-    final isSelected = active == filter;
-    return ChoiceChip(
-      label: Text(
-        label,
-        style: TextStyle(
-          color: isSelected ? Colors.white : c.textSecondary,
-          fontWeight: FontWeight.bold,
-          fontFamily: 'Inter',
-        ),
-      ),
-      selected: isSelected,
-      onSelected: (_) => onSelect(filter),
-      selectedColor: AppColors.primary,
-      backgroundColor: c.surface,
-      side: BorderSide(color: isSelected ? Colors.transparent : c.border),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+    return FutureBuilder<DocumentSnapshot>(
+      future: FirebaseFirestore.instance.collection('users').doc(userId).get(),
+      builder: (ctx, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Text('Portfolio', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontFamily: 'Inter', fontSize: 20));
+        }
+        if (snapshot.hasData) {
+          final data = snapshot.data!.data() as Map<String, dynamic>?;
+          final firstName = data?['firstName'] ?? '';
+          final lastName = data?['lastName'] ?? '';
+          final name = '${firstName.isNotEmpty ? '$firstName ' : ''}${lastName}';
+          return Text('$name Portfolio', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontFamily: 'Inter', fontSize: 20), maxLines: 1, overflow: TextOverflow.ellipsis);
+        }
+        return Text('Portfolio', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontFamily: 'Inter', fontSize: 20));
+      },
     );
   }
 }
 
-// ─────────────────────────────────────────────────────────────
-// 🎨 Public Portfolio Card (Read-Only)
-// ─────────────────────────────────────────────────────────────
-class _PublicPortfolioCard extends StatelessWidget {
-  final Map<String, dynamic> item;
-  final VoidCallback? onView;
-
-  const _PublicPortfolioCard({required this.item, this.onView});
+// ── ✅ Public Profile Header Widget ──
+class _PublicProfileHeader extends StatelessWidget {
+  final String userId;
+  final ThemeColors c;
+  const _PublicProfileHeader({required this.userId, required this.c});
 
   @override
   Widget build(BuildContext context) {
-    final c = context.colors;
-    final isProject = item['type'] == 'project';
+    return FutureBuilder<DocumentSnapshot>(
+      future: FirebaseFirestore.instance.collection('users').doc(userId).get(),
+      builder: (ctx, snapshot) {
+        if (!snapshot.hasData) {
+          return Container(height: 140, color: c.surface);
+        }
+        final data = snapshot.data!.data() as Map<String, dynamic>?;
+        final firstName = data?['firstName'] ?? '';
+        final lastName = data?['lastName'] ?? '';
+        final bio = data?['bio'] ?? '';
+        final avatar = data?['photoURL']?.toString() ?? data?['avatar']?.toString();
+        final name = '${firstName.isNotEmpty ? '$firstName ' : ''}${lastName}'.trim();
+        final initials = name.isEmpty ? '?' : name.split(' ').map((e) => e[0]).take(2).join().toUpperCase();
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: c.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: c.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 20),
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [AppColors.primary.withOpacity(0.12), AppColors.primary.withOpacity(0.04)]),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: AppColors.primary.withOpacity(0.2)),
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
+                width: 64, height: 64,
                 decoration: BoxDecoration(
-                  color: (isProject ? AppColors.primary : AppColors.green)
-                      .withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(6),
+                  color: AppColors.primary.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: AppColors.primary.withOpacity(0.3), width: 2),
+                  image: avatar?.isNotEmpty == true ? DecorationImage(image: NetworkImage(avatar!), fit: BoxFit.cover) : null,
                 ),
-                child: Text(
-                  isProject ? '💼 Project' : '📜 Certificate',
-                  style: TextStyle(
-                    color: isProject ? AppColors.primary : AppColors.green,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'Inter',
-                  ),
+                child: avatar?.isNotEmpty != true ? Center(child: Text(initials, style: TextStyle(color: AppColors.primary, fontSize: 24, fontFamily: 'Inter', fontWeight: FontWeight.w700))) : null,
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(name.isEmpty ? 'User' : name, style: TextStyle(color: c.textPrimary, fontSize: 18, fontFamily: 'Inter', fontWeight: FontWeight.w800)),
+                    if (bio.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(bio, style: TextStyle(color: c.textSecondary, fontSize: 13, fontFamily: 'Inter', height: 1.4), maxLines: 2, overflow: TextOverflow.ellipsis),
+                    ],
+                  ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            item['title'] ?? '',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-              fontFamily: 'Inter',
-              color: c.textPrimary,
+        );
+      },
+    );
+  }
+}
+
+// ── ✅ Modern Filter Button (مع ألوان ديناميكية) ──
+class _ModernFilterBtn extends StatelessWidget {
+  final String label, filter, active;
+  final Color color;
+  final Function(String) onSelect;
+  const _ModernFilterBtn({required this.label, required this.filter, required this.active, required this.color, required this.onSelect});
+  
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final sel = active == filter;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => onSelect(filter),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOut,
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: sel ? color : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: sel ? [BoxShadow(color: color.withOpacity(0.25), blurRadius: 12, offset: const Offset(0, 3))] : [],
+          ),
+          child: Text(label, textAlign: TextAlign.center, style: TextStyle(color: sel ? Colors.white : c.textMuted, fontSize: 13, fontFamily: 'Inter', fontWeight: sel ? FontWeight.w700 : FontWeight.w500)),
+        ),
+      ),
+    );
+  }
+}
+
+// ── ✅ Public Portfolio Full-Width Card (محسّن) ──
+class _PublicPortfolioFullCard extends StatelessWidget {
+  final Map<String, dynamic> item;
+  final Color accentColor;
+  final VoidCallback? onView;
+  const _PublicPortfolioFullCard({required this.item, required this.accentColor, this.onView});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final isProj = item['type'] == 'project';
+    final title = item['title'] ?? 'Untitled';
+    final description = item['description'] ?? '';
+    
+    return Container(
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: c.border, width: 1.2),
+        boxShadow: [BoxShadow(color: accentColor.withOpacity(0.08), blurRadius: 12, offset: const Offset(0, 4))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header: Icon Area with accent gradient
+          Container(
+            height: 100,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [accentColor.withOpacity(0.15), accentColor.withOpacity(0.05)]),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: Center(
+              child: Icon(
+                isProj ? Icons.work_outline_rounded : Icons.verified_user_rounded,
+                color: accentColor,
+                size: 40,
+              ),
             ),
           ),
-          if (item['description']?.isNotEmpty ?? false) ...[
-            const SizedBox(height: 4),
-            Text(
-              item['description'],
-              style: TextStyle(
-                color: c.textSecondary,
-                fontSize: 13,
-                fontFamily: 'Inter',
-                height: 1.4,
-              ),
-            ),
-          ],
-          const SizedBox(height: 12),
-          if (onView != null)
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: onView,
-                icon: const Icon(Icons.visibility_outlined, size: 18),
-                label: Text(AppLocalizations.of(context).viewDocument),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.primary,
-                  side: BorderSide(color: AppColors.primary.withOpacity(0.3)),
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+          
+          Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Type Badge
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(color: accentColor.withOpacity(0.12), borderRadius: BorderRadius.circular(100), border: Border.all(color: accentColor.withOpacity(0.3))),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(isProj ? Icons.work_outline_rounded : Icons.verified_user_rounded, size: 10, color: accentColor),
+                      const SizedBox(width: 4),
+                      Text(isProj ? 'Project' : 'Certificate', style: TextStyle(color: accentColor, fontSize: 10, fontFamily: 'Inter', fontWeight: FontWeight.w700, letterSpacing: 0.5)),
+                    ],
                   ),
                 ),
-              ),
+                const SizedBox(height: 12),
+                
+                // Title
+                Text(title, style: TextStyle(color: c.textPrimary, fontSize: 18, fontFamily: 'Inter', fontWeight: FontWeight.w700), maxLines: 2, overflow: TextOverflow.ellipsis),
+                
+                // Description
+                if (description.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(description, style: TextStyle(color: c.textSecondary, fontSize: 14, fontFamily: 'Inter', height: 1.5), maxLines: 3, overflow: TextOverflow.ellipsis),
+                  ),
+                
+                // View Button
+                if (onView != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 16),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton(
+                        onPressed: onView,
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: accentColor.withOpacity(0.4)),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.visibility_rounded, size: 18, color: accentColor),
+                            const SizedBox(width: 8),
+                            Text(AppLocalizations.of(context).viewDocument, style: TextStyle(color: accentColor, fontSize: 14, fontFamily: 'Inter', fontWeight: FontWeight.w600)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
+          ),
         ],
       ),
     );
   }
 }
 
-// ─────────────────────────────────────────────────────────────
-// 📄 شاشة عرض ذكية ومصححة (PDF أو Image) - نفس النسخة الناجحة
-// ─────────────────────────────────────────────────────────────
-class _InternalFileViewerScreen extends StatefulWidget {
-  final String fileUrl;
-  const _InternalFileViewerScreen({required this.fileUrl});
-
+// ── ✅ Error State Widget ──
+class _ErrorState extends StatelessWidget {
+  final String error;
+  final ThemeColors c;
+  const _ErrorState({required this.error, required this.c});
   @override
-  State<_InternalFileViewerScreen> createState() =>
-      _InternalFileViewerScreenState();
-}
-
-class _InternalFileViewerScreenState extends State<_InternalFileViewerScreen> {
-  bool _isPdf = false;
-
-  @override
-  void initState() {
-    super.initState();
-    final url = widget.fileUrl.toLowerCase();
-    // ✅ المنطق الصحيح للتمييز بين PDF و Image في Cloudinary
-    if (url.contains('/raw/') || url.endsWith('.pdf')) {
-      _isPdf = true;
-    } else {
-      _isPdf = false;
-    }
-    // ✅ طباعة الرابط للتأكد من صحته في Console
-    debugPrint(
-      '🔍 Opening URL: ${widget.fileUrl} | Type: ${_isPdf ? "PDF" : "Image"}',
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: AppColors.redLight, borderRadius: BorderRadius.circular(16)), child: Icon(Icons.error_outline_rounded, size: 48, color: AppColors.red)),
+          const SizedBox(height: 16),
+          Text('Failed to load portfolio', style: TextStyle(color: c.textPrimary, fontSize: 16, fontFamily: 'Inter', fontWeight: FontWeight.w600)),
+          const SizedBox(height: 8),
+          Text(error, style: TextStyle(color: c.textMuted, fontSize: 13, fontFamily: 'Inter'), textAlign: TextAlign.center),
+        ],
+      ),
     );
   }
+}
 
+// ── ✅ Empty State Widget ──
+class _EmptyPortfolioState extends StatelessWidget {
+  final String filter;
+  final ThemeColors c;
+  const _EmptyPortfolioState({required this.filter, required this.c});
+  
+  @override
+  Widget build(BuildContext context) {
+    final message = filter == 'project' ? 'No projects shared yet' : (filter == 'external_cert' ? 'No certificates added yet' : 'Portfolio is empty');
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(padding: const EdgeInsets.all(24), decoration: BoxDecoration(color: c.iconBg, borderRadius: BorderRadius.circular(24)), child: Icon(Icons.auto_awesome_motion_rounded, size: 56, color: c.textMuted)),
+          const SizedBox(height: 16),
+          Text(message, style: TextStyle(color: c.textPrimary, fontSize: 16, fontFamily: 'Inter', fontWeight: FontWeight.w700)),
+          const SizedBox(height: 6),
+          Text('Check back later for new content', style: TextStyle(color: c.textMuted, fontSize: 13, fontFamily: 'Inter'), textAlign: TextAlign.center),
+        ],
+      ),
+    );
+  }
+}
+
+// ── ✅ Internal File Viewer (محسّن) ──
+class _InternalFileViewerScreen extends StatelessWidget {
+  final String fileUrl;
+  const _InternalFileViewerScreen({required this.fileUrl});
+  bool get _isPdf => fileUrl.toLowerCase().endsWith('.pdf') || fileUrl.contains('/raw/');
+  
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
     return Scaffold(
+      backgroundColor: c.bg,
       appBar: AppBar(
-        title: Text(_isPdf ? 'PDF Viewer' : 'Image Viewer'),
         backgroundColor: c.surface,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
+        elevation: 0,
+        title: Text(_isPdf ? 'Document Viewer' : 'Image Viewer', style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w800, color: c.textPrimary)),
+        leading: GestureDetector(
+          onTap: () => Navigator.pop(context),
+          child: Container(
+            margin: const EdgeInsets.all(8),
+            decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(14), border: Border.all(color: c.border)),
+            child: Icon(Icons.arrow_back_ios_new_rounded, color: c.textPrimary, size: 18),
+          ),
         ),
       ),
-      body: _isPdf
-          ? SfPdfViewer.network(widget.fileUrl)
+      body: _isPdf 
+          ? SfPdfViewer.network(fileUrl, canShowScrollHead: false, )
           : InteractiveViewer(
-              child: Image.network(
-                widget.fileUrl,
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) {
-                  debugPrint('❌ Image Error: $error');
-                  return Center(child: Text(AppLocalizations.of(context).failedLoadImage));
-                },
+              minScale: 0.5,
+              maxScale: 4.0,
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Image.network(
+                    fileUrl,
+                    fit: BoxFit.contain,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Center(child: CircularProgressIndicator(color: AppColors.primary, value: loadingProgress.expectedTotalBytes != null ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes! : null));
+                    },
+                    errorBuilder: (context, error, stackTrace) => Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(color: c.iconBg, borderRadius: BorderRadius.circular(20)), child: Icon(Icons.broken_image_rounded, size: 48, color: c.textMuted)),
+                        const SizedBox(height: 16),
+                        Text('Failed to load image', style: TextStyle(color: c.textMuted, fontFamily: 'Inter', fontSize: 14)),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ),
     );
