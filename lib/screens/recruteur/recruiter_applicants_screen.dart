@@ -188,7 +188,8 @@ class _ApplicantCardState extends State<_ApplicantCard> {
   @override
   void initState() {
     super.initState();
-    _currentStatus = widget.application['status'] ?? 'pending';
+  String status = widget.application['status'] ?? 'pending';
+  _currentStatus = status == 'approved' ? 'accepted' : status;
   }
 
   // ✅ لون الحالة (متناسق مع النظام)
