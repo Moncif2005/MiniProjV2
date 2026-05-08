@@ -43,10 +43,10 @@ class _EditOfferScreenState extends State<EditOfferScreen> {
 
     // ✅ استخراج الراتب والعملة من النص المحفوظ (مثال: "80000 $" أو "120000 د.ج")
     final salaryText = widget.offer['salary'] as String? ?? '';
-    if (salaryText.contains('د.ج')) {
+    if (salaryText.contains('DZD')) {
       _selectedCurrency = 'DZD';
       _salaryCtrl = TextEditingController(
-        text: salaryText.replaceAll('د.ج', '').trim(),
+        text: salaryText.replaceAll('DZD', '').trim(),
       );
     } else if (salaryText.contains('\$') || salaryText.contains('\$')) {
       _selectedCurrency = 'USD';
@@ -131,7 +131,7 @@ class _EditOfferScreenState extends State<EditOfferScreen> {
     setState(() => _isSaving = true);
     try {
       // ✅ احسب الراتب مع العملة
-final salaryText = '${_salaryCtrl.text.trim()} ${_selectedCurrency == 'USD' ? '\$' : 'د.ج'}';
+final salaryText = '${_salaryCtrl.text.trim()} ${_selectedCurrency == 'USD' ? '\$' : 'DZD'}';
 
       final success = await _offersService.updateOffer(
         offerId: widget.offer['id'],
@@ -264,8 +264,8 @@ Row(
                     isExpanded: true,
                     underline: const SizedBox(),
                     items: const [
-                      DropdownMenuItem(value: 'USD', child: Text('\$ USD', style: TextStyle(fontSize: 13))),
-                      DropdownMenuItem(value: 'DZD', child: Text('د.ج DZD', style: TextStyle(fontSize: 13))),
+                      DropdownMenuItem(value: 'USD', child: Text(' USD', style: TextStyle(fontSize: 10))),
+                      DropdownMenuItem(value: 'DZD', child: Text(' DZD', style: TextStyle(fontSize: 10))),
                     ],
                     onChanged: (val) => setState(() => _selectedCurrency = val!),
                   ),

@@ -112,7 +112,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
     try {
       // ✅ احسب الراتب مع العملة
 final salaryText = _salaryCtrl.text.trim().isNotEmpty 
-    ? '${_salaryCtrl.text.trim()} ${_selectedCurrency == 'USD' ? '\$' : 'د.ج'}'
+    ? '${_salaryCtrl.text.trim()} ${_selectedCurrency == 'USD' ? '\$' : 'DZD'}'
     : 'Negotiable';
 
       // 3. استدعاء الخدمة لنشر الوظيفة في Firestore
@@ -268,8 +268,8 @@ Row(
                     isExpanded: true,
                     underline: const SizedBox(),
                     items: const [
-                      DropdownMenuItem(value: 'USD', child: Text('\$ USD', style: TextStyle(fontSize: 13))),
-                      DropdownMenuItem(value: 'DZD', child: Text('د.ج DZD', style: TextStyle(fontSize: 13))),
+                      DropdownMenuItem(value: 'USD', child: Text(' USD', style: TextStyle(fontSize: 10))),
+                      DropdownMenuItem(value: 'DZD', child: Text(' DZD', style: TextStyle(fontSize: 10))),
                     ],
                     onChanged: (val) => setState(() => _selectedCurrency = val!),
                   ),

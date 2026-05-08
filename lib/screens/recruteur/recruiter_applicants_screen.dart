@@ -19,18 +19,18 @@ class RecruiterApplicantsScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: c.surface,
         elevation: 0,
-        leading: GestureDetector(
-          onTap: () => Navigator.pop(context),
-          child: Container(
-            margin: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: c.surface,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: c.border),
-            ),
-            child: Icon(Icons.arrow_back_ios_new_rounded, color: c.textPrimary, size: 18),
-          ),
-        ),
+        // leading: GestureDetector(
+        //   onTap: () => Navigator.pop(context),
+        //   child: Container(
+        //     margin: const EdgeInsets.all(8),
+        //     decoration: BoxDecoration(
+        //       color: c.surface,
+        //       borderRadius: BorderRadius.circular(14),
+        //       border: Border.all(color: c.border),
+        //     ),
+        //     child: Icon(Icons.arrow_back_ios_new_rounded, color: c.textPrimary, size: 18),
+        //   ),
+        // ),
         title: Text(
           AppLocalizations.of(context).allCandidates,
           style: TextStyle(color: c.textPrimary, fontSize: 18, fontFamily: 'Inter', fontWeight: FontWeight.w700),
